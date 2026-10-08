@@ -6,6 +6,7 @@ src/
   icon.py               иконите за начален екран → docs/ (iPhone 180, Android 192/512 + maskable), без зависимости
   fonts/                шрифтовете за офлайн сборката (fetch.py ги тегли веднъж от Google Fonts; SIL OFL в licenses/)
   mac/                  Mac приложение: main.swift (WKWebView) + make_app.py → dist/Резонанс.app
+  win/                  Windows приложение: main.go (WebView2) + make_exe.py → dist/Rezonans-windows/ (x64 + arm64 .exe)
   base/rezonans_v21.html оригиналният двигател + първата част
   engine/               общ код за всички части
     series.js           регистър на игрите, еднаквото меню, навигация с Esc
@@ -49,6 +50,18 @@ python3 src/mac/make_app.py r1 … r7    # с изброените части; -
 (Apple Silicon + Intel, macOS 13+), с локален подпис: на този Mac се отваря направо, на чужд — десен бутон → Отвори.
 Играта вътре е `build.py --offline` (шрифтовете от `src/fonts/` са вградени). Нов шрифт в game.json →
 `python3 src/fonts/fetch.py`. Проверка: `dist/Резонанс.app/Contents/MacOS/Rezonans --selftest`.
+
+## Windows приложение
+```
+python3 src/win/make_exe.py            # dist/Rezonans-windows/ — частите като сайта
+python3 src/win/make_exe.py r1 … r7    # с изброените части; --zip → и dist/Rezonans-windows.zip
+```
+Сглобява се и от Mac: нужен е само Go (`brew install go`), без cgo и без Windows. Получават се
+`Rezonans-x64.exe` и `Rezonans-arm64.exe` — по един файл, без инсталация, офлайн. Прозорецът е WebView2
+(вграден в Windows 10/11); играта (`build.py --offline`) е вградена в .exe и при старт се записва в
+`%LOCALAPPDATA%\Rezonans\game\`, а записите — в `%LOCALAPPDATA%\Rezonans\WebView2`. Иконата и версията се
+вграждат с go-winres. Без подпис — SmartScreen пита веднъж („More info“ → „Run anyway“).
+Проверка на Windows: `Rezonans-x64.exe --selftest` (показва резултата и го записва в selftest.json).
 
 ## Махане на част
 Изтрий id-то ѝ от `games/series.json`. Връзките към нея изчезват от всички менюта.

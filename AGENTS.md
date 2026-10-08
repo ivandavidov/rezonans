@@ -13,7 +13,7 @@ python3 src/build.py
 За проба с част от игрите: `python3 src/build.py r1 r3 --out /tmp/proba.html`.
 По подразбиране (`games/series.json`) се публикува само `r1`; всички части: `python3 src/build.py r1 r2 r3 r4 r5 r6 r7`.
 
-## Mac приложение и офлайн сборка
+## Mac / Windows приложения и офлайн сборка
 ```
 python3 src/mac/make_app.py            # dist/Резонанс.app (частите като сайта); --zip → и архив
 ```
@@ -22,6 +22,9 @@ python3 src/mac/make_app.py            # dist/Резонанс.app (частит
 - Кодът е в `src/mac/` (`main.swift` — прозорец с WKWebView, `make_app.py` — сглобяване). Проверка без ръце:
   `dist/Резонанс.app/Contents/MacOS/Rezonans --selftest [--snapshot снимка.png]` → JSON (шрифтове, записи, JS грешки).
 - Нов шрифт в някой `game.json` → `python3 src/fonts/fetch.py` (тегли от Google Fonts, само кирилица и латиница).
+- Windows: `python3 src/win/make_exe.py` → `dist/Rezonans-windows/` (x64 + arm64 .exe; само Go, без cgo — сглобява се и от Mac).
+  Кодът е в `src/win/` (`main.go` — прозорец с WebView2, `go.mod`/`go.sum`, `make_exe.py`). Тук не може да се пусне —
+  проверка на Windows с `Rezonans-x64.exe --selftest`.
 
 ## Какво не се пипа на ръка
 - **`docs/index.html`**, иконите и **`docs/manifest.webmanifest`** — генерират се. Всяка промяна се прави в `src/` и се пуска сборката.
@@ -33,8 +36,8 @@ python3 src/mac/make_app.py            # dist/Резонанс.app (частит
   (офлайн сборката не трябва да зависи от мрежата). Лицензите (SIL OFL) остават до шрифтовете.
 
 ## Какво се commit-ва
-- Да: `src/` (вкл. `src/fonts/` и `src/mac/`) и генерираното в `docs/` — сайтът се публикува оттам.
-- Не (в `.gitignore`): `build/` и `dist/` (Mac приложението се сглобява локално), `.DS_Store`, `__pycache__/`,
+- Да: `src/` (вкл. `src/fonts/`, `src/mac/`, `src/win/`) и генерираното в `docs/` — сайтът се публикува оттам.
+- Не (в `.gitignore`): `build/` и `dist/` (приложенията за Mac и Windows се сглобяват локално), `.DS_Store`, `__pycache__/`,
   старите артефакти в корена, `.claude/`.
 
 ## Как е сглобен кодът

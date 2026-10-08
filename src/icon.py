@@ -7,6 +7,7 @@ iOS и Android сами заоблят/изрязват формата.
   icon-192.png, icon-512.png         Android, purpose „any“ (manifest)
   icon-maskable-192/512.png          Android, purpose „maskable“ — вълната е в безопасния кръг (80 %)
   mac_icns(път)                      macOS: заоблен квадрат 824/1024 със сянка, прозрачни полета (src/mac/make_app.py)
+  win_ico(път)                       Windows: заоблен квадрат почти до ръба, 16–256 (src/win/make_exe.py)
 Рисува се в 512 и се смалява; прерисува се само ако icon.py е по-нов от файловете.
 """
 import math, os, struct, zlib
@@ -91,9 +92,9 @@ def png4(img):
     return (b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', S, S, 8, 6, 0, 0, 0))
             + chunk(b'IDAT', zlib.compress(raw, 9)) + chunk(b'IEND', b''))
 
-def mac_icon(S=1024):
+def mac_icon(S=1024, inner=824 / 1024, rr=0.2237, shadow=0.3):
     """иконата за macOS по шаблона на Apple: заоблен квадрат 824/1024, мека сянка отдолу, прозрачно около него"""
-    A = round(S * 824 / 1024); h, rad, off = A / 2, A * 0.2237, (S - A) // 2
+    A = round(S * inner); h, rad, off = A / 2, A * rr, (S - A) // 2
     art = render(A)
     def sd(px, py):                             # разстояние до заобления квадрат (отрицателно вътре)
         qx, qy = abs(px) - (h - rad), abs(py) - (h - rad)
@@ -104,7 +105,7 @@ def mac_icon(S=1024):
         for x in range(S):
             px, py = x + 0.5 - S / 2, y + 0.5 - S / 2
             cov = max(0.0, min(1.0, 0.5 - sd(px, py)))
-            sh = 0.3 * max(0.0, min(1.0, 0.5 - sd(px, py - S * 0.012) / (S * 0.022)))
+            sh = shadow * max(0.0, min(1.0, 0.5 - sd(px, py - S * 0.012) / (S * 0.022))) if shadow else 0.0
             a = cov + sh * (1 - cov)
             if not a: row.append((0, 0, 0, 0)); continue
             c = art[min(A - 1, max(0, y - off))][min(A - 1, max(0, x - off))] if cov else (0, 0, 0)
@@ -133,6 +134,17 @@ def write_all(folder):
     for name, img in [('apple-touch-icon.png', shrink(full, 180)), ('icon-192.png', shrink(full, 192)), ('icon-512.png', full),
                       ('icon-maskable-192.png', shrink(mask, 192)), ('icon-maskable-512.png', mask)]:
         open(os.path.join(folder, name), 'wb').write(png(img))
+
+def win_ico(path):
+    """icon.ico с PNG вътре (Windows Vista+); прерисува се само ако icon.py е по-нов"""
+    if os.path.exists(path) and os.path.getmtime(path) >= os.path.getmtime(__file__): return
+    big = mac_icon(256, inner=240 / 256, rr=0.18, shadow=0); imgs = [png4(big)]
+    for n in (64, 48, 32, 24, 16): imgs.append(png4(shrink(big, n)))
+    sizes = [256, 64, 48, 32, 24, 16]
+    head = struct.pack('<HHH', 0, 1, len(imgs)); off = 6 + 16 * len(imgs); ents = b''
+    for n, d in zip(sizes, imgs):
+        ents += struct.pack('<BBBBHHII', n % 256, n % 256, 0, 0, 1, 32, len(d), off); off += len(d)
+    open(path, 'wb').write(head + ents + b''.join(imgs))
 
 if __name__ == '__main__':
     import sys
