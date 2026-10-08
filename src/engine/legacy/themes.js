@@ -1,0 +1,26 @@
+/* ================= THEMES ================= */
+const TH={
+  lab:{wall:'#1f2a31',panel:'#26343c',line:'#141c21',hi:'#34464f',s:'#4a5862',sh:'#6c7c87',sd:'#2a333a',amb:0.38,lamps:1},
+  hall:{wall:'#22272a',panel:'#2a3034',line:'#16191c',hi:'#373e43',s:'#4c5256',sh:'#6b7277',sd:'#2a2e31',amb:0.48,lamps:1},
+  waste:{wall:'#1b2520',panel:'#222e27',line:'#121a15',hi:'#2e3e34',s:'#4a534c',sh:'#69736b',sd:'#2a302b',amb:0.46,lamps:1},
+  mil:{wall:'#29271f',panel:'#312e25',line:'#1b1a15',hi:'#403c31',s:'#57534a',sh:'#77726a',sd:'#33302a',amb:0.44,lamps:1},
+  arena:{wall:'#161b1f',panel:'#1c2328',line:'#0e1215',hi:'#27313a',s:'#3d464e',sh:'#58636d',sd:'#232a30',amb:0.5,lamps:1},
+  core:{wall:'#1b2528',panel:'#212d32',line:'#13191b',hi:'#2b3d45',s:'#4a575d',sh:'#6d7c85',sd:'#2b3338',amb:0.55,lamps:1},
+  out:{s:'#7a5238',sh:'#a5714c',sd:'#4a3022',top:'#c08d5d',amb:0.14,sky:1,rock:1},
+  office:{wall:'#2a2620',panel:'#322d26',line:'#1a1714',hi:'#3e382f',s:'#4f4a42',sh:'#6f685d',sd:'#2c2823',amb:0.86,lamps:1},
+  tunnel:{wall:'#22201c',panel:'#29261f',line:'#151310',hi:'#35312a',s:'#4e4a42',sh:'#6c675d',sd:'#2d2a25',amb:0.52,lamps:1},
+  night:{s:'#51444c',sh:'#73616e',sd:'#2d252a',top:'#7b666e',amb:0.4,sky:1,rock:1},
+  hive:{wall:'#2b1a25',panel:'#361e2d',line:'#1e1018',hi:'#4a293d',s:'#693951',sh:'#9a5477',sd:'#3e2131',top:'#aa5c87',moss:'#ff6ad5',amb:0.56,rock:1,alien:1,organic:1,vein:'#4a1a34',dot:'#ff6ad5'},
+  depot:{wall:'#262320',panel:'#2e2a25',line:'#171512',hi:'#3a352e',s:'#55504a',sh:'#77706a',sd:'#2f2b27',amb:0.42,lamps:1},
+  factory:{wall:'#1e1a16',panel:'#26201a',line:'#120f0c',hi:'#332a20',s:'#4a3f33',sh:'#6a5a48',sd:'#2a231c',amb:0.48,lamps:1},
+  citadel:{wall:'#25202e',panel:'#2d263a',line:'#191420',hi:'#3d3352',s:'#4e4366',sh:'#726296',sd:'#2e273f',amb:0.5,lamps:1},
+  cave:{wall:'#1d1a28',panel:'#252132',line:'#14131d',hi:'#312b42',s:'#484262',sh:'#716899',sd:'#2b2840',top:'#5f5785',moss:'#59ffd6',amb:0.86,rock:1,alien:1,organic:1,vein:'#22304a',dot:'#59ffd6'},
+  mine:{wall:'#272320',panel:'#302b26',line:'#1a1815',hi:'#3f372f',s:'#66594e',sh:'#8f7b66',sd:'#3c342d',top:'#7b6651',amb:0.62,lamps:1,rock:1,mine:1},
+  cool:{wall:'#16202a',panel:'#1b2733',line:'#0d141b',hi:'#26384a',s:'#3a4a5a',sh:'#5a7084',sd:'#202a34',amb:0.5,lamps:1},
+  bio:{wall:'#18241f',panel:'#1d2b25',line:'#0f1813',hi:'#273a31',s:'#44524a',sh:'#64746a',sd:'#26302a',amb:0.46,lamps:1},
+  xen:{s:'#3d2e52',sh:'#5c4878',sd:'#21182e',top:'#6a5590',moss:'#4dffc3',amb:0.32,sky:1,rock:1,alien:1},
+  vih:{wall:'#252b30',panel:'#2d353b',line:'#161b1f',hi:'#3b464e',s:'#56616a',sh:'#808c96',sd:'#30383e',amb:0.46,lamps:1},
+  snow:{s:'#56606c',sh:'#7d8a98',sd:'#2c333c',top:'#e9f1f7',amb:0.3,sky:1,rock:1,snow:1},
+  ice:{wall:'#1a2331',panel:'#1f2b3c',line:'#131a22',hi:'#2a3c4e',s:'#415974',sh:'#709dc8',sd:'#263344',top:'#e8ffff',moss:'#e8f8ff',amb:0.86,rock:1,organic:1,vein:'#1e3a5a',dot:'#8fd0ff',snow:1,ice:1},
+};
+
