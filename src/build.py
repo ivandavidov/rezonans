@@ -146,7 +146,11 @@ rep("  if(LVL.vent&&tx>=LVL.vent[0]&&tx<=LVL.vent[1]&&ty===14){","  if(SEQ) r2Ba
 rep("    else for(let k=0;k<L.n;k++){ const cx=hash(k,L.seed)*1024, cy=L.y+hash(L.seed,k)*L.dy, w=18+hash(k,k+L.seed)*L.w;","    else if(r2SkyLayer(L,x)){}\n    else for(let k=0;k<L.n;k++){ const cx=hash(k,L.seed)*1024, cy=L.y+hash(L.seed,k)*L.dy, w=18+hash(k,k+L.seed)*L.w;")
 # застинало време: враговете, снарядите и босът ползват edt=dt*timeScale()
 rep("function update(dt){\n  const p=player; lvT+=dt;","function update(dt){\n  const p=player; lvT+=dt; const edt=dt*timeScale();")
-rep("pylon:(e,dt)=>{e.anim+=dt;}})[e.type](e,dt);","pylon:(e,dt)=>{e.anim+=dt;}})[e.type](e,edt);")
+rep("pylon:(e,dt)=>{e.anim+=dt;}})[e.type](e,dt);","pylon:(e,dt)=>{e.anim+=dt;}})[e.type](e,edt);\n"
+    "    if(!e.dead&&ACID_DIE[e.type]&&rectHas(e.x,e.y+e.h-6,e.w,6,'~')){ hurtEnemy(e,e.hp+1,0,true); for(let i=0;i<10;i++) part(e.x+rnd(e.w),e.y+e.h-4,rnd(-30,30),rnd(-90,-30),rnd(0.3,0.6),'#9dff6a',2,200); }")
+# киселина: ходещите врагове не стъпват в нея (виждат я като пропаст), а ако все пак попаднат там — загиват като раците
+rep("function groundAhead(e,dir){ const fx=dir>0?e.x+e.w+2:e.x-2, fy=e.y+e.h+3, c=tileP(fx,fy); return",
+    "const ACID_DIE={soldier:1,zombie:1,shocker:1,guard:1};\nfunction groundAhead(e,dir){ const fx=dir>0?e.x+e.w+2:e.x-2, fy=e.y+e.h+3, c=tileP(fx,fy); if(tileP(fx,e.y+e.h-4)==='~') return false; return")
 rep("    if(b.grav) b.vy+=G*dt;","    if(b.grav) b.vy+=G*edt;")
 rep("    b.x+=b.vx*dt; b.y+=b.vy*dt; b.life-=dt;","    b.x+=b.vx*edt; b.y+=b.vy*edt; b.life-=edt;")
 rep("  for(const o of orbs){ o.x+=o.vx*dt; o.life-=dt;","  for(const o of orbs){ o.x+=o.vx*edt; o.life-=edt;")
@@ -214,9 +218,9 @@ rep("  else if(state==='levelEnd'){ endT+=dt;","  else if(state==='levelEnd'&&pr
 rep("function svPlan(k){\n","function svPlan(k){ if(SEQ) return GAME.svPlan(k);\n")
 rep("function genLevel(k){\n","function genLevel(k){ if(SEQ) return svGen(k);\n")
 rep("if(LVL.arena) bossMul*=BOSS_NORM[LVL.arena.type]||1;","if(LVL.arena) bossMul*=BOSS_NORM[LVL.arena.type]||1; if(SEQ&&LVL.arena&&(GAME.bossMulOne||[]).includes(LVL.arena.type)) bossMul=1;")
-# генератор на сектори (r1): нищо не се поставя в колона със затворена врата (засада, гнездо, арена),
+# генератор на сектори (r1): нищо не се поставя в колона със затворена врата (засада, гнездо, арена), нито на дъното на яма до киселина,
 # а общите аптечка/батерия/ракети на арената стоят върху терена (при червея има первази на редове 13–14)
-rep("safe=(x,y)=>{ const id=y*cols+x; return kind[id]===1&&!V.virt[id]&&R[id]&&Q[id]; };","safe=(x,y)=>{ const id=y*cols+x; return kind[id]===1&&!V.virt[id]&&R[id]&&Q[id]&&!(y>0&&g[y-1][x]==='D'); };")
+rep("safe=(x,y)=>{ const id=y*cols+x; return kind[id]===1&&!V.virt[id]&&R[id]&&Q[id]; };","safe=(x,y)=>{ const id=y*cols+x; return kind[id]===1&&!V.virt[id]&&R[id]&&Q[id]&&!(y>0&&g[y-1][x]==='D')&&![x-1,x+1].some(xx=>g[y-1][xx]==='~'||(y>1&&g[y-2][xx]==='~')); };")
 rep("  fixed.push(['health',d+2,14,'E'],['battery',d+4,14]); if(k>=10&&!['tank','titan'].includes(type)) fixed.push(['rocketsR',d+2,14],['rocketsR',d+27,14]);",
     "  const top=x=>{ let y=14; while(y>0&&o.g[y][x]!=='.') y--; return y; };\n  fixed.push(['health',d+2,top(d+2),'E'],['battery',d+4,top(d+4)]); if(k>=10&&!['tank','titan'].includes(type)) fixed.push(['rocketsR',d+2,top(d+2)],['rocketsR',d+27,top(d+27)]);")
 # генератор на сектори (r1): недостижими платформи — скокът стига 3 реда
