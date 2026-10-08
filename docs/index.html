@@ -2871,7 +2871,7 @@ function svTry(k,plan,att,simple){
     terrain(){ const n=ri(8,16), x0=b.x; for(let i=0;i<n;i++){ if(i>1&&ch(0.22)){ b.gy=clamp(b.gy+(ch(0.5)?-ri(1,2):ri(1,2)),GMIN,15); } colG(b.x,b.gy); b.x++; }
       for(let j=ri(0,2);j>0;j--){ const x=x0+ri(1,n-3), w=ri(1,2), h=ri(1,3); if(gtop[x]===gtop[x+w-1]&&gtop[x]-h>GMIN-2) fill(x,gtop[x]-h,x+w-1,gtop[x]-1,'B'); } },
     stairs(){ const up=b.gy>GMIN+2&&ch(0.55); for(let n=ri(2,4);n>0;n--){ b.gy=clamp(b.gy+(up?-ri(1,lowg?3:2):ri(1,3)),GMIN,15); ground(ri(2,5)); }
-      if(ch(0.35)){ const x=b.x-ri(3,6), y=Math.min(gtop[x],gtop[x+1],gtop[x+2])-ri(3,4); if(y>GMIN-3){ fill(x,y,x+2,y,'-'); loot(x+1,y,true); } } },
+      if(ch(0.35)){ const x=b.x-ri(3,6), y=Math.min(gtop[x],gtop[x+1],gtop[x+2])-3; if(y>GMIN-3){ fill(x,y,x+2,y,'-'); loot(x+1,y,true); } } },
     gaps(){ const pit=sky?'void':tg.acid&&ch(0.6)?'acid':tg.elec&&ch(0.5)?'elec':'void'; ground(ri(2,3));
       for(let n=ri(1,3);n>0;n--){ const ty=clamp(b.gy-ri(-2,lowg?3:2),GMIN,15), dy=b.gy-ty, w=ri(2,Math.max(2,env(dy)-1)), lo=Math.max(b.gy,ty);
         for(let j=0;j<w;j++){ const x=b.x+j; if(pit==='acid'&&lo<=12){ colG(x,15); fill(x,lo+1,x,14,'~'); if(j===w-1) fill(x,ty,x,14,'H'); } else if(pit==='elec'&&lo<=13){ colG(x,15); set(x,15,'Z'); if(j===w-1) fill(x,ty,x,14,'H'); } }
@@ -2907,7 +2907,7 @@ function svTry(k,plan,att,simple){
       let px=x0+ri(3,5); while(px<x0+L-6){ const w=ri(3,4); fill(px,12,px+w-1,12,'='); if(ch(0.3)) loot(px+1,12,false); px+=w+ri(4,7); }
       tracks.push({x0:x0+1,x1:x0+L-2,dir:ch(0.5)?1:-1,off:2.5+r()*2}); decos.push(()=>rails(x0+1,x0+L-2)); b.gy=15; },
     encounter(){ if(encDone||k<1) return F.terrain(); encDone=true; ground(2); const W=ri(18,24), x0=b.x; ground(W);
-      for(let n=ri(1,3);n>0;n--){ const px=x0+ri(2,W-6), py=b.gy-pick([3,3,6]); if(py>GMIN-2) fill(px,py,px+ri(2,4),py,'-'); }
+      for(let n=ri(1,3);n>0;n--){ const px=x0+ri(2,W-6), py=b.gy-pick([3,3,6]); if(py>GMIN-2){ fill(px,py,px+ri(2,4),py,'-'); if(b.gy-py>3) fill(px-3,b.gy-3,px-1,b.gy-3,'-'); } }
       const dxc=b.x; colG(dxc,b.gy); fill(dxc,sky?0:2,dxc,b.gy-1,'D'); noCeil.add(dxc); b.x++; ground(2);
       const waves=[], nw=2+(k>=8?1:0), per=2+Math.floor(k/6);
       for(let w=0;w<nw;w++){ const wv=[]; for(let i=0;i<per;i++){ const t=foeT(false); wv.push(t==='flyer'?[t,x0+ri(3,W-3),'portal',null,b.gy-ri(4,6)]:[t,x0+ri(3,W-3),(t==='soldier'&&!sky)?'drop':'portal']); } wv.push([foeT(true),x0+ri(3,W-3),'portal','H']); waves.push(wv); }
@@ -2921,7 +2921,7 @@ function svTry(k,plan,att,simple){
     drop(){ if(b.gy>11) return F.stairs(); ground(2); b.gy=ri(b.gy+3,15); ground(ri(3,6)); },
     zfloor(){ if(b.gy<GMIN+3) stepTo(GMIN+4); ground(2); const n=ri(6,11), x0=b.x; for(let i=0;i<n;i++){ colG(b.x,b.gy); set(b.x,b.gy,'Z'); b.x++; }
       let px=x0+ri(1,2); while(px<x0+n-2){ const w=ri(2,3); fill(px,b.gy-3,px+w-1,b.gy-3,'-'); px+=w+ri(2,3); } ground(2); },
-    secret(){ ground(3); const x=b.x; ground(ri(7,10)); const y1=b.gy-3, y2=b.gy-6; if(y2<(sky?2:4)) return; fill(x,y1,x+2,y1,'-'); fill(x+4,y2,x+6,y2,'-'); loot(x+5,y2,true); if(ch(0.5)) loot(x+1,y1,false); },
+    secret(){ ground(3); const x=b.x; ground(ri(7,10)); const y1=b.gy-3, y2=b.gy-6; if(y2<(sky?2:5)) return; fill(x,y1,x+2,y1,'-'); fill(x+4,y2,x+6,y2,'-'); loot(x+5,y2,true); if(ch(0.5)) loot(x+1,y1,false); },
   };
   const foeT=ground=>{ if(alien){ const pool=['crab','crab','shocker']; if(!ground) pool.push('flyer'); if(k>=6) pool.push('shocker'); if(k>=10) pool.push('guard'); if(k>=16) pool.push('guard'); return pick(pool); }
     const pool=['crab','zombie']; if(k>=1) pool.push('zombie'); if(k>=2) pool.push('shocker'); if(k>=3) pool.push('soldier','soldier'); if(k>=8) pool.push('soldier'); return pick(pool); };
@@ -2975,6 +2975,9 @@ function svTry(k,plan,att,simple){
   // start goodies
   const WEAP={1:'shotgun',2:'grenade',6:'pulse',10:'rocket'}; const sy=gyEq(8);
   if(WEAP[k]) spawns.push([WEAP[k],8,sy-1]); if(k>=10&&k%5===0) spawns.push(['rockets',9,sy-1]); spawns.push(['health',10,sy-1,'E']);
+  for(let i=spawns.length-1;i>=0;i--){ const [t,x,y]=spawns[i]; if(DIMS[t]||t==='barrel'||t.startsWith('nest')||V.R[(y+1)*cols+x]) continue;
+    let to=null; for(let d=0;d<=8&&!to;d++) for(const xx of d?[x-d,x+d]:[x]){ if(xx<2||xx>=cols-2) continue; for(let yy=1;yy<ROWS&&!to;yy++) if(safe(xx,yy)&&g[yy][xx]!=='Z'&&g[yy][xx]!=='^') to=[xx,yy]; if(to) break; }
+    if(to) spawns[i]=[t,to[0],to[1]-1].concat(spawns[i].slice(3)); else spawns.splice(i,1); }
   // decorations
   const signY=sky?Math.max(2,gyEq(3)-5):Math.max(3,gyEq(3)-4);
   decos.push(()=>drawSign(3,signY,'СЕКТОР '+(k+1)+' · '+THEME_NAME[theme].toUpperCase()));
@@ -3004,7 +3007,7 @@ function svArena(type,d,o){
   fill(d+29,r0,d+29,14,'D');
   const A={type,door:d,r0,r1:14,exitDoor:[d+29,r0,14],msg:'Вратата към следващия сектор е отворена!'};
   // random reachable platforms
-  const plats=(xmin,xmax)=>{ let cx=xmin+ri(0,3), y=12, out=[]; while(cx<xmax-3){ const w=ri(3,5); fill(cx,y,cx+w-1,y,'-'); out.push([cx,y,w]); const ny=y===12?pick([9,12]):pick([12,9,(sky?6:9)]); cx+=w+ri(2,3)+(ny===12&&y===12?ri(1,3):0); y=ny; } return out; };
+  const plats=(xmin,xmax)=>{ let cx=xmin+ri(0,3), y=12, out=[]; while(cx<xmax-3){ const w=ri(3,5); fill(cx,y,cx+w-1,y,'-'); out.push([cx,y,w]); const ny=y===12?pick([9,12]):pick([12,9,(sky?6:9)]); cx+=w+(ny<=y?ri(1,2):ri(2,3))+(ny===12&&y===12?ri(1,3):0); y=ny; } return out; };
   if(type==='worm'){ fill(d+1,13,d+6,14,'#'); fill(d+7,13,d+22,14,'~'); fill(d+23,13,d+28,14,'#');
     const a=ri(8,9), b2=ri(13,14), c=ri(18,19); fill(d+a,10,d+a+2,10,'-'); fill(d+b2,9,d+b2+3,9,'-'); fill(d+c,10,d+c+2,10,'-');
     fixed.push(['barrel',d+3,12],['barrel',d+26,12],['health',d+2,12],['health',d+27,12],['ammo',d+b2+1,8],['grenade',d+a+1,9]); A.pool=[d+7,d+22]; }

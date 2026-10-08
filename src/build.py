@@ -205,6 +205,21 @@ rep("if(LVL.arena) bossMul*=BOSS_NORM[LVL.arena.type]||1;","if(LVL.arena) bossMu
 rep("safe=(x,y)=>{ const id=y*cols+x; return kind[id]===1&&!V.virt[id]&&R[id]&&Q[id]; };","safe=(x,y)=>{ const id=y*cols+x; return kind[id]===1&&!V.virt[id]&&R[id]&&Q[id]&&!(y>0&&g[y-1][x]==='D'); };")
 rep("  fixed.push(['health',d+2,14,'E'],['battery',d+4,14]); if(k>=10&&!['tank','titan'].includes(type)) fixed.push(['rocketsR',d+2,14],['rocketsR',d+27,14]);",
     "  const top=x=>{ let y=14; while(y>0&&o.g[y][x]!=='.') y--; return y; };\n  fixed.push(['health',d+2,top(d+2),'E'],['battery',d+4,top(d+4)]); if(k>=10&&!['tank','titan'].includes(type)) fixed.push(['rocketsR',d+2,top(d+2)],['rocketsR',d+27,top(d+27)]);")
+# генератор на сектори (r1): недостижими платформи — скокът стига 3 реда
+#  · „стълби“: платформата е на 3 реда (беше 3–4); засада: платформа на 6 реда получава стъпало на 3
+#  · бос арена: към платформа на същата или по-голяма височина пролуката е 1–2 (беше 2–3)
+#  · тайник: горната платформа е поне на ред 5, иначе при скока главата опира в тавана
+#  · накрая всеки предмет, който не стои на достижимо място (по проверката на генератора), се мести до най-близкото такова или отпада
+rep("y=Math.min(gtop[x],gtop[x+1],gtop[x+2])-ri(3,4);","y=Math.min(gtop[x],gtop[x+1],gtop[x+2])-3;")
+rep("const px=x0+ri(2,W-6), py=b.gy-pick([3,3,6]); if(py>GMIN-2) fill(px,py,px+ri(2,4),py,'-'); }",
+    "const px=x0+ri(2,W-6), py=b.gy-pick([3,3,6]); if(py>GMIN-2){ fill(px,py,px+ri(2,4),py,'-'); if(b.gy-py>3) fill(px-3,b.gy-3,px-1,b.gy-3,'-'); } }")
+rep("const y1=b.gy-3, y2=b.gy-6; if(y2<(sky?2:4)) return;","const y1=b.gy-3, y2=b.gy-6; if(y2<(sky?2:5)) return;")
+rep("cx+=w+ri(2,3)+(ny===12&&y===12?ri(1,3):0); y=ny;","cx+=w+(ny<=y?ri(1,2):ri(2,3))+(ny===12&&y===12?ri(1,3):0); y=ny;")
+rep("  if(WEAP[k]) spawns.push([WEAP[k],8,sy-1]); if(k>=10&&k%5===0) spawns.push(['rockets',9,sy-1]); spawns.push(['health',10,sy-1,'E']);",
+    "  if(WEAP[k]) spawns.push([WEAP[k],8,sy-1]); if(k>=10&&k%5===0) spawns.push(['rockets',9,sy-1]); spawns.push(['health',10,sy-1,'E']);\n"
+    "  for(let i=spawns.length-1;i>=0;i--){ const [t,x,y]=spawns[i]; if(DIMS[t]||t==='barrel'||t.startsWith('nest')||V.R[(y+1)*cols+x]) continue;\n"
+    "    let to=null; for(let d=0;d<=8&&!to;d++) for(const xx of d?[x-d,x+d]:[x]){ if(xx<2||xx>=cols-2) continue; for(let yy=1;yy<ROWS&&!to;yy++) if(safe(xx,yy)&&g[yy][xx]!=='Z'&&g[yy][xx]!=='^') to=[xx,yy]; if(to) break; }\n"
+    "    if(to) spawns[i]=[t,to[0],to[1]-1].concat(spawns[i].slice(3)); else spawns.splice(i,1); }")
 rep("const survBest=(i=DI)=>parseInt(store.get('rz.best'+i,'0'),10)||0;","const survBest=(i=DI)=>parseInt(store.get(KEY('best')+i,'0'),10)||0;")
 rep("const survBestK=(i=DI)=>parseInt(store.get('rz.bestK'+i,'0'),10)||0;","const survBestK=(i=DI)=>parseInt(store.get(KEY('bestK')+i,'0'),10)||0;")
 rep("store.set('rz.best'+DI,score); store.set('rz.bestK'+DI,sector);","store.set(KEY('best')+DI,score); store.set(KEY('bestK')+DI,sector);")
