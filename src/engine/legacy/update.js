@@ -3,7 +3,7 @@ function update(dt){
   const p=player; lvT+=dt; const edt=dt*timeScale();
   stats.time+=dt;
   if(LVL.tick) LVL.tick(dt);
-  updLifts(); r2Update(dt);
+  updLifts(); mechRun('update',dt);
   updPlayer(dt);
   if(p.dead&&p.deadT>1.4&&state==='play'){ state='dead'; deadT=0; }
   for(const t of triggers) if(!t.done&&p.x>t.x*T&&!p.dead&&(!t.cond||t.cond())){ t.done=true; t.fn(); }
@@ -61,7 +61,7 @@ function update(dt){
   portals=portals.filter(po=>po.t<(po.big?1.6:1.0));
   if(exitPortal){ exitPortal.t+=dt; if(Math.random()<0.6){ const a=rnd(6.28); part(exitPortal.x+Math.cos(a)*30,exitPortal.y+Math.sin(a)*30,-Math.cos(a)*40,-Math.sin(a)*40,0.7,LVL.arena&&LVL.arena.home?'#cfe8ff':'#9dff5a',1.5,0); }
     if(!p.dead&&Math.hypot(p.x+p.w/2-exitPortal.x,p.y+p.h/2-exitPortal.y)<22&&exitPortal.t>0.8){ flash=1; flashCol=LVL.arena&&LVL.arena.home?'#e8f4ff':'#c8ffb0'; completeLevel(); } }
-  if(LVL.exit&&p.x>LVL.exit*T&&!p.dead&&r2ExitOk()) completeLevel();
+  if(LVL.exit&&p.x>LVL.exit*T&&!p.dead&&mechExitOk()) completeLevel();
   // camera
   const lock=bossActive&&boss&&LVL.arena.lock!==false;
   const tc=lock?lockCam():clamp(p.x+p.w/2-W/2+p.face*36,0,COLS*T-W);

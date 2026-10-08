@@ -1,4 +1,4 @@
-/* ================= ДВИГАТЕЛ · МЕХАНИКИ III =================
+/* ================= МЕХАНИКА · ХОРА В ТРАНС, РАКЕТИ, ШАХТИ, СКРИТИ ПРОХОДИ, ВОДОПАДИ, ПРИЛЕПИ =================
    Хора в транс (LVL.sleepers:[[tx,tx1,опции]]): вървят насън към tx1; задръж ↑ до тях, за да ги събудиш.
      LVL.needHeal — изходът се отваря едва когато всички са будни. Стрелбата минава през тях.
    Сигнални ракети (LVL.flares): E хвърля ракета, която осветява мястото; прилепите бягат от светлина.
@@ -8,20 +8,20 @@
    Враг 'bat' (прилеп): лети на рояци в тъмното и бяга от светлина. */
 let SLEEPERS=[], FLARES=[], flareCd=0, HREV={}, M3={};
 const SLEEP_HEAL=1.5;
-function mech3Load(){
+function tranceLoad(){
   SLEEPERS=[]; FLARES=[]; flareCd=0; HREV={}; M3={healed:0,lostMsg:0};
   const L=LVL; if(!L) return;
   for(const s of (L.sleepers||[])) addSleeper(s[0],s[1],s[2]||{});
   if(L.falls) L.winds=(L.winds||[]).filter(w=>!w.fall).concat(L.falls.map(f=>Object.assign([f[0],f[1],f[2],f[3],0,f[4]||520],{fall:1})));
 }
-function mech3Respawn(){ FLARES=[]; for(const s of SLEEPERS) if(!s.ok&&!s.boss){ s.heal=0; } }
+function tranceRespawn(){ FLARES=[]; for(const s of SLEEPERS) if(!s.ok&&!s.boss){ s.heal=0; } }
 function addSleeper(tx,tx1,o={}){
   const x=tx*T+3, s={x,y:o.row!=null?(o.row+1)*T-24:0,w:10,h:24,x0:x,x1:tx1*T+3,dir:tx1>=tx?1:-1,heal:0,ok:false,fall:0,vy:0,anim:Math.random()*9,seed:Math.floor(Math.random()*999),t:0,...o};
   s.y=sleeperFloor(s)-s.h; s.y0=s.y; SLEEPERS.push(s); return s; }
 function sleeperFloor(s){ const tx=Math.floor((s.x+s.w/2)/T); let ty=s.y?Math.max(1,Math.floor((s.y+s.h-2)/T)):1;
   while(ty<16&&isS(tx,ty)) ty++; while(ty<16&&!isS(tx,ty)&&tileAt(tx,ty)!=='-') ty++; return ty*T; }
 function sleepersLeft(){ return SLEEPERS.filter(s=>!s.ok&&!s.boss).length; }
-function mech3ExitOk(){ if(LVL.needHeal&&sleepersLeft()>0){ if(!M3.exitMsg||lvT-M3.exitMsg>3){ M3.exitMsg=lvT; showMsg('Не можеш да ги оставиш. Събуди всички хора в транс ('+sleepersLeft()+' остават).',2.5); } return false; } return true; }
+function tranceExitOk(){ if(LVL.needHeal&&sleepersLeft()>0){ if(!M3.exitMsg||lvT-M3.exitMsg>3){ M3.exitMsg=lvT; showMsg('Не можеш да ги оставиш. Събуди всички хора в транс ('+sleepersLeft()+' остават).',2.5); } return false; } return true; }
 function throwFlare(){ const p=player; if(flareCd>0||p.dead) return; flareCd=1.6;
   FLARES.push({x:p.x+p.w/2+p.face*6,y:p.y+8,vx:p.face*170+p.vx*0.3,vy:p.aimUp?-300:-170,t:0,life:8,stuck:false});
   if(AC){ nz({t:0.35,v:0.1,type:'highpass',f:2400}); osc({type:'sine',f:300,f2:900,t:0.25,v:0.05}); } }
@@ -30,7 +30,7 @@ function isLit(x,y){
   for(const f of FLARES) if(Math.hypot(f.x-x,f.y-y)<96*Math.min(1,(f.life-f.t)/1.5)) return true;
   if(LVL.shafts) for(const s of LVL.shafts){ if(x>s[0]*T-4&&x<(s[0]+s[1])*T+4&&shaftK(s)>0.35) return true; }
   return false; }
-function mech3Update(dt){
+function tranceUpdate(dt){
   const p=player; if(!p) return;
   flareCd=Math.max(0,flareCd-dt);
   if(E_ACT==='flare') throwFlare();
@@ -67,7 +67,7 @@ function wakeSleeper(s){ s.ok=true; s.t=0; M3.healed++; SFX.pickup(); if(AC){ os
   if(s.fn) s.fn(s); if(LVL.onHeal) LVL.onHeal(s);
   if(LVL.needHeal&&!sleepersLeft()) showMsg('Всички са будни. Пътят напред е свободен.',2.5);
 }
-function mech3DrawBack(){
+function tranceDrawBack(){
   if(!LVL.shafts) return;
   ctx.save(); ctx.globalCompositeOperation='lighter';
   for(const s of LVL.shafts){ const k=shaftK(s), x0=s[0]*T-cam, w=s[1]*T; if(x0>W+80||x0+w<-80) continue;
@@ -89,7 +89,7 @@ function drawSleeper(s){ const x=Math.round(s.x+s.w/2-cam), y=Math.round(s.y+s.h
     if(s.heal>0){ ctx.fillStyle='rgba(0,0,0,0.6)'; ctx.fillRect(x-12,y-36,24,4); ctx.fillStyle='#ffe6a0'; ctx.fillRect(x-11,y-35,22*(s.heal/SLEEP_HEAL),2); }
     const p=player; if(p&&!p.dead&&Math.abs((p.x+p.w/2)-(s.x+s.w/2))<16&&Math.abs((p.y+p.h)-(s.y+s.h))<20&&s.heal<=0&&Math.floor(titleT*3)%2){ ctx.font='600 6px "IBM Plex Mono",monospace'; ctx.fillStyle='#ffffff'; ctx.textAlign='center'; ctx.fillText('задръж ↑',x,y-40); ctx.textAlign='left'; } }
 }
-function mech3DrawWorld(){
+function tranceDrawWorld(){
   for(const s of SLEEPERS) drawSleeper(s);
   // скрити стени
   const c0=Math.max(0,Math.floor(cam/T)), c1=Math.min(COLS-1,c0+31);
@@ -105,12 +105,12 @@ function mech3DrawWorld(){
     for(let i=0;i<(x1-x0)/3;i++){ const sx=x0+i*3+(i%2), len=10+(i*7)%14, sy=y0+((titleT*220+i*41)%(y1-y0+len))-len; ctx.fillRect(sx,Math.max(y0,sy),1,Math.min(len,y1-Math.max(y0,sy))); }
     for(let i=0;i<4;i++) if(Math.random()<0.3) part(rnd(x0,x1)+cam,y1-2,rnd(-40,40),rnd(-80,-20),0.4,'#e8fffa',1.5,200); } ctx.restore(); }
 }
-function mech3Lights(L){
+function tranceLights(L){
   for(const f of FLARES){ const k=Math.min(1,(f.life-f.t)/1.5); L.push([f.x,f.y,110*k,1]); }
   if(LVL.shafts) for(const s of LVL.shafts){ const k=shaftK(s); if(k<0.05) continue; for(let y=1;y<15;y+=3) L.push([(s[0]+s[1]/2)*T,y*T,(s[1]*8+30+y*2),0.9*k]); }
   for(const s of SLEEPERS) if(!s.ok) L.push([s.x+5,s.y+8,26,0.3]);
 }
-function mech3Chips(chip){
+function tranceChips(chip){
   if(LVL.hero&&GAME.heroName) chip(GAME.heroName(LVL.hero),GAME.accent2||'#ffe6a0');
   const n=SLEEPERS.filter(s=>!s.boss).length; if(n) chip('♥ БУДНИ '+SLEEPERS.filter(s=>s.ok&&!s.boss).length+' / '+n+(sleepersLeft()?' · задръж ↑ до човек в транс':''),'#ffe6a0');
   if(LVL.flares) chip(flareCd>0?'✸ РАКЕТА · '+flareCd.toFixed(1)+' s':'✸ РАКЕТА · E — хвърли','#ff9a7a');
@@ -130,3 +130,4 @@ defFoe('bat',{draw:e=>{ if(e.dead&&e.deadT>0.6) return; const x=Math.round(e.x+e
   ctx.beginPath(); ctx.moveTo(x-1,y-1); ctx.lineTo(x-8,y-3-f*4); ctx.lineTo(x-5,y+1); ctx.lineTo(x-1,y+1); ctx.closePath(); ctx.fill();
   ctx.beginPath(); ctx.moveTo(x+1,y-1); ctx.lineTo(x+8,y-3-f*4); ctx.lineTo(x+5,y+1); ctx.lineTo(x+1,y+1); ctx.closePath(); ctx.fill();
   if(!e.dead){ ctx.fillStyle='#ff5a4a'; ctx.fillRect(x-1,y-1,1,1); ctx.fillRect(x+1,y-1,1,1); } }});
+defMech('trance',{load:tranceLoad,respawn:tranceRespawn,exitOk:tranceExitOk,update:tranceUpdate,drawBack:tranceDrawBack,drawWorld:tranceDrawWorld,lights:tranceLights,chips:tranceChips});

@@ -7,7 +7,7 @@ function completeLevel(){
   if(LI+2>gUnl&&LI<GLV.length-1){ gUnl=LI+2; store.set(KEY('unlocked'),gUnl); }
 }
 function respawn(){
-  r2PreRespawn(); const p=player; p.x=cp*T+3; p.h=26; p.crouch=false; p.y=groundY(cp)-26; p.vx=p.vy=0; p.hp=100; p.dead=false; p.inv=1.5; p.climb=false; p.hurtAgo=9;
+  mechRun('preRespawn'); const p=player; p.x=cp*T+3; p.h=26; p.crouch=false; p.y=groundY(cp)-26; p.vx=p.vy=0; p.hp=100; p.dead=false; p.inv=1.5; p.climb=false; p.hurtAgo=9;
   if(p.ammo.pistol.res+p.ammo.pistol.mag<34) p.ammo.pistol.res=34-p.ammo.pistol.mag;
   if(!hasAmmo(p.cur)) autoSwitch();
   ebullets=[];grenades=[];orbs=[];bolts=[];bmiss=[]; for(const e of enemies) if(!FOES[e.type].fixed) e.alert=false;
@@ -26,7 +26,7 @@ function respawn(){
     sfxAt(bossSfx(boss.type),boss);
   }
   trains=[]; rockets=[]; _resetHaz(); for(const tr of tracks){ tr.t=Math.max(tr.t,trainWarn()+2); tr.warned=false; }
-  r2Respawn(); cam=clamp(p.x-W/2,0,COLS*T-W); if(bossActive&&LVL.arena.lock!==false) cam=lockCam(); state='play';
+  mechRun('respawn'); cam=clamp(p.x-W/2,0,COLS*T-W); if(bossActive&&LVL.arena.lock!==false) cam=lockCam(); state='play';
 }
 function _resetHaz(){ if(player) player.onLift=null; }
 const lockCam=()=>Math.min(LVL.arena.door*T+8,COLS*T-W);

@@ -230,7 +230,7 @@ function drawLights(){
   for(const m of bmiss) L.push([m.x,m.y,34,0.7]);
   if(LVL.fires) for(const [fx,fy] of LVL.fires) L.push([fx,fy-10,80+Math.sin(titleT*13+fx)*8,0.8]);
   if(LVL.sw) L.push([LVL.sw[0]*T+8,LVL.sw[1]*T,40,0.6]);
-  r2Lights(L);
+  mechRun('lights',L);
   lc.globalCompositeOperation='source-over'; lc.clearRect(0,0,240,136); lc.fillStyle=`rgba(3,5,9,${torch?Math.min(amb,0.7):Math.min(amb*0.65,0.36)})`; lc.fillRect(0,0,240,136);
   lc.globalCompositeOperation='destination-out';
   for(const [x0,y0,r0,a] of L){ const x=(x0-cam)/2, y=y0/2, r=r0/2; if(x<-r||x>240+r) continue; const g=lc.createRadialGradient(x,y,0,x,y,r); g.addColorStop(0,`rgba(0,0,0,${clamp(a,0,1)})`); g.addColorStop(1,'rgba(0,0,0,0)'); lc.fillStyle=g; lc.fillRect(x-r,y-r,r*2,r*2); }
@@ -257,7 +257,7 @@ function renderWorld(){
   const saveCam=cam; cam=sx;
   if(SKY) drawSky();
   ctx.drawImage(LV,sx*S,0,W*S,H*S,0,0,W,H);
-  if(LVL.drawBack) LVL.drawBack(); r2DrawBack();
+  if(LVL.drawBack) LVL.drawBack(); mechRun('drawBack');
   for(const k of pickups) if(!k.taken&&k.x>cam-20&&k.x<cam+W+20) drawPickup(k);
   for(const b of barrels) if(b.x>cam-20&&b.x<cam+W+20) drawBarrel(b);
   for(const s of scientists) drawScientist(s);
@@ -266,7 +266,7 @@ function renderWorld(){
   if(boss) BOSSES[boss.type].draw();
   drawMissiles();
   for(const r of rockets){ ctx.save(); ctx.translate(Math.round(r.x-cam),Math.round(r.y)); ctx.rotate(Math.atan2(r.vy,r.vx)); px(-6,-1,8,3,'#5a6348'); px(2,-1,3,3,'#c9473a'); px(-9,-1,3,3,'#ffd36b'); ctx.restore(); }
-  if(player) drawPlayer(); r2DrawWorld();
+  if(player) drawPlayer(); mechRun('drawWorld');
   drawSlime(Math.floor(cam/T)-1,Math.floor((cam+W)/T)+1);
   drawElectric();
   drawExitPortal();
@@ -283,7 +283,7 @@ function renderWorld(){
   if(!FLIP) for(const b of barks){ const x=b.e.x+b.e.w/2-cam, y=b.e.y-6; const w=ctx.measureText(b.t).width+8; ctx.fillStyle='rgba(8,10,12,0.8)'; ctx.fillRect(Math.round(x-w/2),y-10,Math.round(w),11); ctx.fillStyle='#e8edf0'; ctx.fillText(b.t,x,y); }
   ctx.textAlign='left';
   cam=saveCam;
-  ctx.restore(); r2PostFx();
+  ctx.restore(); postFx();
 }
 function renderSurvOver(){
   overlay(0.88); glitchTitle('КРАЙ НА ОЦЕЛЯВАНЕТО',W/2,70,22);

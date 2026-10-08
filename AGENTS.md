@@ -57,8 +57,8 @@ python3 src/win/make_exe.py            # dist/Rezonans-windows/ (Rezonans-x64.ex
   `src/shell/index.html`; маркерите `@@FONT_FAMILIES@@`, `/*@@GAME_CSS@@*/` и `/*@@FONT_LOADS@@*/` (в
   `engine/legacy/loop.js`) се попълват от `game.json` на частите — всеки трябва да се среща точно веднъж.
 - Всичко влиза **в едно и също IIFE** (`'use strict'`): `engine/legacy/*.js` (двигателят — бившата база по раздели),
-  `engine/defs.js` (регистрите) и `engine/lib/` (общото съдържание: класическите теми и небета) в реда от `LEGACY` в `build.py` → `engine/*.js` по списъка
-  в `build.py` → игрите по `games/series.json` (във всяка — по `files` от `game.json`, `game.js` последен, вика
+  `engine/defs.js` (регистрите) и `engine/lib/` (общото съдържание: класическите теми и небета) в реда от `LEGACY` в `build.py` → `engine/*.js` и
+  механиките `engine/mech/*.js` по списъците в `build.py` (редът на куките им е в `MECH_ORDER`, `engine/mech/core.js`) → игрите по `games/series.json` (във всяка — по `files` от `game.json`, `game.js` последен, вика
   `registerGame`; първата част е обикновена част в `games/r1/`) → `engine/legacy/loop.js` (цикълът и `window.__rz`).
   Няма модули и `import`: всеки файл вижда глобалните имена на двигателя (`W`, `state`, `centerText`, `store`, …)
   и на другите файлове.
@@ -72,8 +72,8 @@ python3 src/win/make_exe.py            # dist/Rezonans-windows/ (Rezonans-x64.ex
 - Забранени остатъци от старата архитектура: `R2`, `R3`, `LEVELS2`, `r2title`, `unlocked2`, `MO` и др.
   (списъкът е в `build.py`).
 - Общите речници (`TH`, `SKIES`, `SV_THEMES`, `THEME_NAME`, `MUT_NAME`) се пълнят само с `addUnique(...)`; враговете,
-  босовете, предметите, плочките и фоновете — само с `defFoe`/`defBoss`/`defItem`/`defTile`/`defBack` (`engine/defs.js`):
-  вече зададено поле спира играта с ясна грешка.
+  босовете, предметите, плочките и фоновете — само с `defFoe`/`defBoss`/`defItem`/`defTile`/`defBack` (`engine/defs.js`), а
+  механиките — с `defMech` (`engine/mech/core.js`): вече зададено поле спира играта с ясна грешка.
 - Записите в `localStorage` минават през `store` и `KEY(...)` — всяка част е под свой `GAME.key`.
 - `engine/` не знае за конкретни игри; конкретното съдържание е само в `games/<id>/`.
 

@@ -1,12 +1,12 @@
-/* ================= ДВИГАТЕЛ · МЕХАНИКИ IV =================
+/* ================= МЕХАНИКА · ТОНЪТ =================
    Тонът (LVL.tone): E изпява тон — вълна, която зашеметява враговете наоколо (e.stunT)
      и отваря тоновите врати (плочка 't') за няколко секунди. Босовете могат да реагират чрез onTone(разстояние).
-   Зашеметен враг замръзва на място (виж куката в build.py). */
+   Зашеметен враг замръзва на място (e.stunT). */
 let TONEP=[], toneCd=0, TDOORS=[], tdoorT=0;
 SOLID.add('t');
-function mech4Load(){ TONEP=[]; toneCd=0; tdoorT=0; TDOORS=[]; SOLID.add('t'); if(!LVL) return;
+function toneLoad(){ TONEP=[]; toneCd=0; tdoorT=0; TDOORS=[]; SOLID.add('t'); if(!LVL) return;
   for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++) if(map[y][x]==='t') TDOORS.push([x,y]); }
-function mech4Respawn(){ TONEP=[]; tdoorT=0; SOLID.add('t'); }
+function toneRespawn(){ TONEP=[]; tdoorT=0; SOLID.add('t'); }
 function tonePulse(){
   const p=player; if(toneCd>0||p.dead) return; toneCd=1.3; const x=p.x+p.w/2, y=p.y+p.h/2; TONEP.push({x,y,t:0});
   if(AC){ osc({type:'sine',f:440,t:0.9,v:0.08}); osc({type:'sine',f:554,t:0.9,v:0.05,when:0.08}); osc({type:'sine',f:659,t:0.9,v:0.05,when:0.16}); }
@@ -15,14 +15,14 @@ function tonePulse(){
   if(boss&&!boss.dead&&(BOSSES[boss.type]||{}).onTone) BOSSES[boss.type].onTone(Math.hypot(boss.x+boss.w/2-x,boss.y+boss.h/2-y));
   if(TDOORS.some(([tx,ty])=>Math.hypot(tx*T+8-x,ty*T+8-y)<170)){ tdoorT=3.6; SOLID.delete('t'); if(AC) osc({type:'triangle',f:880,t:0.4,v:0.05,when:0.2}); }
 }
-function mech4Update(dt){
+function toneUpdate(dt){
   const p=player; if(!p) return;
   toneCd=Math.max(0,toneCd-dt);
   if(E_ACT==='tone') tonePulse();
   for(const t of TONEP) t.t+=dt; TONEP=TONEP.filter(t=>t.t<1.2);
   if(tdoorT>0){ tdoorT-=dt; if(tdoorT<=0){ const inside=TDOORS.some(([tx,ty])=>ov(p,{x:tx*T,y:ty*T,w:T,h:T})); if(inside) tdoorT=0.2; else SOLID.add('t'); } }
 }
-function mech4DrawWorld(){
+function toneDrawWorld(){
   // тоновите врати
   if(TDOORS.length){ const open=!SOLID.has('t'), a=(Math.sin(titleT*5)+1)/2;
     for(const [tx,ty] of TDOORS){ const x=tx*T-cam, y=ty*T; if(x<-T||x>W) continue;
@@ -33,7 +33,8 @@ function mech4DrawWorld(){
   // зашеметени врагове
   for(const e of enemies){ if(e.dead||!(e.stunT>0)) continue; const x=e.x+e.w/2-cam, y=e.y-6; for(let i=0;i<3;i++){ const a=titleT*5+i*2.1; ctx.fillStyle='#e8c25a'; ctx.fillRect(Math.round(x+Math.cos(a)*7),Math.round(y+Math.sin(a)*2),2,2); } }
 }
-function mech4Lights(L){ for(const t of TONEP){ const r=t.t*190, al=Math.max(0,1-t.t/1.1); for(let i=0;i<20;i++){ const a=i/20*6.283; L.push([t.x+Math.cos(a)*r,t.y+Math.sin(a)*r,36,al*0.8]); } }
+function toneLights(L){ for(const t of TONEP){ const r=t.t*190, al=Math.max(0,1-t.t/1.1); for(let i=0;i<20;i++){ const a=i/20*6.283; L.push([t.x+Math.cos(a)*r,t.y+Math.sin(a)*r,36,al*0.8]); } }
   if(TDOORS.length&&player){ let n=0; for(const [tx,ty] of TDOORS){ if(Math.abs(tx*T-player.x)>260||(tx+ty)%2) continue; L.push([tx*T+8,ty*T+8,20,0.3]); if(++n>30) break; } } }
-function mech4Chips(chip){ if(LVL.tone) chip(toneCd>0?'♫ ТОН · '+toneCd.toFixed(1)+' s':'♫ ТОН · E — изпей','#e8c25a'); }
+function toneChips(chip){ if(LVL.tone) chip(toneCd>0?'♫ ТОН · '+toneCd.toFixed(1)+' s':'♫ ТОН · E — изпей','#e8c25a'); }
 defTile(function(tx,ty,ch){ if(ch==='t'){ drawBack(tx,ty); return true; } return false; });
+defMech('tone',{load:toneLoad,respawn:toneRespawn,update:toneUpdate,drawWorld:toneDrawWorld,lights:toneLights,chips:toneChips});

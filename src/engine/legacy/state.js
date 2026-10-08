@@ -11,7 +11,7 @@ const CAP={pistol:17,shotgun:8,pulse:40,grenade:10,rocket:6}, RES_MAX={pistol:15
 function showMsg(t,d=3.6,who){ msg={t,d:Math.max(d,1.2+t.length*0.055),age:0,who}; }
 function radio(t){ showMsg(t,0,GAME.radioWho||'Д-Р ИЛИЕВА'); SFX.radio&&AC&&SFX.radio(0.8,sfxBus); }
 function bark(e,t,d=2){ barks.push({e,t,d}); }
-function setCp(tx){ cp=tx; r2SetCp(); }
+function setCp(tx){ cp=tx; mechRun('setCp'); }
 function makeEnemy(type,cx,feet){
   const d=DIMS[type];
   return {type,x:cx-d[0]/2,y:feet-d[1],w:d[0],h:d[1],hp:d[2]*D.ehp*ehpMul,vx:0,vy:0,face:-1,state:'idle',t:rnd(0.6,1.4),cd:rnd(0.6,1.4),gcd:rnd(2.5,4),burst:0,bt:0,alert:false,onGround:false,hitT:0,anim:rnd(10),dead:false,home:cx,bite:0,lastSeen:9,summoned:false,side:Math.random()<0.5?1:-1,elecT:0};
@@ -49,7 +49,7 @@ function loadLevel(i,obj){
   stats={time:0,shots:0,hits:0,kills:0,deaths:0};
   amb=TP(LVL.start).amb;
   setMusic(LVL.music);
-  r2Load(); if(LVL.onLoad) LVL.onLoad();
+  mechRun('load'); if(LVL.onLoad) LVL.onLoad();
 }
 function startEpisode(i,carry){
   const prev=carry?player:null; SURV=false; bossMul=1; ehpMul=1;

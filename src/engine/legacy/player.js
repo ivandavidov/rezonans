@@ -23,7 +23,7 @@ function updPlayer(dt){
   const inSlime=rectHas(p.x,p.y+p.h-6,p.w,6,'~');
   const cx=p.x+p.w/2, bot=p.y+p.h;
   if(!p.climb&&!p.crouch&&((U&&ladderAt(cx,bot-2))||(Dn&&ladderAt(cx,bot+3)&&p.onGround))){ p.climb=true; p.x=Math.floor(cx/T)*T+T/2-p.w/2; p.vx=0; p.vy=0; }
-  if(r2Move(p,dt,dir,U,Dn)){}
+  if(mechMove(p,dt,dir,U,Dn)){}
   else if(p.climb){
     p.aimUp=false; p.vy=U?-90:Dn?90:0; p.vx=0; p.dropThrough=Dn?0.1:0;
     const ltx=Math.floor((p.x+p.w/2)/T); let tty=Math.floor((p.y+p.h-1)/T); while(tty>0&&tileAt(ltx,tty-1)==='H') tty--; const topY=tty*T;
@@ -42,7 +42,7 @@ function updPlayer(dt){
     }
     p.padT=Math.max(0,(p.padT||0)-dt);
     if(!keys.jump&&p.vy<-150&&!(p.padT>0)) p.vy+=(-150-p.vy)*0.35;
-    p.vy=Math.min(p.vy+G*dt,520); r2Wind(p,dt);
+    p.vy=Math.min(p.vy+G*dt,520); mechRun('force',p,dt);
     const wasAir=!p.onGround, vyB=p.vy;
     moveX(p,p.vx*dt); moveY(p,p.vy*dt);
     p.onLift=null; if(p.vy>=0&&!(p.dropThrough>0)) for(const l of lifts){ if(p.x+p.w>l.x+1&&p.x<l.x+l.w-1&&p.y+p.h>=l.y-2&&p.y+p.h<=l.y+10){ p.y=l.y-p.h; p.vy=0; p.onGround=true; p.onLift=l; break; } }

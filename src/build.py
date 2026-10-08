@@ -59,7 +59,10 @@ LEGACY=['legacy/core.js','defs.js','legacy/difficulty.js','legacy/synth.js','lib
         'legacy/input.js','legacy/state.js','legacy/fx.js','legacy/combat.js','legacy/player.js','legacy/enemies.js','legacy/lifts.js',
         'legacy/crushers.js','legacy/trains.js','legacy/bosses.js','legacy/missiles.js','legacy/survgen.js','legacy/flow.js','legacy/update.js',
         'legacy/render.js','legacy/training.js']
-code=['/* ================= ДВИГАТЕЛ ================= */']+[rd('engine',f) for f in ['series.js','sequel.js','world.js','mech.js','mech2.js','mech3.js','mech4.js','mech5.js','survival.js','svsave.js','audio.js']]
+# механиките (engine/mech/) — core.js първи; редът на куките е в MECH_ORDER (core.js), не тук
+MECH=['core','water','levers','escort','flips','shifters','allies','eras','gens','chase','sun','winds','echo','plates','cams','terms','snow',
+      'freqsonar','trance','tone','cursors']
+code=['/* ================= ДВИГАТЕЛ ================= */']+[rd('engine',f) for f in ['series.js','sequel.js','world.js']+['mech/'+m+'.js' for m in MECH]+['survival.js','svsave.js','audio.js']]
 for gid,g in games:
     code.append(f'/* ================= ИГРА: {gid} ================= */')
     code+= [rd('games',gid,f) for f in g['files']]
@@ -69,7 +72,9 @@ s=(shell+"<script>\n(()=>{\n'use strict';\n"+''.join(rd('engine',f) for f in LEG
 
 allcode=''.join(rd('engine',f) for f in LEGACY)+'\n'.join(code)   # loop.js не влиза: там са старите псевдоними в window.__rz
 left=[w for w in ['R3','R2','r2title',"state='mode'","'r2intro'",'LEVELS2','unlocked2','MO','SEQ','R2B','R2UPD','R2DRAW','R2_TAKE','R2_PDRAW','R2B_TONE','R2B_CMD','R2BAR',
-                    'TILE_HOOKS','BACK_HOOKS','BOSS_NORM','drawHUD2','renderEps2','r2EpsInput','r2Tile','r2BackDeco','r2SkyLayer'] if re.search(r'(?<![\w])'+re.escape(w)+r'(?![\w])',allcode)]
+                    'TILE_HOOKS','BACK_HOOKS','BOSS_NORM','drawHUD2','renderEps2','r2EpsInput','r2Tile','r2BackDeco','r2SkyLayer',
+                    'r2T','r2Load','r2SetCp','r2PreRespawn','r2Respawn','r2ExitOk','r2Move','r2Wind','r2BuildEras','r2Update','r2DrawBack',
+                    'r2DrawWorld','r2Lights','r2PostFx','mechLoad','mechRespawn','mechUpdate','mechDrawBack','mechDrawWorld','mechLights','mechChips'] if re.search(r'(?<![\w])'+re.escape(w)+r'(?![\w])',allcode)]
 if left: raise SystemExit('остатъци от старата архитектура: '+', '.join(left))
 # всяко глобално име трябва да е уникално — иначе една игра тихо подменя функция на друга
 tops=collections.Counter(a or b for a,b in re.findall(r'^(?:function\s+(\w+)|(?:const|let)\s+(\w+)\s*=)',s,re.M))

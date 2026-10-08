@@ -125,7 +125,7 @@ function renderR2Intro(){
   if(t>17&&t<23.5){ ctx.globalAlpha=clamp(Math.min(t-17,23.5-t)/0.8,0,1); glitchTitle('РЕЗОНАНС 2',W/2,196,30); centerText('О  Т  З  В  У  К',216,'600 10px "IBM Plex Mono",monospace',ACC()); ctx.globalAlpha=1; }
   ctx.font='600 6px "IBM Plex Mono",monospace'; ctx.fillStyle='rgba(200,240,240,0.55)'; ctx.textAlign='right'; ctx.fillText('Enter / Q — пропусни интрото  ·  Esc — назад',472,9); ctx.textAlign='left';
   drawMsgBox(t>10?72:14);
-  r2PostFx();
+  postFx();
   if(t<1.4){ ctx.fillStyle=`rgba(0,0,0,${1-t/1.4})`; ctx.fillRect(0,0,W,H); }
   if(t>RI_END-3){ ctx.fillStyle=`rgba(0,0,0,${clamp((t-(RI_END-3))/2.5,0,1)})`; ctx.fillRect(0,0,W,H); }
 }

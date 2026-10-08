@@ -1,4 +1,4 @@
-/* ================= ДВИГАТЕЛ · МЕХАНИКИ V =================
+/* ================= МЕХАНИКА · КУРСОРИ И КАСЕТА =================
    Курсори (LVL.cursors): мигащи станции в нивото; E до тях изпълнява команда.
      ['POKE', tx,row,{set:[[x0,y0,x1,y1,ch],…], label, msg}]  — пренаписва плочки (еднократно)
      ['PEEK', tx,row,{r:14, msg}]                              — разкрива скритите проходи 'h' наоколо
@@ -10,9 +10,9 @@
    Касета (LVL.tape={x0, speed, delay, label, doneMsg}): нивото се „зарежда“ отляво надясно — колоните зад границата са празни. */
 let CURS=[], TAPE=null;
 function addCursor(cmd,tx,row,o={}){ const c={cmd,tx,row,o,done:false,cd:0,flash:0}; CURS.push(c); return c; }
-function mech5Load(){ CURS=[]; TAPE=null; if(!LVL) return; for(const [cmd,tx,row,o] of (LVL.cursors||[])) addCursor(cmd,tx,row,Object.assign({},o||{}));
+function curLoad(){ CURS=[]; TAPE=null; if(!LVL) return; for(const [cmd,tx,row,o] of (LVL.cursors||[])) addCursor(cmd,tx,row,Object.assign({},o||{}));
   if(LVL.tape) tapeInit(LVL.tape); }
-function mech5Respawn(){ for(const c of CURS) c.cd=0; }
+function curRespawn(){ for(const c of CURS) c.cd=0; }
 function curNear(c){ const p=player; if(!p||p.dead) return false; return Math.abs(p.x+p.w/2-(c.tx*T+8))<15&&Math.abs(p.y+p.h-(c.row+1)*T)<22; }
 function pokeTiles(rects){
   const one=()=>{ for(const [x0,y0,x1,y1,ch] of rects){ for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++) if(map[y]&&x>=0&&x<COLS) map[y][x]=ch; redrawCols(Math.max(0,x0),Math.min(COLS-1,x1)); } };
@@ -34,7 +34,7 @@ function runCursor(c){
   if(boss&&!boss.dead&&(BOSSES[boss.type]||{}).onCmd) BOSSES[boss.type].onCmd(c);
   cursorBeep(true);
 }
-function mech5Update(dt){
+function curUpdate(dt){
   const p=player; if(!p) return;
   for(const c of CURS){ c.cd=Math.max(0,c.cd-dt); c.flash=Math.max(0,c.flash-dt*2); }
   if(E_ACT==='cursor'){ const c=CURS.find(c=>!c.done&&curNear(c)); if(c.cd>0){ cursorBeep(false); showMsg('Курсорът още мига… изчакай '+c.cd.toFixed(1)+' s.',1); } else runCursor(c); }
@@ -53,7 +53,7 @@ function tapeUpdate(dt){ const tp=TAPE; if(tp.done) return; tp.t+=dt;
   if(tp.next>=COLS){ tp.done=true; showMsg(tp.doneMsg,1.5); }
   if(AC&&Math.random()<dt*14) osc({type:'square',f:Math.random()<0.5?1200:2400,t:0.03,v:0.015}); }
 /* ---------- рисуване ---------- */
-function mech5DrawWorld(){
+function curDrawWorld(){
   for(const c of CURS){ const x=Math.round(c.tx*T+8-cam), fy=(c.row+1)*T; if(x<-40||x>W+40) continue; const col=c.o.col||ACC(), on=!c.done&&c.cd<=0, blink=Math.floor(titleT*2.5)%2;
     ctx.fillStyle='#14161c'; ctx.fillRect(x-7,fy-18,14,18); ctx.fillStyle='#2a2e38'; ctx.fillRect(x-7,fy-18,14,1);
     ctx.fillStyle=c.done?'#3a3e46':on?(blink?col:'#0a0c10'):'#5a4a2a'; ctx.fillRect(x-4,fy-15,8,10);
@@ -64,6 +64,7 @@ function mech5DrawWorld(){
     for(let y=0;y<ROWS*T;y+=4){ const k=Math.floor(y/4+titleT*30)%cols.length; ctx.fillStyle=cols[(k+Math.floor(hash(y,Math.floor(titleT*20))*2))%cols.length]; ctx.fillRect(x0,y,W-x0,4); }
     ctx.fillStyle='rgba(0,0,0,0.35)'; ctx.fillRect(x0,0,W-x0,ROWS*T); ctx.fillStyle='#ffffff'; ctx.fillRect(x0,0,2,ROWS*T); } }
 }
-function mech5Lights(L){ for(const c of CURS) if(!c.done) L.push([c.tx*T+8,(c.row+1)*T-10,26,0.5]); if(TAPE&&!TAPE.done) L.push([TAPE.x*T,8*T,90,0.6]); }
-function mech5Chips(chip){ if(TAPE&&!TAPE.done) chip('▶ '+TAPE.label+' · '+Math.min(99,Math.floor(TAPE.x/COLS*100))+'%','#ffd84a');
+function curLights(L){ for(const c of CURS) if(!c.done) L.push([c.tx*T+8,(c.row+1)*T-10,26,0.5]); if(TAPE&&!TAPE.done) L.push([TAPE.x*T,8*T,90,0.6]); }
+function curChips(chip){ if(TAPE&&!TAPE.done) chip('▶ '+TAPE.label+' · '+Math.min(99,Math.floor(TAPE.x/COLS*100))+'%','#ffd84a');
   const c=CURS.find(c=>!c.done&&curNear(c)); if(c) chip('▌ '+c.cmd+(c.cd>0?' · '+c.cd.toFixed(1)+' s':' · E — изпълни'),'#9aff8a'); }
+defMech('cursors',{load:curLoad,respawn:curRespawn,update:curUpdate,drawWorld:curDrawWorld,lights:curLights,chips:curChips});
