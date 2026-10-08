@@ -5,7 +5,7 @@ let SEQ=false;                 // включен ли е двигателят н
 let GLV=[], GCH=[], gUnl=1;    // нивата, главите и отключените епизоди на текущата игра
 const gChOf=i=>Math.max(0,GCH.findIndex(c=>i>=c.a&&i<=c.b));
 let FLOOD=null, ESC=null, CHASE=null, LEVERS=[], DRAINS=[], GENS=[], ALLIES=[], FLIPS=[], FLIP=false, ERA=0, ERAD=null, SHIFT=[], GWIND=0, flipCd=0, cpFlip=false, cpEra=0, eraCd=0, r2T={}, sunWarned=false, airWarned=false, r2epsSel=0;
-const R2_TAKE={}, R2_PDRAW={}, R2UPD={}, R2DRAW={}, R2B={make:{},hurt:{},upd:{},draw:{},intro:{},name:{},col:{}};
+const R2_TAKE={}, R2_PDRAW={}, R2UPD={}, R2DRAW={}, R2B={make:{},hurt:{},upd:{},draw:{},intro:{},name:{},col:{},sfx:{}};
 
 /* ---------- избор на епизод ---------- */
 function r2EpsInput(){

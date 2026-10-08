@@ -1,1 +1,1 @@
-{ "files": ["game.js"] }
+{ "files": ["data.js","levels_c1.js","levels_c2.js","levels_c3.js","levels_c4.js","levels_c5.js","bosses.js","training.js","tram.js","survival.js","game.js"] }

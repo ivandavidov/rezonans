@@ -42,7 +42,6 @@ function loadLevel(i,obj){
     else if(t.endsWith('R')) pickups.push({type:t.slice(0,-1),x:cx-6,y:feet-10,w:12,h:10,taken:false,bob:rnd(6),tx,respawn:12});
     else pickups.push({type:t,x:cx-6,y:feet-10,w:12,h:10,taken:false,bob:rnd(6),tx});
   }
-  if(LVL.n===1&&!SEQ) scientists.push({x:33*T,y:15*T-26,w:10,h:26,vx:0,vy:0,state:'idle',onGround:false,face:1,anim:0,t:0});
   triggers=LVL.triggers.map(t=>({x:t.x,fn:t.fn,cond:t.cond,done:false}));
   tracks=(LVL.tracks||[]).map(t=>({...t,t:t.off,warned:false})); crushers=(LVL.crushers||[]).map(c=>({w:2,...c,hitCd:0,last:0})); trains=[];
   lifts=(LVL.lifts||[]).map(l=>({...l,x:l.x0*T,y:l.y0*T,w:(l.w||3)*T,dx:0,dy:0})); lasers=(LVL.lasers||[]).map(l=>({...l,hitCd:0,was:false})); vents=(LVL.vents||[]).map(v=>({...v,hitCd:0,was:false})); rockets=[]; gateOpen=false; switchOn=false;

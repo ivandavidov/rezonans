@@ -112,7 +112,7 @@ const LEVELS_R2=[
   {x:100,fn:()=>{ setCp(100); startEncounter({msg:'Още портали!',waves:[[['zombie',112,'portal'],['imp',120,'portal'],['flyer',108,'portal',null,9]],[['imp',96,'portal'],['zombie',118,'portal'],['shocker',124,'portal','N']]],done:()=>{}}); }},
   {x:150,fn:()=>{ setCp(150); startEncounter({msg:'Пазят станцията!',waves:[[['imp',160,'portal'],['imp',170,'portal'],['shocker',166,'portal']],[['flyer',158,'portal',null,9],['imp',175,'portal'],['zombie',172,'portal','N']]],done:()=>radio('Станцията е пред вас.')}); }}]},
 
-{title:'ПИСТАТА',cols:230,grav:900,music:MUS.snow,start:4,theme:()=>'snow',sky:LEVELS.find(l=>l.title==='ЛИФТЪТ').sky,liftStyle:'cable',loadout:LOAD_C2,exit:222,
+{title:'ПИСТАТА',cols:230,grav:900,music:MUS.snow,start:4,theme:()=>'snow',sky:SKIES.lift,liftStyle:'cable',loadout:LOAD_C2,exit:222,
  story:['Лифтът скърца нагоре по склона над Беловир. Седалките се движат сами.','Горе, на билото, ретранслаторът бръмчи на честотата на резонатора. И снегът тази година е тежък.'],
  end:['Лавината спира на метри от хижата.','Под теб, насред площада на Беловир, се разтваря огромен портал. Д-р Илиева: „Това е източникът на отзвука в града. Имам план — но ще ми трябват генераторите.“'],
  build(F,C){ F(0,0,1,16,'#'); F(C-2,0,C-1,16,'#');

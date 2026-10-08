@@ -20,7 +20,7 @@ function respawn(){
   }
   if(bossActive&&boss&&!boss.dead){
     enemies=enemies.filter(e=>!e.summoned&&e.tag!=='pylon'); portals=portals.filter(q=>q.tag!=='boss');
-    boss=makeBoss(); boss.hp*=bossMul; boss.max*=bossMul; if(boss.type!=='heli') boss.t=1.2; if(boss.type==='guardian') spawnPylons();
+    boss=makeBoss(); boss.hp*=bossMul; boss.max*=bossMul; if(boss.type!=='heli') boss.t=1.2;
     const d=LVL.arena.door!=null?LVL.arena.door:LVL.arena.x0;
     for(const b of barrels) if(b.tx>d){ b.dead=false; b.hp=15; b.fuse=-1; }
     for(const k of pickups) if(k.tx>d) k.taken=false;

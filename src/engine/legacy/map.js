@@ -1,5 +1,5 @@
 /* ================= MAP ================= */
-let map, LVL=LEVELS[0], LI=0;
+let map, LVL=null, LI=0;
 const SOLID=new Set(['#','=','B','D','Z','>','<','^']);
 const CONV={'>':1,'<':-1};
 function tileAt(tx,ty){ if(tx<0||tx>=COLS||ty<0) return '#'; if(ty>=ROWS) return '.'; return map[ty][tx]; }

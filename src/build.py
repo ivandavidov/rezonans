@@ -13,12 +13,13 @@
 
 Части (обикновен код — сборката само ги сглобява, без замени по кода):
   shell/index.html        разметката и CSS; @@FONT_FAMILIES@@ и /*@@GAME_CSS@@*/ се попълват от game.json на частите
-  engine/legacy/*.js      двигателят и засега първата част (бившата база с вградените куки) по раздели — до цикъла
+  engine/legacy/*.js      двигателят (бившата база) по раздели — до цикъла; engine/lib/ — общи теми и небета
   engine/*.js             общият код: регистър на игрите, меню, механики, плочки, оцеляване
   games/<id>/game.json    манифест: файлове, шрифтове, CSS на играта
   games/<id>/*.js         съдържанието на играта; последният файл вика registerGame({...})
   engine/legacy/loop.js   главният цикъл и window.__rz; /*@@FONT_LOADS@@*/ — шрифтовете на частите
 Всичко е в едно IIFE ('use strict'): LEGACY (по реда долу) → engine/*.js → игрите (по games/series.json) → loop.js.
+Първата част е обикновена част (games/r1/) — сборката не я третира по-специално.
 
 Добавяне на нова част: нова папка games/<id>/ с game.json и game.js (registerGame с order),
 после id-то в games/series.json. Махане: изтрий id-то от series.json — нищо друго не се променя.
@@ -53,16 +54,17 @@ shell=fill(shell,'/*@@GAME_CSS@@*/','\n'.join(l for _,g in games for l in g.get(
 loads=''.join(",document.fonts.load('"+f+"')" for _,g in games for f in g.get('fontLoad',[]))
 
 # ---------- код: двигател + игрите от поредицата ----------
-# разделите на бившата база — в същия ред (реархитектурата ги разнася по engine/ и games/r1/)
-LEGACY=['core.js','difficulty.js','synth.js','themes.js','levels.js','map.js','prerender.js','sky.js','input.js','state.js','fx.js','combat.js',
-        'player.js','enemies.js','lifts.js','crushers.js','trains.js','bosses.js','bosses_bonus.js','survgen.js','flow.js','update.js','render.js',
-        'tram.js','training.js']
+# разделите на бившата база (engine/legacy/) и споделеното съдържание (engine/lib/) — в реда на бившата база
+LEGACY=['legacy/core.js','legacy/difficulty.js','legacy/synth.js','lib/themes.js','legacy/map.js','legacy/prerender.js','legacy/sky.js',
+        'legacy/input.js','legacy/state.js','legacy/fx.js','legacy/combat.js','legacy/player.js','legacy/enemies.js','legacy/lifts.js',
+        'legacy/crushers.js','legacy/trains.js','legacy/bosses.js','legacy/missiles.js','legacy/survgen.js','legacy/flow.js','legacy/update.js',
+        'legacy/render.js','legacy/training.js']
 code=['/* ================= ДВИГАТЕЛ ================= */']+[rd('engine',f) for f in ['series.js','sequel.js','world.js','mech.js','mech2.js','mech3.js','mech4.js','mech5.js','survival.js','svsave.js','audio.js']]
 for gid,g in games:
     code.append(f'/* ================= ИГРА: {gid} ================= */')
     code+= [rd('games',gid,f) for f in g['files']]
 code.append("if(!GAMES.length) throw new Error('Няма регистрирани игри'); setGame(GAMES[0].id);")
-s=(shell+"<script>\n(()=>{\n'use strict';\n"+''.join(rd('engine','legacy',f) for f in LEGACY)+'\n'.join(code)+'\n'
+s=(shell+"<script>\n(()=>{\n'use strict';\n"+''.join(rd('engine',f) for f in LEGACY)+'\n'.join(code)+'\n'
    +fill(rd('engine','legacy','loop.js'),'/*@@FONT_LOADS@@*/',loads)+'})();\n</script>\n')
 
 allcode='\n'.join(code)

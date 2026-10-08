@@ -10,6 +10,7 @@
      drawLogo()  фон и лого в горната част на менюто (до y≈135)
      renderWin(), postFx()        финалният екран и цветовата обработка (engine 2)
      svPlan(k), svBoss, svFallback, bossMulOne     оцеляването (engine 2)
+     svPlan(k), genSector(k)       оцеляването със собствен генератор (r1)
      accent, accentRgb, accent2, font, suit, glitch, hintCols, prog, menuMusic, menuCam, controls
      eKey / eBtn   надпис за клавиш E (легенда / бутон на тъч екран), echo, flashlight
      debug        допълнителни полета за window.__rz (тестове)

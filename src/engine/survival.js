@@ -1,11 +1,11 @@
 MUT_NAME.bats='Рояци прилепи';   // мутацията е в двигателя (mech3) — ползват я Р5 и Р6
 /* ================= ДВИГАТЕЛ · ОЦЕЛЯВАНЕ (процедурни сектори) =================
    Темите се регистрират от игрите в SV_THEMES (ключовете трябва да са уникални за поредицата),
-   небетата — в SKIES. Планът на секторите (кои теми и босове) идва от GAME.svPlan(k),
+   небетата — в SKIES (engine/lib/themes.js). Планът на секторите (кои теми и босове) идва от GAME.svPlan(k),
    а сектор с бос копира арената на епизод GLV[GAME.svBoss[boss][0]]. */
-const SV_THEMES={}, SKIES={};
+const SV_THEMES={};
 const SV_LOAD={w:['wrench','pistol'],ammo:{pistol:[17,51]},armor:0,cur:'pistol'};
-const svSky=key=>!key?null:key[0]==='@'?((LEVELS.find(l=>l.title===key.slice(1))||{}).sky||null):(SKIES[key]||null);
+const svSky=key=>key&&SKIES[key]||null;
 function svGen(k){
   const plan=GAME.svPlan(k);
   if(plan.boss) return svBoss(k,plan);

@@ -1,12 +1,6 @@
 /* ================= UPDATE ================= */
 function update(dt){
   const p=player; lvT+=dt; const edt=dt*timeScale();
-  if(LVL.intro){
-    intro.t+=dt; intro.lock-=dt;
-    if(intro.phase===0&&intro.t>1.8){ intro.phase=1; intro.lock=1.1; flash=1; flashCol='#ffffff'; shake=14; SFX.cascade(); SFX.alarm(5); showMsg('АВАРИЯ В СЕКТОР 7! НЕЗАБАВНА ЕВАКУАЦИЯ!',4);
-      portalSpawn('crab',24*T,15*T,0.6); for(let i=0;i<30;i++) sparks(15.5*T+rnd(-10,10),rnd(100,160),1,'#9dff6a'); }
-    if(intro.phase===1&&intro.t>4.6){ intro.phase=2; setDoor([29,11,14],'.'); SFX.door(); scientists[0].state='run'; bark(scientists[0],'Помощ! Те са навсякъде!',2.5); showMsg('Намери изход от комплекса',3); }
-  }
   stats.time+=dt;
   if(LVL.tick) LVL.tick(dt);
   updLifts(); r2Update(dt);
@@ -24,14 +18,14 @@ function update(dt){
     if(Math.abs(e.x-ccx)>440) continue;
     e.hitT-=dt; e.flashT=(e.flashT||0)-dt;
     if(e.stunT>0){ e.stunT-=dt; continue; }
-    ({crab:updCrab,shocker:updShocker,soldier:updSoldier,turret:updTurret,flyer:updFlyer,zombie:updZombie,nest:updNest,guard:updGuard,egg:updEgg,target:updTarget,...R2UPD,pylon:(e,dt)=>{e.anim+=dt;}})[e.type](e,edt);
+    ({crab:updCrab,shocker:updShocker,soldier:updSoldier,turret:updTurret,flyer:updFlyer,zombie:updZombie,nest:updNest,guard:updGuard,target:updTarget,...R2UPD})[e.type](e,edt);
     if(!e.dead&&ACID_DIE[e.type]&&rectHas(e.x,e.y+e.h-6,e.w,6,'~')){ hurtEnemy(e,e.hp+1,0,true); for(let i=0;i<10;i++) part(e.x+rnd(e.w),e.y+e.h-4,rnd(-30,30),rnd(-90,-30),rnd(0.3,0.6),'#9dff6a',2,200); }
     if(e.type!=='flyer'&&e.type!=='turret'&&e.type!=='nest'&&e.type!=='pylon'&&e.onGround&&elecOn()&&onTile(e,'Z')){ e.elecT-=dt; if(e.elecT<=0){ e.elecT=0.25; hurtEnemy(e,10,0,true); sparks(e.x+e.w/2,e.y+e.h,3,'#bfe8ff'); } }
     if(e.y>ROWS*T+40){ e.dead=true; e.deadT=99; }
     if(e.alert&&Math.abs(e.x-p.x)<380) threat=true;
   }
   for(const s of scientists) updScientist(s,dt);
-  if(boss) ({colossus:updColossus,warden:updWarden,heli:updHeli,worm:updWorm,guardian:updGuardian,exo:updExo,tank:updTank,hunter:updHunter,queen:updQueen,titan:updTitan,...R2B.upd})[boss.type](edt);
+  if(boss) R2B.upd[boss.type](edt);
   if(bmiss.length) updMissiles(dt);
   combatHold=threat?4:combatHold-dt;
   mInt=bossActive&&boss&&!boss.dead?2:combatHold>0?1:0;

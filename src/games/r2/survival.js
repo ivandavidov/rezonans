@@ -5,7 +5,7 @@ const SV2={
  dune:{name:'Пясъчният свят',th:'dune',sky:'dune',sun:1,foes:['crab','crab','guard','flyer','imp'],mus:MUS.worlds},
  shrine:{name:'Светилището',th:'ruinp',thB:'thrace',sky:'ruinp',skyB:'thrace',era:1,eraNames:['ДНЕС','ТРАКИЯ · IV в. пр. Хр.'],foes:['crab','zombie','flyer'],foesB:['shocker','guard','flyer'],mus:MUS.time},
  b70:{name:'Строежът',th:'vih',thB:'build70',skyB:'build70',era:1,turret:1,eraNames:['ДНЕС · ИЗОСТАВЕНИЯТ „ВИХРЕН“','1977 · СТРОЕЖЪТ'],foes:['zombie','crab','drone'],foesB:['shocker','flyer','zombie'],mus:MUS.time},
- ruin:{name:'Руините',th:'snow',thB:'future',sky:'@ПРОХОДЪТ',skyB:'future',era:1,eraNames:['ДНЕС · СКЛОНЪТ НАД „ВИХРЕН“','2500 г. · РУИНИТЕ'],foes:['crab','flyer','zombie'],foesB:['guard','drone','shocker'],mus:MUS.time},
+ ruin:{name:'Руините',th:'snow',thB:'future',sky:'pass',skyB:'future',era:1,eraNames:['ДНЕС · СКЛОНЪТ НАД „ВИХРЕН“','2500 г. · РУИНИТЕ'],foes:['crab','flyer','zombie'],foesB:['guard','drone','shocker'],mus:MUS.time},
  gear:{name:'Машинният свят',th:'gear',conv:1,crush:1,lift:'float',foes:['drone','crab','guard'],mus:{tr:-3,bpm:126,alien:true}},
  gas:{name:'Газовият гигант',th:'gas',sky:'gas',wind:1,lift:'float',foes:['flyer','guard','drone'],mus:{tr:4,bpm:96,alien:true}},
  necro:{name:'Мъртвият град',th:'necro',sky:'necro',ghost:1,nest:1,foes:['zombie','crab','flyer','guard'],mus:{tr:-2,bpm:92,alien:true}},

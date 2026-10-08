@@ -56,9 +56,10 @@ python3 src/win/make_exe.py            # dist/Rezonans-windows/ (Rezonans-x64.ex
 - Целият код е обикновен изходен код; `build.py` само сглобява (без замени по кода). Разметката и CSS са в
   `src/shell/index.html`; маркерите `@@FONT_FAMILIES@@`, `/*@@GAME_CSS@@*/` и `/*@@FONT_LOADS@@*/` (в
   `engine/legacy/loop.js`) се попълват от `game.json` на частите — всеки трябва да се среща точно веднъж.
-- Всичко влиза **в едно и също IIFE** (`'use strict'`): `engine/legacy/*.js` (двигателят и засега първата част —
-  бившата база с вградените куки, по раздели в реда от `LEGACY` в `build.py`) → `engine/*.js` по списъка в `build.py` → игрите по `games/series.json` (във всяка —
-  по `files` от `game.json`, `game.js` последен, вика `registerGame`) → `engine/legacy/loop.js` (цикълът и `window.__rz`).
+- Всичко влиза **в едно и също IIFE** (`'use strict'`): `engine/legacy/*.js` (двигателят — бившата база по раздели) и
+  `engine/lib/` (общото съдържание: класическите теми и небета) в реда от `LEGACY` в `build.py` → `engine/*.js` по списъка
+  в `build.py` → игрите по `games/series.json` (във всяка — по `files` от `game.json`, `game.js` последен, вика
+  `registerGame`; първата част е обикновена част в `games/r1/`) → `engine/legacy/loop.js` (цикълът и `window.__rz`).
   Няма модули и `import`: всеки файл вижда глобалните имена на двигателя (`W`, `state`, `centerText`, `store`, …)
   и на другите файлове.
 - Реархитектурата върви по [notes/rearch-plan.md](notes/rearch-plan.md) (клон `rearch`); ходът — в `notes/handoff.md`.

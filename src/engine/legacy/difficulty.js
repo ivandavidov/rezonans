@@ -8,9 +8,6 @@ const DIFFS=[
    dmg:1.9,haz:1.6,ehp:1.4,bhp:1.6,rate:0.6,bspd:1.35,react:0.65,aim:0.22,heal:15,bat:15,regen:false,burst:4,spread:0.015,gren:true,ammo:0.6,fall:40,drop:0.4},
 ];
 let DI=clamp(parseInt(store.get('rz.diff','1'),10)||0,0,2), D=DIFFS[DI];
-let unlocked=clamp(parseInt(store.get('rz.unlocked','1'),10)||1,1,25); if(unlocked>=20&&unlocked<21) unlocked=21;
-const CHAPTERS=['СЕКТОР 7','ДЪЛБИНИТЕ','ПРОБИВЪТ','ЧУЖДИЯТ СВЯТ','ЗАВРЪЩАНЕТО'], ROM=['I','II','III','IV','V'];
-const chLabel=c=>c===4?'БОНУС ГЛАВА':'ГЛАВА '+ROM[c];
-const chOf=i=>Math.floor(i/5);
+const ROM=['I','II','III','IV','V'];
 const allow=f=>!f||(f==='E'&&DI===0)||(f==='N'&&DI>0)||(f==='H'&&DI===2);
 
