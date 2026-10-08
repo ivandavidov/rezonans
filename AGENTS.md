@@ -43,8 +43,6 @@ python3 src/win/make_exe.py            # dist/Rezonans-windows/ (Rezonans-x64.ex
 ## Какво не се пипа на ръка
 - **`docs/index.html`**, иконите и **`docs/manifest.webmanifest`** — генерират се. Всяка промяна се прави в `src/` и се пуска сборката.
   Пресглобените файлове се commit-ват заедно с промените в `src/`.
-- **`src/base/rezonans_v21.html`** — оригиналният двигател. Промени в него се правят като
-  точкови замени `rep(старо, ново)` в `build.py`, не в самия файл.
 - `docs/.nojekyll` трябва да остане (иначе GitHub Pages прекарва файла през Jekyll).
 - **`src/fonts/fonts.css`, `src/fonts/files/`, `src/fonts/licenses/`** — генерират се от `src/fonts/fetch.py`, но се commit-ват
   (офлайн сборката не трябва да зависи от мрежата). Лицензите (SIL OFL) остават до шрифтовете.
@@ -55,16 +53,19 @@ python3 src/win/make_exe.py            # dist/Rezonans-windows/ (Rezonans-x64.ex
   старите артефакти в корена, `.claude/`.
 
 ## Как е сглобен кодът
-- Всички `engine/*.js` и `games/<id>/*.js` се вмъкват **в едно и също IIFE** на базовия файл
-  (`'use strict'`, преди маркера `/* ================= LOOP`). Няма модули и `import`:
-  всеки файл вижда глобалните имена на двигателя (`W`, `state`, `centerText`, `store`, …) и на другите файлове.
-- Редът на зареждане: `engine/` по списъка в `build.py`, после игрите по `games/series.json`,
-  а във всяка игра — по `files` от `game.json` (`game.js` винаги последен, вика `registerGame`).
+- Целият код е обикновен изходен код; `build.py` само сглобява (без замени по кода). Разметката и CSS са в
+  `src/shell/index.html`; маркерите `@@FONT_FAMILIES@@`, `/*@@GAME_CSS@@*/` и `/*@@FONT_LOADS@@*/` (в
+  `engine/legacy/loop.js`) се попълват от `game.json` на частите — всеки трябва да се среща точно веднъж.
+- Всичко влиза **в едно и също IIFE** (`'use strict'`): `engine/legacy/head.js` (двигателят и засега първата част —
+  бившата база с вградените куки) → `engine/*.js` по списъка в `build.py` → игрите по `games/series.json` (във всяка —
+  по `files` от `game.json`, `game.js` последен, вика `registerGame`) → `engine/legacy/loop.js` (цикълът и `window.__rz`).
+  Няма модули и `import`: всеки файл вижда глобалните имена на двигателя (`W`, `state`, `centerText`, `store`, …)
+  и на другите файлове.
+- Реархитектурата върви по [notes/rearch-plan.md](notes/rearch-plan.md) (клон `rearch`); ходът — в `notes/handoff.md`.
 - Шрифтове и CSS на играта се декларират в `game.json`, не в JS.
 
 ## Правила, които сборката проверява (и спира при нарушение)
-- `rep(a, b)` очаква `a` да се среща точно веднъж (или `cnt` пъти). Ако базовият код се промени
-  и съвпадението изчезне, сборката спира — оправи куката, не я заобикаляй.
+- Всеки маркер на шаблона (`@@FONT_FAMILIES@@`, `/*@@GAME_CSS@@*/`, `/*@@FONT_LOADS@@*/`) се среща точно веднъж.
 - Глобалните `function` / `const` / `let` имена трябва да са уникални в целия сглобен файл.
   Давай на функциите в една игра префикс с id-то ѝ (`r8Logo`, `r8Win`).
 - Забранени остатъци от старата архитектура: `R2`, `R3`, `LEVELS2`, `r2title`, `unlocked2`, `MO` и др.
