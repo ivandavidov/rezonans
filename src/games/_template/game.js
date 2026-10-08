@@ -2,7 +2,7 @@
 function r8Logo(){ overlay(0.75); glitchTitle('РЕЗОНАНС 8',W/2,98,40); centerText('П  О  Д  З  А  Г  Л  А  В  И  Е',126,'600 11px "IBM Plex Mono",monospace',ACC()); }
 function r8Win(){ overlay(0.9); centerText('КРАЙ',90,'30px '+DFONT(),ACC()); drawStats(totals,148); if(winT>2&&blink()) centerText('Z — към менюто',238,'600 10px "IBM Plex Mono",monospace','#eeeeee'); }
 registerGame({
-  id:'r8', order:8, title:'РЕЗОНАНС 8', subtitle:'Подзаглавие', name:'РЕЗОНАНС 8', engine:2, key:'rz8',
+  id:'r8', order:8, title:'РЕЗОНАНС 8', subtitle:'Подзаглавие', name:'РЕЗОНАНС 8', key:'rz8',
   blurb:'Шестата част — кратко описание за менютата на другите части.',
   desc:{intro:'…', training:'…', campaign:'…', survival:'Безкрайни сектори, генерирани наново при всяко начало.'},
   controls:'← → движение · Z стрелба · X скок · P / Esc пауза',

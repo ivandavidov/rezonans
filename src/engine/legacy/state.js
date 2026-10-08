@@ -27,7 +27,7 @@ function makePlayer(lo){
   return p;
 }
 function loadLevel(i,obj){
-  LI=i; LVL=obj||(SEQ?GLV:LEVELS)[i]; COLS=LVL.cols; G=LVL.grav;
+  LI=i; LVL=obj||GLV[i]; COLS=LVL.cols; G=LVL.grav;
   map=[]; for(let y=0;y<ROWS;y++) map.push(new Array(COLS).fill('.'));
   const F=(x0,y0,x1,y1,c)=>{for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)if(x>=0&&x<COLS&&y>=0&&y<ROWS)map[y][x]=c;};
   LVL.build(F,COLS); prerender(); buildSky();

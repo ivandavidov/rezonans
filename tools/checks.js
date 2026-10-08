@@ -19,7 +19,12 @@
      smoke     — за всяка част: меню, интро, тренировка, всеки епизод (+ старт на боса), сектори 1 и 5 — с програмиран вход и
                  семенен Math.random. Хваща грешки и дава отпечатък на сценарий („златен образец“): при чисто преструктуриране
                  трябва да остане същият. Записите в localStorage се възстановяват след проверката. Пуска се на току-що
-                 заредена страница (в Node: tools/run.js го прави сам) — описанията на нивата още се мутират по време на игра. */
+                 заредена страница (в Node: tools/run.js го прави сам) — описанията на нивата още се мутират по време на игра.
+     pixels    — само в браузъра: отпечатък на картината за всяка част — менюто, трудността, менюто на епизодите по глави,
+                 началото/играта/края на първия и последния епизод от всяка глава, бос, финал, тренировка, интро, оцеляване,
+                 пауза, „загина“, пререндерираните нива и сектори 1–8. {ref:'save'} пази еталон в sessionStorage, {ref:'compare'}
+                 дава разлики с него. Пробите — от tools/ab.py --pixels (канвите с willReadFrequently: иначе Chrome ги прехвърля
+                 на процесора посред проверката и преливките се закръглят с ±1–3). Също на току-що заредена страница. */
 const T = 16, z = () => window.__rz;
 const tile = (x, y) => { const r = z().map[y]; return r ? r[x] : '#'; };
 const pause = () => new Promise(r => setTimeout(r, 0));
@@ -130,6 +135,67 @@ const C = {
       Math.random = rnd0; lsRestore(saved); window.requestAnimationFrame = raf;
       try { Z.setDiff(di0); Z.toMenu(2); } catch (e) {}
       if (raf) raf(tt => Z.frame(tt));               // пуска отново истинския цикъл
+    }
+    return res;
+  },
+  async pixels({ games = null, levels = true, sectors = 8, keep = [], ref = null } = {}) {   // ref: 'save' — еталон в sessionStorage, 'compare' — разлики с него; keep: кадри → window.rzKeep   // само в браузъра: отпечатък на картината (менюта, екрани, HUD, пререндерирани нива)
+    const Z = z(), cv = document.getElementById('game'), cx2 = cv && cv.getContext && cv.getContext('2d');
+    if (!cx2 || typeof cx2.getImageData !== 'function' || !(cx2.getImageData(0, 0, 1, 1).data instanceof Uint8ClampedArray)) throw new Error('pixels работи само в браузъра');
+    const res = { части: {} }, saved = lsSnap(), raf = window.requestAnimationFrame, rnd0 = Math.random, di0 = Z.DI;
+    // без willReadFrequently Chrome прехвърля канвите на процесора посред проверката и преливките се закръглят с ±1–3 → пробата от tools/ab.py --pixels
+    if (!(cx2.getContextAttributes && cx2.getContextAttributes().willReadFrequently)) res.предупреждение = 'канвата е без willReadFrequently — пусни пробата от tools/ab.py --pixels';
+    let t = -1048576;
+    window.requestAnimationFrame = () => 0; await new Promise(r => setTimeout(r, 100));
+    if (document.fonts) { await Promise.all([...document.fonts].map(f => f.load().catch(() => {}))); await document.fonts.ready; }   // всички шрифтове — иначе първите кадри са с резервен
+    const hcv = c => { const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let h = 0;
+      for (let i = 0; i < d.length; i += 4) h = (Math.imul(h, 31) + (d[i] | d[i + 1] << 8 | d[i + 2] << 16)) | 0; return (h >>> 0).toString(36); };
+    const step = (n, k) => { for (let i = 0; i < n; i++) { if (k && i === 0) { Z.pressed[k] = true; Z.keys[k] = true; } t += 1000 / 64; Z.frame(t); if (k && i === 0) Z.keys[k] = false; } };
+    // всеки кадър — от един и същ часовник и семе; картината се взима с titleT=0 (blink() е „включено“)
+    const shot = (g, name, fn, lv) => { Math.random = mkRng(hnum(g + ':' + name)); Z.resetClock(); t -= 1e5; let r;
+      try { fn(); Z.resetClock(); if (!lv) Z.render(); r = hcv(lv ? Z.LV : cv); if (keep.includes(name)) (window.rzKeep = window.rzKeep || {})[g + ':' + name] = (lv ? Z.LV : cv).toDataURL(); } catch (e) { r = 'ГРЕШКА ' + String(e).slice(0, 90); }
+      for (const k of SM_KEYS) { Z.keys[k] = false; Z.pressed[k] = false; } return name + '=' + r; };
+    const play = i => { Z.startEpisode(i, false); step(1, 'fire'); step(1, 'fire'); };   // началният екран: първото Z показва целия текст, второто — започва
+    try {
+      for (const g of games || Z.GAMES.map(q => q.id)) {
+        Z.setDiff(1); Z.enterGame(g, 2);
+        const out = [], N = Z.levels.length, G = Z.GAME;
+        const chs = G.chapters ? G.chapters.map(c => [c.a, c.b]) : Array.from({ length: Math.ceil(N / 5) }, (_, i) => [i * 5, Math.min(N - 1, i * 5 + 4)]);
+        out.push(shot(g, 'меню', () => Z.enterGame(g, 2)));
+        out.push(shot(g, 'трудност', () => { Z.enterGame(g, 2); step(1, 'fire'); }));
+        out.push(shot(g, 'трудност · оцеляване', () => { Z.enterGame(g, 3); step(1, 'fire'); }));
+        for (let c = 0; c < chs.length; c++) out.push(shot(g, 'епизоди · глава ' + (c + 1), () => {   // през входа: ← до първата глава, после → по една
+          Z.enterGame(g, 2); step(1, 'fire'); step(1, 'fire'); for (let k = 0; k < chs.length; k++) step(1, 'left'); for (let k = 0; k < c; k++) step(1, 'right'); }));
+        const eps = [...new Set(chs.flat())];
+        for (const i of eps) {
+          out.push(shot(g, 'начало · епизод ' + (i + 1), () => { Z.startEpisode(i, false); step(1, 'fire'); }));
+          out.push(shot(g, 'игра · епизод ' + (i + 1), () => play(i)));
+          out.push(shot(g, 'край · епизод ' + (i + 1), () => { play(i); Z.completeLevel(); step(1, 'fire'); step(80); }));
+        }
+        for (const [, b] of chs) out.push(shot(g, 'бос · епизод ' + (b + 1), () => { play(b);
+          if (Z.LVL.arena) { Z.startBoss(); for (let k = 0; k < 600 && Z.boss && Z.boss.state === 'intro'; k++) step(1); } }));
+        for (const [, b] of chs) out.push(shot(g, 'финал · епизод ' + (b + 1), () => { play(b); Z.state = 'win'; step(150); }));
+        out.push(shot(g, 'тренировка', () => { Z.GAME.training(true); step(1, 'fire'); step(1, 'fire'); step(30); }));
+        out.push(shot(g, 'интро', () => { Z.GAME.intro(true); step(120); }));
+        const sv = { k: 0, seed: 17919, score: 0, w: ['wrench', 'pistol'], a: { pistol: [17, 51] }, ar: 0, hp: 100, cur: 'pistol' };
+        out.push(shot(g, 'оцеляване', () => { Z.startSurv(0, sv); if (Z.state === 'story') { step(1, 'fire'); step(1, 'fire'); } step(10); }));
+        out.push(shot(g, 'оцеляване · край на сектор', () => { Z.startSurv(0, sv); if (Z.state === 'story') { step(1, 'fire'); step(1, 'fire'); } Z.completeLevel(); step(80); }));
+        out.push(shot(g, 'пауза', () => { play(0); Z.state = 'paused'; }));
+        out.push(shot(g, 'загина', () => { play(0); Z.state = 'dead'; step(100); }));
+        if (levels) {
+          for (let i = 0; i < N; i++) out.push(shot(g, 'ниво ' + (i + 1), () => Z.loadLevel(i), true));
+          for (let k = 0; k < sectors; k++) out.push(shot(g, 'сектор ' + (k + 1), () => { Z.survSeed = 17919; Z.loadLevel(-1, Z.genLevel(k)); }, true));
+        }
+        res.части[g] = { кадри: out.length, грешки: out.filter(s => s.includes('=ГРЕШКА')).length, отпечатък: hstr(out.join('\n')), подробно: out };
+        await pause();
+      }
+      if (ref === 'save') sessionStorage.setItem('rzPixels', JSON.stringify(Object.fromEntries(Object.entries(res.части).map(([g, v]) => [g, v.подробно]))));
+      if (ref === 'compare') { const E = JSON.parse(sessionStorage.getItem('rzPixels') || '{}');
+        res.разлики = Object.fromEntries(Object.entries(res.части).map(([g, v]) => { const m = new Map((E[g] || []).map(s => s.split('=')));
+          return [g, v.подробно.filter(s => m.get(s.split('=')[0]) !== s.split('=')[1]).map(s => s.split('=')[0] + ': ' + (m.get(s.split('=')[0]) || '—') + ' → ' + s.split('=')[1])]; })); }
+    } finally {
+      Math.random = rnd0; lsRestore(saved); window.requestAnimationFrame = raf;
+      try { Z.setDiff(di0); Z.toMenu(2); } catch (e) {}
+      if (raf) raf(tt => Z.frame(tt));
     }
     return res;
   },

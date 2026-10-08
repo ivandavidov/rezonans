@@ -1,15 +1,17 @@
 /* ================= ПОРЕДИЦАТА: регистър на игрите и общо меню =================
    Всяка част се описва с един обект, подаден на registerGame() (виж games/<id>/game.js):
      id, order, title ('РЕЗОНАНС 2'), subtitle ('Отзвук'), name (за HUD), blurb (описание в чужди менюта)
-     engine     1 = оригиналният двигател, 2 = двигателят на продълженията
      key        префикс за записите ('rz2' → 'rz2.unlocked', 'rz2.best0' …)
-     levels, chapters             кампанията (само при engine 2)
+     levels, chapters             кампанията; главата е {t, a, b} (+ по избор label, short, done, col, star — свои надписи
+                                  и вид; fin — след последния ѝ епизод идва финалният екран, а след него следващата глава)
+     unlFix(u)  поправка на прочетения брой отключени епизоди (r1: стар запис 20 → 21)
+     classic    видът на първата част: нейният HUD и меню на епизодите, плочките B=-H остават под декора
      intro(fromMenu), training(fromMenu)        стартират интрото и тренировката
      introUpd(dt), introRender()                ако интрото е кинематографично (state 'gintro')
      desc:{intro,training,campaign,survival}    текстовете под менюто
      drawLogo()  фон и лого в горната част на менюто (до y≈135)
-     renderWin(), postFx()        финалният екран и цветовата обработка (engine 2)
-     svPlan(k), svBoss, svFallback, bossMulOne     оцеляването (engine 2)
+     renderWin(), postFx()        финалният екран и цветовата обработка
+     svPlan(k), svBoss, svFallback, bossMulOne     оцеляването (общият генератор)
      svPlan(k), genSector(k)       оцеляването със собствен генератор (r1)
      accent, accentRgb, accent2, font, suit, glitch, hintCols, prog, menuMusic, menuCam, controls
      eKey / eBtn   надпис за клавиш E (легенда / бутон на тъч екран), echo, flashlight
@@ -25,10 +27,10 @@ const KEY=k=>GAME.key+'.'+k;
 /* добавя ключове в общ речник (TH, SKIES, SV_THEMES, THEME_NAME…) и спира сборката при дублиран ключ между игрите */
 function addUnique(target,obj,what){ for(const k in obj){ if(k in target) throw new Error(what+': ключът „'+k+'“ вече е зает от друга игра'); target[k]=obj[k]; } }
 function setGame(id){
-  const g=gameById(id)||GAMES[0]; GAME=g; SEQ=g.engine>=2;
+  const g=gameById(id)||GAMES[0]; GAME=g;
   for(const o of GAMES) document.body.classList.toggle('g-'+o.id,o===g);
   document.body.classList.toggle('has-e',!!g.eBtn);
-  if(SEQ){ GLV=g.levels; GCH=g.chapters; gUnl=clamp(parseInt(store.get(KEY('unlocked'),'1'),10)||1,1,GLV.length); }
+  GLV=g.levels; GCH=g.chapters; gUnl=clamp(parseInt(store.get(KEY('unlocked'),'1'),10)||1,1,GLV.length); if(g.unlFix) gUnl=g.unlFix(gUnl);
   const ek=document.getElementById('ekey'), eb=document.getElementById('ebtn');
   if(ek){ ek.style.display=g.eKey?'':'none'; ek.innerHTML='<kbd>E</kbd>'+(g.eKey||''); }
   if(eb){ eb.style.display=g.eBtn?'':'none'; eb.innerHTML=g.eBtn||'E'; }

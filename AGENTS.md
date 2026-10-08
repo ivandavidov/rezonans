@@ -85,12 +85,13 @@ python3 src/win/make_exe.py            # dist/Rezonans-windows/ (Rezonans-x64.ex
 4. **Предпазна мрежа** (`tools/`; как — в началото на всеки файл; очакваните стойности са в `notes/handoff.md`, раздел 4):
    - `tools/checks.js` — в браузъра, върху самата сборка: `baseline` (отпечатък на генерирането + терен + население),
      `placement`, `reach`, `acidSim`, `smoke` (всяка част: меню, интро, тренировка, всеки епизод, сектори 1 и 5 —
-     хваща грешки и дава „златен образец“). Сървър от корена (`python3 -m http.server 8766` или „repo“ от
+     хваща грешки и дава „златен образец“), `pixels` (отпечатък на картината — само върху пробите от `ab.py --pixels`). Сървър от корена (`python3 -m http.server 8766` или „repo“ от
      `.claude/launch.json`) → `/docs/index.html`, после `await import('/tools/checks.js')`.
    - `node tools/run.js <сборка.html> <проверка|suite|storage>` — същите проверки без браузър (само за разработка,
      без npm) + договорът на записите (`storage`). Числата от Node се сравняват само с числа от Node.
-   - `python3 tools/ab.py [ref] [--suite]` — A/B: сглобява ref и работното копие (публикуваните, 7-те части, `--offline`),
-     сравнява байт по байт и (с `--suite`) отпечатъците в Node.
+   - `python3 tools/ab.py [ref] [--suite] [--pixels]` — A/B: сглобява ref и работното копие (публикуваните, 7-те части,
+     `--offline`), сравнява байт по байт и (с `--suite`) отпечатъците в Node; `--pixels` пише пробите `docs/_ab_old.html` и
+     `docs/_ab_new.html` за `pixels` (картината на менютата, екраните, HUD-а и нивата) в браузъра.
    - Пробни файлове в `docs/` (напр. `_proba.html` с всички части) не се commit-ват.
 
 ## Стил

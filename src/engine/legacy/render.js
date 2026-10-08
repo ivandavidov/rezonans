@@ -233,7 +233,6 @@ function drawLights(){
   if(LVL.fires) for(const [fx,fy] of LVL.fires) L.push([fx,fy-10,80+Math.sin(titleT*13+fx)*8,0.8]);
   if(boss&&boss.type==='heli'&&!boss.dead) L.push([player.x+player.w/2,player.y+player.h,50,0.35]);
   if(LVL.sw) L.push([LVL.sw[0]*T+8,LVL.sw[1]*T,40,0.6]);
-  if(!SEQ&&LVL.lightsExtra) LVL.lightsExtra(L);   // продълженията го викат от mechLights
   r2Lights(L);
   lc.globalCompositeOperation='source-over'; lc.clearRect(0,0,240,136); lc.fillStyle=`rgba(3,5,9,${torch?Math.min(amb,0.7):Math.min(amb*0.65,0.36)})`; lc.fillRect(0,0,240,136);
   lc.globalCompositeOperation='destination-out';
@@ -297,7 +296,7 @@ function renderSurvOver(){
   if(winT>1.5&&blink()) centerText('Z — главно меню',240,'600 10px "IBM Plex Mono",monospace','#f3e6cf');
 }
 function wrap(text,maxW){ const words=text.split(' '), lines=[]; let line=''; for(const w of words){ const t=line?line+' '+w:w; if(ctx.measureText(t).width>maxW&&line){ lines.push(line); line=w; } else line=t; } if(line) lines.push(line); return lines; }
-function drawHUD(){ if(SEQ) return drawHUD2();
+function drawHUD(){ if(!GAME.classic) return drawHUD2();
   const p=player, A='#ffa62b';
   ctx.save(); ctx.shadowColor='rgba(255,140,0,0.55)'; ctx.shadowBlur=6; ctx.textBaseline='alphabetic';
   const hc=p.hp<=25?'#ff4d3a':A;
@@ -320,7 +319,7 @@ function drawHUD(){ if(SEQ) return drawHUD2();
     let ly=y+11; if(who){ ctx.font='600 7px "IBM Plex Mono",monospace'; ctx.fillStyle=wcol; ctx.fillText('◉ '+who,x+10,ly-1); ly+=10; ctx.font='600 9px "IBM Plex Mono",monospace'; }
     ctx.fillStyle='#f3e6cf'; for(const l of lines){ ctx.fillText(l,x+10,ly); ly+=12; }
     ctx.globalAlpha=1; }
-  ctx.font='600 6px "IBM Plex Mono",monospace'; ctx.fillStyle='rgba(200,210,215,0.5)'; ctx.textAlign='right'; ctx.fillText(SURV?('ОЦЕЛЯВАНЕ · СЕКТОР '+(survK+1)+' · '+D.name):LVL.training?('ТРЕНИРОВКА · '+D.name):((chOf(LI)===4?'БОНУС':'ГЛ. '+ROM[chOf(LI)])+' · ЕП. '+LVL.n+' · '+D.name),472,9); ctx.textAlign='left';
+  ctx.font='600 6px "IBM Plex Mono",monospace'; ctx.fillStyle='rgba(200,210,215,0.5)'; ctx.textAlign='right'; ctx.fillText(SURV?('ОЦЕЛЯВАНЕ · СЕКТОР '+(survK+1)+' · '+D.name):LVL.training?('ТРЕНИРОВКА · '+D.name):(chShort(gChOf(LI))+' · ЕП. '+LVL.n+' · '+D.name),472,9); ctx.textAlign='left';
   if(SURV){ ctx.font='600 7px "IBM Plex Mono",monospace'; ctx.fillStyle='#ff6a5a'; ctx.fillText('♥'.repeat(Math.max(0,survLives)),8,10); ctx.fillStyle='#ffa62b'; ctx.fillText('ТОЧКИ '+(survScore+stats.kills*10),8+survLives*9+6,10); ctx.font='600 6px "IBM Plex Mono",monospace'; }
   if(muted){ ctx.fillStyle='#7f8e97'; ctx.fillText('БЕЗ ЗВУК (M)',8,SURV?20:9); }
   if(LVL.training&&TRN){ ctx.font='600 6px "IBM Plex Mono",monospace'; ctx.fillStyle=TRN.skip>0?'#ffd36b':'rgba(200,210,215,0.5)'; ctx.fillText(TRN.skip>0?'НАТИСНИ ENTER ОТНОВО, ЗА ДА ПРОПУСНЕШ':'ENTER — ПРОПУСНИ КУРСА',8,muted?19:9); }
@@ -373,22 +372,22 @@ function render(){
     centerText('↑ ↓ избор · Z потвърди · Esc / X назад',244,'600 7px "IBM Plex Mono",monospace','#7f8e97');
     return;
   }
-  if(state==='eps'&&SEQ){ renderEps2(); return; }
-  if(state==='eps'){
+  if(state==='eps'&&!GAME.classic){ renderEps2(); return; }
+  if(state==='eps'){   // класическото меню (r1): по една глава на страница
     overlay(0.8); centerText('ИЗБЕРИ ЕПИЗОД',58,'16px '+DFONT(),'#ffa62b');
-    const ch=chOf(menuSel);
-    centerText((ch>0?'◀  ':'    ')+chLabel(ch)+' · '+CHAPTERS[ch]+(ch<4&&(ch+1)*5<unlocked?'  ▶':'    '),82,'11px '+DFONT(),ch===4?'#ffd36b':'#94ff57');
-    for(let r=0;r<5;r++){ const i=ch*5+r, l=LEVELS[i], y=108+r*20, on=i===menuSel, lock=i>=unlocked;
+    const ch=gChOf(menuSel), c=GCH[ch];
+    centerText((ch>0?'◀  ':'    ')+chName(ch)+' · '+c.t+(ch<GCH.length-1&&GCH[ch+1].a<gUnl?'  ▶':'    '),82,'11px '+DFONT(),c.col||'#94ff57');
+    for(let i=c.a;i<=c.b;i++){ const l=GLV[i], y=108+(i-c.a)*20, on=i===menuSel, lock=i>=gUnl;
       if(on){ ctx.fillStyle='rgba(255,166,43,0.12)'; ctx.fillRect(W/2-130,y-13,260,18); ctx.fillStyle='#ffa62b'; ctx.fillRect(W/2-130,y-13,2,18); }
       ctx.font='12px '+DFONT(); ctx.textAlign='center'; ctx.fillStyle=lock?'#4a555c':on?'#ffa62b':'#b9c4ca';
-      ctx.fillText(lock?(l.n+' · заключен'):(l.n+' · '+l.title+(r===4||ch===4?'  ★':'')),W/2,y); ctx.textAlign='left'; }
+      ctx.fillText(lock?(l.n+' · заключен'):(l.n+' · '+l.title+(i===c.b||c.star?'  ★':'')),W/2,y); ctx.textAlign='left'; }
     centerText('Трудност: '+D.name,222,'600 8px "IBM Plex Mono",monospace','#cfd8dc');
     centerText('↑ ↓ ← → избор · Z начало · Esc / X назад',244,'600 7px "IBM Plex Mono",monospace','#7f8e97');
     return;
   }
   if(state==='story'){
     overlay(0.88);
-    centerText(SEQ&&!LVL.training?('ГЛАВА '+ROM[gChOf(LI)]+' · '+GCH[gChOf(LI)].t+'   ·   ЕПИЗОД '+LVL.n):LVL.training?(LVL.hdrS||'ПОДГОТОВКА · ПРЕДИ СЕКТОР 7'):chLabel(chOf(LI))+' · '+CHAPTERS[chOf(LI)]+'   ·   ЕПИЗОД '+LVL.n,56,'600 9px "IBM Plex Mono",monospace','#94ff57');
+    centerText(LVL.training?(LVL.hdrS||'ПОДГОТОВКА · ПРЕДИ СЕКТОР 7'):chName(gChOf(LI))+' · '+GCH[gChOf(LI)].t+'   ·   ЕПИЗОД '+LVL.n,56,'600 9px "IBM Plex Mono",monospace','#94ff57');
     glitchTitle(LVL.title,W/2,86,26);
     const rv=storyT*45; drawParagraphs(LVL.story,118,rv);
     if(rv>=parasLen(LVL.story)&&blink()) centerText('Z — започни',250,'600 9px "IBM Plex Mono",monospace','#f3e6cf');
@@ -406,16 +405,9 @@ function render(){
       centerText('Следва: сектор '+(survK+2)+' · '+THEME_NAME[svPlan(survK+1).theme]+(svPlan(survK+1).boss?' · БОС':''),204,'600 8px "IBM Plex Mono",monospace','#cfd8dc');
       if(endT>1.2&&blink()) centerText('Z — напред',240,'600 10px "IBM Plex Mono",monospace','#f3e6cf'); } }
   else if(state==='levelEnd'){ overlay(Math.min(0.88,endT*0.8));
-    if(endT>0.5){ centerText((SEQ&&!LVL.training?(LI===GCH[gChOf(LI)].b?'ГЛАВА '+ROM[gChOf(LI)]+' ЗАВЪРШЕНА':'ЕПИЗОД '+LVL.n+' ПРЕМИНАТ'):LVL.training?'ТРЕНИРОВКАТА Е ЗАВЪРШЕНА':LI===24?'БОНУС ГЛАВАТА Е ЗАВЪРШЕНА':LI%5===4?'ГЛАВА '+ROM[chOf(LI)]+' ЗАВЪРШЕНА':'ЕПИЗОД '+LVL.n+' ПРЕМИНАТ'),46,'600 9px "IBM Plex Mono",monospace','#94ff57'); glitchTitle(LVL.title,W/2,74,24);
+    if(endT>0.5){ centerText((LVL.training?'ТРЕНИРОВКАТА Е ЗАВЪРШЕНА':LI===GCH[gChOf(LI)].b?(GCH[gChOf(LI)].done||chName(gChOf(LI))+' ЗАВЪРШЕНА'):'ЕПИЗОД '+LVL.n+' ПРЕМИНАТ'),46,'600 9px "IBM Plex Mono",monospace','#94ff57'); glitchTitle(LVL.title,W/2,74,24);
       const y=drawParagraphs(LVL.end,104,(endT-0.5)*45); drawStats(stats,Math.max(y+8,200));
-      if(endT>1.2&&(endT-0.5)*45>=parasLen(LVL.end)&&blink()) centerText(SEQ&&!LVL.training?(LI<GLV.length-1?'Z — към следващия епизод':'Z — продължи'):LVL.training?(TRN&&TRN.fromMenu?'Z — към менюто':(LVL.hdrN||'Z — към Сектор 7')):LI<LEVELS.length-1&&LI!==19?'Z — към следващия епизод':'Z — продължи',262,'600 9px "IBM Plex Mono",monospace','#f3e6cf'); } }
-  if(state==='win'&&SEQ){ GAME.renderWin(); }
-  else if(state==='win'){ overlay(0.9); const bonus=LI===24;
-    glitchTitle(bonus?'КРАЙ':'ОЦЕЛЯ!',W/2,84,38);
-    centerText(bonus?'Мина бонус главата на трудност „'+D.name+'“.':'Мина кампанията на трудност „'+D.name+'“.',110,'600 9px "IBM Plex Mono",monospace','#cfd8dc');
-    drawStats(totals,148);
-    if(!bonus) centerText('Отключи бонус главата „ЗАВРЪЩАНЕТО“',196,'600 9px "IBM Plex Mono",monospace','#ffd36b');
-    else centerText('„Вихрен“ е спасен. Благодарим ти за играта!',196,'600 9px "IBM Plex Mono",monospace','#94ff57');
-    if(winT>2&&blink()) centerText(bonus?'Z — към главното меню':'Z — към бонус главата · X — главно меню',238,'600 10px "IBM Plex Mono",monospace','#f3e6cf'); }
+      if(endT>1.2&&(endT-0.5)*45>=parasLen(LVL.end)&&blink()) centerText(LVL.training?(TRN&&TRN.fromMenu?'Z — към менюто':(LVL.hdrN||'Z — към Сектор 7')):!epFinal(LI)?'Z — към следващия епизод':'Z — продължи',262,'600 9px "IBM Plex Mono",monospace','#f3e6cf'); } }
+  if(state==='win') GAME.renderWin();
 }
 

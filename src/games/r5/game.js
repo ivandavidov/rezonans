@@ -2,7 +2,7 @@
 const SUIT5={r:{suit:'#3a6a5a',suitD:'#24463c',plate:'#d8d0c0',plateH:'#f0ece0',dark:'#1a1e1c',helm:'#f4f0e6'},
              d:{suit:'#4a5a7a',suitD:'#2e3a52',plate:'#d8d0c0',plateH:'#f0ece0',dark:'#1a1c22',helm:'#f4f0e6'}};
 registerGame({
-  id:'r5', order:5, title:'РЕЗОНАНС 5', subtitle:'Извор', name:'РЕЗОНАНС 5', engine:2, key:'rz5',
+  id:'r5', order:5, title:'РЕЗОНАНС 5', subtitle:'Извор', name:'РЕЗОНАНС 5', key:'rz5',
   blurb:'Петата част — „Резонанс 5: Извор“. Александрово, 1983 г. Двама лекари и една тайна мисия.',
   desc:{intro:'Пътят за Александрово, септември 1983 г. — началото на историята.',
         training:'Дворът на здравната служба: хора в транс, сигнални ракети, стетоскоп и дневник.',

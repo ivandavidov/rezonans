@@ -14,7 +14,7 @@ function updPlayer(dt){
     return;
   }
   const ctrl=intro.lock<=0;
-  const L=ctrl&&keys.left, Rr=ctrl&&keys.right, U=ctrl&&(SEQ&&FLIP?keys.down:keys.up), Dn=ctrl&&(SEQ&&FLIP?keys.up:keys.down), C=ctrl&&keys.crouch;
+  const L=ctrl&&keys.left, Rr=ctrl&&keys.right, U=ctrl&&(FLIP?keys.down:keys.up), Dn=ctrl&&(FLIP?keys.up:keys.down), C=ctrl&&keys.crouch;
   const dir=(Rr?1:0)-(L?1:0);
   if(C&&!p.crouch&&!p.climb&&!p.swim){ p.crouch=true; p.y+=12; p.h=14; }
   else if(!C&&p.crouch&&!rectSolid(p.x,p.y-12,p.w,26)){ p.crouch=false; p.y-=12; p.h=26; }

@@ -67,8 +67,8 @@ code.append("if(!GAMES.length) throw new Error('Няма регистриран�
 s=(shell+"<script>\n(()=>{\n'use strict';\n"+''.join(rd('engine',f) for f in LEGACY)+'\n'.join(code)+'\n'
    +fill(rd('engine','legacy','loop.js'),'/*@@FONT_LOADS@@*/',loads)+'})();\n</script>\n')
 
-allcode='\n'.join(code)
-left=[w for w in ['R3','R2','r2title',"state='mode'","'r2intro'",'LEVELS2','unlocked2','MO'] if re.search(r'(?<![\w])'+re.escape(w)+r'(?![\w])',allcode)]
+allcode=''.join(rd('engine',f) for f in LEGACY)+'\n'.join(code)   # loop.js не влиза: там са старите псевдоними в window.__rz
+left=[w for w in ['R3','R2','r2title',"state='mode'","'r2intro'",'LEVELS2','unlocked2','MO','SEQ'] if re.search(r'(?<![\w])'+re.escape(w)+r'(?![\w])',allcode)]
 if left: raise SystemExit('остатъци от старата архитектура: '+', '.join(left))
 # всяко глобално име трябва да е уникално — иначе една игра тихо подменя функция на друга
 tops=collections.Counter(a or b for a,b in re.findall(r'^(?:function\s+(\w+)|(?:const|let)\s+(\w+)\s*=)',s,re.M))

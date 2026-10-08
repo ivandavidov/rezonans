@@ -1,9 +1,10 @@
-/* ================= ДВИГАТЕЛ НА ПРОДЪЛЖЕНИЯТА (engine ≥ 2) =================
-   Общ код за всички части след първата: вода, епохи, обръщане, ескорт, гонитби, HUD, епизоди.
+/* ================= ДВИГАТЕЛ: МЕХАНИКИ, ЕПИЗОДИ, HUD =================
+   Общ код за всички части: вода, епохи, обръщане, ескорт, гонитби (включват се по данните на нивото), HUD, епизоди.
    Тук НЯМА съдържание на конкретна игра — нивата, босовете и текстовете са в games/<id>/. */
-let SEQ=false;                 // включен ли е двигателят на продълженията (GAME.engine>=2)
 let GLV=[], GCH=[], gUnl=1;    // нивата, главите и отключените епизоди на текущата игра
 const gChOf=i=>Math.max(0,GCH.findIndex(c=>i>=c.a&&i<=c.b));
+const chName=c=>GCH[c].label||'ГЛАВА '+ROM[c], chShort=c=>GCH[c].short||'ГЛ. '+ROM[c];   // надписите на главата (бонус главата на r1 има свои)
+const epFinal=i=>i>=GLV.length-1||!!GCH[gChOf(i)].fin&&i===GCH[gChOf(i)].b;   // след епизода идва финалният екран
 let FLOOD=null, ESC=null, CHASE=null, LEVERS=[], DRAINS=[], GENS=[], ALLIES=[], FLIPS=[], FLIP=false, ERA=0, ERAD=null, SHIFT=[], GWIND=0, flipCd=0, cpFlip=false, cpEra=0, eraCd=0, r2T={}, sunWarned=false, airWarned=false, r2epsSel=0;
 const R2_TAKE={}, R2_PDRAW={}, R2UPD={}, R2DRAW={}, R2B={make:{},hurt:{},upd:{},draw:{},intro:{},name:{},col:{},sfx:{}};
 
@@ -55,7 +56,6 @@ function r2ExitOk(){
 /* ---------- water & swimming ---------- */
 function isWater(x,y){ const c=tileP(x,y); if(c==='w') return true; if(FLOOD&&y>FLOOD.y&&x>=FLOOD.x0&&x<FLOOD.x1&&!solidAt(x,y)) return true; return false; }
 function r2Move(p,dt,dir,U,Dn){
-  if(!SEQ) return false;
   if(p.leapT>0){ p.leapT-=dt; p.swim=false; return false; }
   const cx=p.x+p.w/2, wet=isWater(cx,p.y+p.h*0.8), zg=!!LVL.zeroG||inZG(p);
   p.wet=wet; p.headWet=wet&&isWater(cx,p.y+4);
@@ -82,7 +82,6 @@ function r2Move(p,dt,dir,U,Dn){
   return true;
 }
 function r2Wind(p,dt){
-  if(!SEQ) return;
   if(LVL.winds) for(const w of LVL.winds){ const cx=p.x+p.w/2, cy=p.y+p.h/2; if(cx>w[0]*T&&cx<(w[2]+1)*T&&cy>w[1]*T&&cy<(w[3]+1)*T){ p.vx+=w[4]*dt; p.vy+=w[5]*dt; if(w[5]<0){ p.vy=Math.max(p.vy,-300); p.onGround=false; p.padT=0.2; } } }
   if(GWIND) p.vx+=GWIND*(p.onGround?0.55:1)*dt;
 }
@@ -210,7 +209,6 @@ function updShifters(){
 
 /* ---------- per-frame update ---------- */
 function r2Update(dt){
-  if(!SEQ) return;
   const p=player;
   // air
   if(!p.dead){
@@ -257,7 +255,6 @@ function shaded(p){ const cx=Math.floor((p.x+p.w/2)/T); for(let ty=Math.floor(p.
 
 /* ---------- drawing ---------- */
 function r2DrawBack(){
-  if(!SEQ) return;
   mechDrawBack();
   for(const v of LEVERS){ const x=Math.round(v.x*T-cam), y=v.y*T; if(x<-20||x>W+20) continue;
     px(x+3,y-14,10,14,'#3a4248'); px(x+3,y-14,10,1,'#5a646c'); px(x+5,y-12,6,3,v.on?'#3dff7a':(Math.floor(titleT*3)%2?'#ff3b2e':'#5a1a14'));
@@ -269,7 +266,6 @@ function r2DrawBack(){
     else if(Math.random()<0.2) part(g.x+14,g.y,rnd(-5,5),-25,0.8,'#444',3,-10,2); }
 }
 function r2DrawWorld(){
-  if(!SEQ) return;
   if(LVL.winds){ ctx.save(); ctx.globalCompositeOperation='lighter'; for(const w of LVL.winds){ if(w[5]>=0) continue; const x0=w[0]*T-cam, x1=(w[2]+1)*T-cam, y0=w[1]*T, y1=(w[3]+1)*T; if(x1<-10||x0>W+10) continue;
     const g=ctx.createLinearGradient(0,y1,0,y0); g.addColorStop(0,'rgba(150,230,255,0.10)'); g.addColorStop(1,'rgba(150,230,255,0.02)'); ctx.fillStyle=g; ctx.fillRect(x0,y0,x1-x0,y1-y0);
     ctx.fillStyle='rgba(200,245,255,0.18)'; for(let i=0;i<Math.max(2,(x1-x0)/12);i++){ const sx=x0+((i*37)%Math.max(1,x1-x0-2)), len=14+(i%3)*6, sy=y1-((titleT*160+i*53)%(y1-y0+len)); ctx.fillRect(Math.round(sx),Math.round(sy),1,len); } } ctx.restore(); }
@@ -297,7 +293,6 @@ function r2DrawWorld(){
   drawAllies();
 }
 function r2Lights(L){
-  if(!SEQ) return;
   mechLights(L);
   for(const g of GENS) if(g.hp>0) L.push([g.x+14,g.y+10,60,0.7]);
   for(const f of FLIPS) L.push([f.x,f.y,60,0.8]);
@@ -306,7 +301,6 @@ function r2Lights(L){
   if(FLOOD&&FLOOD.y<H) L.push([player.x,FLOOD.y,60,0.3]);
 }
 function r2PostFx(){
-  if(!SEQ) return;
   const p=player;
   if(p&&p.headWet){ ctx.fillStyle='rgba(10,70,110,0.28)'; ctx.fillRect(0,0,W,H); }
   if(LVL.sun){ if(r2T.flare){ ctx.fillStyle='rgba(255,236,190,0.30)'; ctx.fillRect(0,0,W,H); } else if(r2T.warn){ const a=(Math.sin(titleT*14)+1)/2; ctx.fillStyle=`rgba(255,150,40,${0.06+a*0.1})`; ctx.fillRect(0,0,W,H); } }
@@ -352,7 +346,7 @@ function drawHUD2(){
     const wcol=who==='Д-Р ИЛИЕВА'?'#94ff57':'#7fd8ff'; ctx.fillStyle='rgba(4,14,18,0.82)'; ctx.fillRect(x,y,w,h); ctx.fillStyle=who?wcol:A; ctx.fillRect(x,y,2,h); ctx.fillRect(x+w-2,y,2,h);
     let ly=y+11; if(who){ ctx.font='600 7px "IBM Plex Mono",monospace'; ctx.fillStyle=wcol; ctx.fillText('◉ '+who,x+10,ly-1); ly+=10; ctx.font='600 9px "IBM Plex Mono",monospace'; }
     ctx.fillStyle='#eaf6f6'; for(const l of lines){ ctx.fillText(l,x+10,ly); ly+=12; } ctx.globalAlpha=1; }
-  ctx.font='600 6px "IBM Plex Mono",monospace'; ctx.fillStyle='rgba(200,240,240,0.5)'; ctx.textAlign='right'; ctx.fillText(SURV?(GAME.name+' · ОЦЕЛЯВАНЕ · СЕКТОР '+(survK+1)+' · '+D.name):LVL.training?(GAME.name+' · ТРЕНИРОВКА · '+D.name):(GAME.name+' · ГЛ. '+ROM[gChOf(LI)]+' · ЕП. '+LVL.n+' · '+D.name),W-6,9); ctx.textAlign='left';
+  ctx.font='600 6px "IBM Plex Mono",monospace'; ctx.fillStyle='rgba(200,240,240,0.5)'; ctx.textAlign='right'; ctx.fillText(SURV?(GAME.name+' · ОЦЕЛЯВАНЕ · СЕКТОР '+(survK+1)+' · '+D.name):LVL.training?(GAME.name+' · ТРЕНИРОВКА · '+D.name):(GAME.name+' · '+chShort(gChOf(LI))+' · ЕП. '+LVL.n+' · '+D.name),W-6,9); ctx.textAlign='left';
   if(SURV){ ctx.font='600 7px "IBM Plex Mono",monospace'; ctx.textAlign='right'; ctx.fillStyle='#ff6a8a'; ctx.fillText('♥'.repeat(Math.max(0,survLives)),W-6,19); ctx.fillStyle=A; ctx.fillText('ТОЧКИ '+(survScore+stats.kills*10),W-6-survLives*8-6,19); ctx.textAlign='left'; }
   ctx.restore();
 }
@@ -360,7 +354,7 @@ function drawHUD2(){
 function renderEps2(){
   overlay(0.82); centerText('ИЗБЕРИ ЕПИЗОД',50,'15px '+DFONT(),ACC());
   const ch=gChOf(menuSel), c=GCH[ch];
-  centerText((ch>0?'◀  ':'    ')+'ГЛАВА '+ROM[ch]+' · '+c.t+(ch<GCH.length-1&&GCH[ch+1].a<gUnl?'  ▶':'    '),74,'10px '+DFONT(),GAME.accent2);
+  centerText((ch>0?'◀  ':'    ')+chName(ch)+' · '+c.t+(ch<GCH.length-1&&GCH[ch+1].a<gUnl?'  ▶':'    '),74,'10px '+DFONT(),GAME.accent2);
   for(let i=c.a;i<=c.b;i++){ const l=GLV[i], r=i-c.a, y=96+r*18, on=i===menuSel, lock=i>=gUnl;
     if(on){ ctx.fillStyle=ACCA(0.12); ctx.fillRect(W/2-140,y-12,280,16); ctx.fillStyle=ACC(); ctx.fillRect(W/2-140,y-12,2,16); }
     ctx.font='10px '+DFONT(); ctx.textAlign='center'; ctx.fillStyle=lock?'#3e5558':on?ACC():'#b9cfd2';

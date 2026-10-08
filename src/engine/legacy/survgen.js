@@ -91,7 +91,7 @@ function startSurv(k,carry){
   const sv=carry&&carry!==true?carry:null; if(sv) carry=false; const prev=carry?player:null;
   SURV=true; survK=k; bossMul=0.75+0.2*Math.floor(k/5); ehpMul=1+0.03*k;
   if(!carry){ survScore=0; survLives=[3,2,1][DI]; survSeed=(Date.now()%90000)+10000; survNewBest=false; survStartBest=survBest(); if(sv){ survSeed=sv.seed; survScore=sv.score|0; } }
-  loadLevel(-1,genLevel(k)); if(LVL.arena) bossMul*=BOSS_NORM[LVL.arena.type]||1; if(SEQ&&LVL.arena&&(GAME.bossMulOne||[]).includes(LVL.arena.type)) bossMul=1;
+  loadLevel(-1,genLevel(k)); if(LVL.arena) bossMul*=BOSS_NORM[LVL.arena.type]||1; if(LVL.arena&&(GAME.bossMulOne||[]).includes(LVL.arena.type)) bossMul=1;
   const p=player;
   if(prev){ for(const w of ORDER) if(prev.weapons[w]) p.weapons[w]=true;
     for(const kk in p.ammo){ p.ammo[kk].mag=Math.max(p.ammo[kk].mag,prev.ammo[kk].mag); p.ammo[kk].res=Math.max(p.ammo[kk].res,prev.ammo[kk].res); }

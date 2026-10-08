@@ -345,12 +345,12 @@ function drawBack(tx,ty){
   if(z==='mil'&&ty===8){ R(x,y+5,T,4,'#6b5a24'); for(let i=0;i<T;i+=8) R(x+i,y+5,4,4,'#2a2410'); }
   if(z==='waste'&&ty>=10&&ty<=12){ R(x,y,T,T,'rgba(60,110,40,0.08)'); }
   if(z==='core'&&tx%7===3&&ty>2){ R(x+6,y,4,T,'#0c1d20'); if(ty%3===0) R(x+7,y+6,2,2,'#2a8a7a'); }
-  if(SEQ) r2BackDeco(tx,ty,x,y,z,P);
+  r2BackDeco(tx,ty,x,y,z,P);
   if(LVL.vent&&tx>=LVL.vent[0]&&tx<=LVL.vent[1]&&ty===14){ R(x,y,T,T,'#14181b'); R(x,y+2,T,1,'#22282c'); R(x,y+13,T,1,'#0c0f11'); if(tx%3===0) R(x+7,y,2,T,'#1b2024'); }
 }
 function drawTile(tx,ty){
   const ch=map[ty][tx],x=tx*T,y=ty*T,P=TP(tx),z=zoneAt(tx);
-  if(SEQ&&r2Tile(tx,ty,ch,x,y,P,z)) return;
+  if(r2Tile(tx,ty,ch,x,y,P,z)) return;
   if(ch==='#'&&P.rock){
     R(x,y,T,T,P.s);
     for(let i=0;i<3;i++){ const a=hash(tx*5+i,ty*3), b=hash(ty*7+i,tx); R(x+Math.floor(a*13),y+Math.floor(b*13),2+(i&1),1,P.sd); }
@@ -448,7 +448,7 @@ function prerender(){
   LV.width=COLS*T*S; LV.height=ROWS*T*S; lx=LV.getContext('2d'); lx.setTransform(S,0,0,S,0,0); lx.imageSmoothingEnabled=false;
   lx.clearRect(0,0,COLS*T,ROWS*T); crystals=[]; zTiles=[];
   for(let ty=0;ty<ROWS;ty++) for(let tx=0;tx<COLS;tx++) drawTile(tx,ty);
-  LVL.deco(); if(SEQ) for(let ty=0;ty<ROWS;ty++) for(let tx=0;tx<COLS;tx++) if('B=-H'.includes(map[ty][tx])) drawTile(tx,ty);
+  LVL.deco(); if(!GAME.classic) for(let ty=0;ty<ROWS;ty++) for(let tx=0;tx<COLS;tx++) if('B=-H'.includes(map[ty][tx])) drawTile(tx,ty);   // в r1 декорът остава над тях
   convTiles=[]; for(let ty=0;ty<ROWS;ty++) for(let tx=0;tx<COLS;tx++){ if(map[ty][tx]==='Z') zTiles.push([tx,ty]); if(CONV[map[ty][tx]]) convTiles.push([tx,ty,CONV[map[ty][tx]]]); }
   lamps=[]; beacons=[];
   for(let tx=2;tx<COLS-2;tx++){
@@ -528,7 +528,7 @@ function makePlayer(lo){
   return p;
 }
 function loadLevel(i,obj){
-  LI=i; LVL=obj||(SEQ?GLV:LEVELS)[i]; COLS=LVL.cols; G=LVL.grav;
+  LI=i; LVL=obj||GLV[i]; COLS=LVL.cols; G=LVL.grav;
   map=[]; for(let y=0;y<ROWS;y++) map.push(new Array(COLS).fill('.'));
   const F=(x0,y0,x1,y1,c)=>{for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)if(x>=0&&x<COLS&&y>=0&&y<ROWS)map[y][x]=c;};
   LVL.build(F,COLS); prerender(); buildSky();
@@ -731,7 +731,7 @@ function updPlayer(dt){
     return;
   }
   const ctrl=intro.lock<=0;
-  const L=ctrl&&keys.left, Rr=ctrl&&keys.right, U=ctrl&&(SEQ&&FLIP?keys.down:keys.up), Dn=ctrl&&(SEQ&&FLIP?keys.up:keys.down), C=ctrl&&keys.crouch;
+  const L=ctrl&&keys.left, Rr=ctrl&&keys.right, U=ctrl&&(FLIP?keys.down:keys.up), Dn=ctrl&&(FLIP?keys.up:keys.down), C=ctrl&&keys.crouch;
   const dir=(Rr?1:0)-(L?1:0);
   if(C&&!p.crouch&&!p.climb&&!p.swim){ p.crouch=true; p.y+=12; p.h=14; }
   else if(!C&&p.crouch&&!rectSolid(p.x,p.y-12,p.w,26)){ p.crouch=false; p.y-=12; p.h=26; }
@@ -1180,7 +1180,7 @@ function startSurv(k,carry){
   const sv=carry&&carry!==true?carry:null; if(sv) carry=false; const prev=carry?player:null;
   SURV=true; survK=k; bossMul=0.75+0.2*Math.floor(k/5); ehpMul=1+0.03*k;
   if(!carry){ survScore=0; survLives=[3,2,1][DI]; survSeed=(Date.now()%90000)+10000; survNewBest=false; survStartBest=survBest(); if(sv){ survSeed=sv.seed; survScore=sv.score|0; } }
-  loadLevel(-1,genLevel(k)); if(LVL.arena) bossMul*=BOSS_NORM[LVL.arena.type]||1; if(SEQ&&LVL.arena&&(GAME.bossMulOne||[]).includes(LVL.arena.type)) bossMul=1;
+  loadLevel(-1,genLevel(k)); if(LVL.arena) bossMul*=BOSS_NORM[LVL.arena.type]||1; if(LVL.arena&&(GAME.bossMulOne||[]).includes(LVL.arena.type)) bossMul=1;
   const p=player;
   if(prev){ for(const w of ORDER) if(prev.weapons[w]) p.weapons[w]=true;
     for(const kk in p.ammo){ p.ammo[kk].mag=Math.max(p.ammo[kk].mag,prev.ammo[kk].mag); p.ammo[kk].res=Math.max(p.ammo[kk].res,prev.ammo[kk].res); }
@@ -1200,8 +1200,7 @@ function completeLevel(){
   state='levelEnd'; endT=0; mInt=0; bossMusic=false; SFX.win();
   if(SURV){ survScore+=100+stats.kills*10+(LVL.arena?500:0); saveSurv(survScore,survK+1); return; }
   for(const k in totals) totals[k]+=stats[k];
-  if(SEQ){ if(LI+2>gUnl&&LI<GLV.length-1){ gUnl=LI+2; store.set(KEY('unlocked'),gUnl); } }
-  else if(LI+2>unlocked&&LI<LEVELS.length-1){ unlocked=LI+2; store.set('rz.unlocked',unlocked); }
+  if(LI+2>gUnl&&LI<GLV.length-1){ gUnl=LI+2; store.set(KEY('unlocked'),gUnl); }
 }
 function respawn(){
   r2PreRespawn(); const p=player; p.x=cp*T+3; p.h=26; p.crouch=false; p.y=groundY(cp)-26; p.vx=p.vy=0; p.hp=100; p.dead=false; p.inv=1.5; p.climb=false; p.hurtAgo=9;
@@ -1536,7 +1535,6 @@ function drawLights(){
   if(LVL.fires) for(const [fx,fy] of LVL.fires) L.push([fx,fy-10,80+Math.sin(titleT*13+fx)*8,0.8]);
   if(boss&&boss.type==='heli'&&!boss.dead) L.push([player.x+player.w/2,player.y+player.h,50,0.35]);
   if(LVL.sw) L.push([LVL.sw[0]*T+8,LVL.sw[1]*T,40,0.6]);
-  if(!SEQ&&LVL.lightsExtra) LVL.lightsExtra(L);   // продълженията го викат от mechLights
   r2Lights(L);
   lc.globalCompositeOperation='source-over'; lc.clearRect(0,0,240,136); lc.fillStyle=`rgba(3,5,9,${torch?Math.min(amb,0.7):Math.min(amb*0.65,0.36)})`; lc.fillRect(0,0,240,136);
   lc.globalCompositeOperation='destination-out';
@@ -1600,7 +1598,7 @@ function renderSurvOver(){
   if(winT>1.5&&blink()) centerText('Z — главно меню',240,'600 10px "IBM Plex Mono",monospace','#f3e6cf');
 }
 function wrap(text,maxW){ const words=text.split(' '), lines=[]; let line=''; for(const w of words){ const t=line?line+' '+w:w; if(ctx.measureText(t).width>maxW&&line){ lines.push(line); line=w; } else line=t; } if(line) lines.push(line); return lines; }
-function drawHUD(){ if(SEQ) return drawHUD2();
+function drawHUD(){ if(!GAME.classic) return drawHUD2();
   const p=player, A='#ffa62b';
   ctx.save(); ctx.shadowColor='rgba(255,140,0,0.55)'; ctx.shadowBlur=6; ctx.textBaseline='alphabetic';
   const hc=p.hp<=25?'#ff4d3a':A;
@@ -1623,7 +1621,7 @@ function drawHUD(){ if(SEQ) return drawHUD2();
     let ly=y+11; if(who){ ctx.font='600 7px "IBM Plex Mono",monospace'; ctx.fillStyle=wcol; ctx.fillText('◉ '+who,x+10,ly-1); ly+=10; ctx.font='600 9px "IBM Plex Mono",monospace'; }
     ctx.fillStyle='#f3e6cf'; for(const l of lines){ ctx.fillText(l,x+10,ly); ly+=12; }
     ctx.globalAlpha=1; }
-  ctx.font='600 6px "IBM Plex Mono",monospace'; ctx.fillStyle='rgba(200,210,215,0.5)'; ctx.textAlign='right'; ctx.fillText(SURV?('ОЦЕЛЯВАНЕ · СЕКТОР '+(survK+1)+' · '+D.name):LVL.training?('ТРЕНИРОВКА · '+D.name):((chOf(LI)===4?'БОНУС':'ГЛ. '+ROM[chOf(LI)])+' · ЕП. '+LVL.n+' · '+D.name),472,9); ctx.textAlign='left';
+  ctx.font='600 6px "IBM Plex Mono",monospace'; ctx.fillStyle='rgba(200,210,215,0.5)'; ctx.textAlign='right'; ctx.fillText(SURV?('ОЦЕЛЯВАНЕ · СЕКТОР '+(survK+1)+' · '+D.name):LVL.training?('ТРЕНИРОВКА · '+D.name):(chShort(gChOf(LI))+' · ЕП. '+LVL.n+' · '+D.name),472,9); ctx.textAlign='left';
   if(SURV){ ctx.font='600 7px "IBM Plex Mono",monospace'; ctx.fillStyle='#ff6a5a'; ctx.fillText('♥'.repeat(Math.max(0,survLives)),8,10); ctx.fillStyle='#ffa62b'; ctx.fillText('ТОЧКИ '+(survScore+stats.kills*10),8+survLives*9+6,10); ctx.font='600 6px "IBM Plex Mono",monospace'; }
   if(muted){ ctx.fillStyle='#7f8e97'; ctx.fillText('БЕЗ ЗВУК (M)',8,SURV?20:9); }
   if(LVL.training&&TRN){ ctx.font='600 6px "IBM Plex Mono",monospace'; ctx.fillStyle=TRN.skip>0?'#ffd36b':'rgba(200,210,215,0.5)'; ctx.fillText(TRN.skip>0?'НАТИСНИ ENTER ОТНОВО, ЗА ДА ПРОПУСНЕШ':'ENTER — ПРОПУСНИ КУРСА',8,muted?19:9); }
@@ -1676,22 +1674,22 @@ function render(){
     centerText('↑ ↓ избор · Z потвърди · Esc / X назад',244,'600 7px "IBM Plex Mono",monospace','#7f8e97');
     return;
   }
-  if(state==='eps'&&SEQ){ renderEps2(); return; }
-  if(state==='eps'){
+  if(state==='eps'&&!GAME.classic){ renderEps2(); return; }
+  if(state==='eps'){   // класическото меню (r1): по една глава на страница
     overlay(0.8); centerText('ИЗБЕРИ ЕПИЗОД',58,'16px '+DFONT(),'#ffa62b');
-    const ch=chOf(menuSel);
-    centerText((ch>0?'◀  ':'    ')+chLabel(ch)+' · '+CHAPTERS[ch]+(ch<4&&(ch+1)*5<unlocked?'  ▶':'    '),82,'11px '+DFONT(),ch===4?'#ffd36b':'#94ff57');
-    for(let r=0;r<5;r++){ const i=ch*5+r, l=LEVELS[i], y=108+r*20, on=i===menuSel, lock=i>=unlocked;
+    const ch=gChOf(menuSel), c=GCH[ch];
+    centerText((ch>0?'◀  ':'    ')+chName(ch)+' · '+c.t+(ch<GCH.length-1&&GCH[ch+1].a<gUnl?'  ▶':'    '),82,'11px '+DFONT(),c.col||'#94ff57');
+    for(let i=c.a;i<=c.b;i++){ const l=GLV[i], y=108+(i-c.a)*20, on=i===menuSel, lock=i>=gUnl;
       if(on){ ctx.fillStyle='rgba(255,166,43,0.12)'; ctx.fillRect(W/2-130,y-13,260,18); ctx.fillStyle='#ffa62b'; ctx.fillRect(W/2-130,y-13,2,18); }
       ctx.font='12px '+DFONT(); ctx.textAlign='center'; ctx.fillStyle=lock?'#4a555c':on?'#ffa62b':'#b9c4ca';
-      ctx.fillText(lock?(l.n+' · заключен'):(l.n+' · '+l.title+(r===4||ch===4?'  ★':'')),W/2,y); ctx.textAlign='left'; }
+      ctx.fillText(lock?(l.n+' · заключен'):(l.n+' · '+l.title+(i===c.b||c.star?'  ★':'')),W/2,y); ctx.textAlign='left'; }
     centerText('Трудност: '+D.name,222,'600 8px "IBM Plex Mono",monospace','#cfd8dc');
     centerText('↑ ↓ ← → избор · Z начало · Esc / X назад',244,'600 7px "IBM Plex Mono",monospace','#7f8e97');
     return;
   }
   if(state==='story'){
     overlay(0.88);
-    centerText(SEQ&&!LVL.training?('ГЛАВА '+ROM[gChOf(LI)]+' · '+GCH[gChOf(LI)].t+'   ·   ЕПИЗОД '+LVL.n):LVL.training?(LVL.hdrS||'ПОДГОТОВКА · ПРЕДИ СЕКТОР 7'):chLabel(chOf(LI))+' · '+CHAPTERS[chOf(LI)]+'   ·   ЕПИЗОД '+LVL.n,56,'600 9px "IBM Plex Mono",monospace','#94ff57');
+    centerText(LVL.training?(LVL.hdrS||'ПОДГОТОВКА · ПРЕДИ СЕКТОР 7'):chName(gChOf(LI))+' · '+GCH[gChOf(LI)].t+'   ·   ЕПИЗОД '+LVL.n,56,'600 9px "IBM Plex Mono",monospace','#94ff57');
     glitchTitle(LVL.title,W/2,86,26);
     const rv=storyT*45; drawParagraphs(LVL.story,118,rv);
     if(rv>=parasLen(LVL.story)&&blink()) centerText('Z — започни',250,'600 9px "IBM Plex Mono",monospace','#f3e6cf');
@@ -1709,17 +1707,10 @@ function render(){
       centerText('Следва: сектор '+(survK+2)+' · '+THEME_NAME[svPlan(survK+1).theme]+(svPlan(survK+1).boss?' · БОС':''),204,'600 8px "IBM Plex Mono",monospace','#cfd8dc');
       if(endT>1.2&&blink()) centerText('Z — напред',240,'600 10px "IBM Plex Mono",monospace','#f3e6cf'); } }
   else if(state==='levelEnd'){ overlay(Math.min(0.88,endT*0.8));
-    if(endT>0.5){ centerText((SEQ&&!LVL.training?(LI===GCH[gChOf(LI)].b?'ГЛАВА '+ROM[gChOf(LI)]+' ЗАВЪРШЕНА':'ЕПИЗОД '+LVL.n+' ПРЕМИНАТ'):LVL.training?'ТРЕНИРОВКАТА Е ЗАВЪРШЕНА':LI===24?'БОНУС ГЛАВАТА Е ЗАВЪРШЕНА':LI%5===4?'ГЛАВА '+ROM[chOf(LI)]+' ЗАВЪРШЕНА':'ЕПИЗОД '+LVL.n+' ПРЕМИНАТ'),46,'600 9px "IBM Plex Mono",monospace','#94ff57'); glitchTitle(LVL.title,W/2,74,24);
+    if(endT>0.5){ centerText((LVL.training?'ТРЕНИРОВКАТА Е ЗАВЪРШЕНА':LI===GCH[gChOf(LI)].b?(GCH[gChOf(LI)].done||chName(gChOf(LI))+' ЗАВЪРШЕНА'):'ЕПИЗОД '+LVL.n+' ПРЕМИНАТ'),46,'600 9px "IBM Plex Mono",monospace','#94ff57'); glitchTitle(LVL.title,W/2,74,24);
       const y=drawParagraphs(LVL.end,104,(endT-0.5)*45); drawStats(stats,Math.max(y+8,200));
-      if(endT>1.2&&(endT-0.5)*45>=parasLen(LVL.end)&&blink()) centerText(SEQ&&!LVL.training?(LI<GLV.length-1?'Z — към следващия епизод':'Z — продължи'):LVL.training?(TRN&&TRN.fromMenu?'Z — към менюто':(LVL.hdrN||'Z — към Сектор 7')):LI<LEVELS.length-1&&LI!==19?'Z — към следващия епизод':'Z — продължи',262,'600 9px "IBM Plex Mono",monospace','#f3e6cf'); } }
-  if(state==='win'&&SEQ){ GAME.renderWin(); }
-  else if(state==='win'){ overlay(0.9); const bonus=LI===24;
-    glitchTitle(bonus?'КРАЙ':'ОЦЕЛЯ!',W/2,84,38);
-    centerText(bonus?'Мина бонус главата на трудност „'+D.name+'“.':'Мина кампанията на трудност „'+D.name+'“.',110,'600 9px "IBM Plex Mono",monospace','#cfd8dc');
-    drawStats(totals,148);
-    if(!bonus) centerText('Отключи бонус главата „ЗАВРЪЩАНЕТО“',196,'600 9px "IBM Plex Mono",monospace','#ffd36b');
-    else centerText('„Вихрен“ е спасен. Благодарим ти за играта!',196,'600 9px "IBM Plex Mono",monospace','#94ff57');
-    if(winT>2&&blink()) centerText(bonus?'Z — към главното меню':'Z — към бонус главата · X — главно меню',238,'600 10px "IBM Plex Mono",monospace','#f3e6cf'); }
+      if(endT>1.2&&(endT-0.5)*45>=parasLen(LVL.end)&&blink()) centerText(LVL.training?(TRN&&TRN.fromMenu?'Z — към менюто':(LVL.hdrN||'Z — към Сектор 7')):!epFinal(LI)?'Z — към следващия епизод':'Z — продължи',262,'600 9px "IBM Plex Mono",monospace','#f3e6cf'); } }
+  if(state==='win') GAME.renderWin();
 }
 
 /* ================= TRAINING COURSE ================= */
@@ -1760,15 +1751,17 @@ function drawMsgBox(y){
 /* ================= ПОРЕДИЦАТА: регистър на игрите и общо меню =================
    Всяка част се описва с един обект, подаден на registerGame() (виж games/<id>/game.js):
      id, order, title ('РЕЗОНАНС 2'), subtitle ('Отзвук'), name (за HUD), blurb (описание в чужди менюта)
-     engine     1 = оригиналният двигател, 2 = двигателят на продълженията
      key        префикс за записите ('rz2' → 'rz2.unlocked', 'rz2.best0' …)
-     levels, chapters             кампанията (само при engine 2)
+     levels, chapters             кампанията; главата е {t, a, b} (+ по избор label, short, done, col, star — свои надписи
+                                  и вид; fin — след последния ѝ епизод идва финалният екран, а след него следващата глава)
+     unlFix(u)  поправка на прочетения брой отключени епизоди (r1: стар запис 20 → 21)
+     classic    видът на първата част: нейният HUD и меню на епизодите, плочките B=-H остават под декора
      intro(fromMenu), training(fromMenu)        стартират интрото и тренировката
      introUpd(dt), introRender()                ако интрото е кинематографично (state 'gintro')
      desc:{intro,training,campaign,survival}    текстовете под менюто
      drawLogo()  фон и лого в горната част на менюто (до y≈135)
-     renderWin(), postFx()        финалният екран и цветовата обработка (engine 2)
-     svPlan(k), svBoss, svFallback, bossMulOne     оцеляването (engine 2)
+     renderWin(), postFx()        финалният екран и цветовата обработка
+     svPlan(k), svBoss, svFallback, bossMulOne     оцеляването (общият генератор)
      svPlan(k), genSector(k)       оцеляването със собствен генератор (r1)
      accent, accentRgb, accent2, font, suit, glitch, hintCols, prog, menuMusic, menuCam, controls
      eKey / eBtn   надпис за клавиш E (легенда / бутон на тъч екран), echo, flashlight
@@ -1784,10 +1777,10 @@ const KEY=k=>GAME.key+'.'+k;
 /* добавя ключове в общ речник (TH, SKIES, SV_THEMES, THEME_NAME…) и спира сборката при дублиран ключ между игрите */
 function addUnique(target,obj,what){ for(const k in obj){ if(k in target) throw new Error(what+': ключът „'+k+'“ вече е зает от друга игра'); target[k]=obj[k]; } }
 function setGame(id){
-  const g=gameById(id)||GAMES[0]; GAME=g; SEQ=g.engine>=2;
+  const g=gameById(id)||GAMES[0]; GAME=g;
   for(const o of GAMES) document.body.classList.toggle('g-'+o.id,o===g);
   document.body.classList.toggle('has-e',!!g.eBtn);
-  if(SEQ){ GLV=g.levels; GCH=g.chapters; gUnl=clamp(parseInt(store.get(KEY('unlocked'),'1'),10)||1,1,GLV.length); }
+  GLV=g.levels; GCH=g.chapters; gUnl=clamp(parseInt(store.get(KEY('unlocked'),'1'),10)||1,1,GLV.length); if(g.unlFix) gUnl=g.unlFix(gUnl);
   const ek=document.getElementById('ekey'), eb=document.getElementById('ebtn');
   if(ek){ ek.style.display=g.eKey?'':'none'; ek.innerHTML='<kbd>E</kbd>'+(g.eKey||''); }
   if(eb){ eb.style.display=g.eBtn?'':'none'; eb.innerHTML=g.eBtn||'E'; }
@@ -1829,12 +1822,13 @@ function renderSplash(){
   centerText('M звук · N музика · B ефекти · P / Esc пауза',238,'600 7px "IBM Plex Mono",monospace','#7f8e97');
 }
 
-/* ================= ДВИГАТЕЛ НА ПРОДЪЛЖЕНИЯТА (engine ≥ 2) =================
-   Общ код за всички части след първата: вода, епохи, обръщане, ескорт, гонитби, HUD, епизоди.
+/* ================= ДВИГАТЕЛ: МЕХАНИКИ, ЕПИЗОДИ, HUD =================
+   Общ код за всички части: вода, епохи, обръщане, ескорт, гонитби (включват се по данните на нивото), HUD, епизоди.
    Тук НЯМА съдържание на конкретна игра — нивата, босовете и текстовете са в games/<id>/. */
-let SEQ=false;                 // включен ли е двигателят на продълженията (GAME.engine>=2)
 let GLV=[], GCH=[], gUnl=1;    // нивата, главите и отключените епизоди на текущата игра
 const gChOf=i=>Math.max(0,GCH.findIndex(c=>i>=c.a&&i<=c.b));
+const chName=c=>GCH[c].label||'ГЛАВА '+ROM[c], chShort=c=>GCH[c].short||'ГЛ. '+ROM[c];   // надписите на главата (бонус главата на r1 има свои)
+const epFinal=i=>i>=GLV.length-1||!!GCH[gChOf(i)].fin&&i===GCH[gChOf(i)].b;   // след епизода идва финалният екран
 let FLOOD=null, ESC=null, CHASE=null, LEVERS=[], DRAINS=[], GENS=[], ALLIES=[], FLIPS=[], FLIP=false, ERA=0, ERAD=null, SHIFT=[], GWIND=0, flipCd=0, cpFlip=false, cpEra=0, eraCd=0, r2T={}, sunWarned=false, airWarned=false, r2epsSel=0;
 const R2_TAKE={}, R2_PDRAW={}, R2UPD={}, R2DRAW={}, R2B={make:{},hurt:{},upd:{},draw:{},intro:{},name:{},col:{},sfx:{}};
 
@@ -1886,7 +1880,6 @@ function r2ExitOk(){
 /* ---------- water & swimming ---------- */
 function isWater(x,y){ const c=tileP(x,y); if(c==='w') return true; if(FLOOD&&y>FLOOD.y&&x>=FLOOD.x0&&x<FLOOD.x1&&!solidAt(x,y)) return true; return false; }
 function r2Move(p,dt,dir,U,Dn){
-  if(!SEQ) return false;
   if(p.leapT>0){ p.leapT-=dt; p.swim=false; return false; }
   const cx=p.x+p.w/2, wet=isWater(cx,p.y+p.h*0.8), zg=!!LVL.zeroG||inZG(p);
   p.wet=wet; p.headWet=wet&&isWater(cx,p.y+4);
@@ -1913,7 +1906,6 @@ function r2Move(p,dt,dir,U,Dn){
   return true;
 }
 function r2Wind(p,dt){
-  if(!SEQ) return;
   if(LVL.winds) for(const w of LVL.winds){ const cx=p.x+p.w/2, cy=p.y+p.h/2; if(cx>w[0]*T&&cx<(w[2]+1)*T&&cy>w[1]*T&&cy<(w[3]+1)*T){ p.vx+=w[4]*dt; p.vy+=w[5]*dt; if(w[5]<0){ p.vy=Math.max(p.vy,-300); p.onGround=false; p.padT=0.2; } } }
   if(GWIND) p.vx+=GWIND*(p.onGround?0.55:1)*dt;
 }
@@ -2041,7 +2033,6 @@ function updShifters(){
 
 /* ---------- per-frame update ---------- */
 function r2Update(dt){
-  if(!SEQ) return;
   const p=player;
   // air
   if(!p.dead){
@@ -2088,7 +2079,6 @@ function shaded(p){ const cx=Math.floor((p.x+p.w/2)/T); for(let ty=Math.floor(p.
 
 /* ---------- drawing ---------- */
 function r2DrawBack(){
-  if(!SEQ) return;
   mechDrawBack();
   for(const v of LEVERS){ const x=Math.round(v.x*T-cam), y=v.y*T; if(x<-20||x>W+20) continue;
     px(x+3,y-14,10,14,'#3a4248'); px(x+3,y-14,10,1,'#5a646c'); px(x+5,y-12,6,3,v.on?'#3dff7a':(Math.floor(titleT*3)%2?'#ff3b2e':'#5a1a14'));
@@ -2100,7 +2090,6 @@ function r2DrawBack(){
     else if(Math.random()<0.2) part(g.x+14,g.y,rnd(-5,5),-25,0.8,'#444',3,-10,2); }
 }
 function r2DrawWorld(){
-  if(!SEQ) return;
   if(LVL.winds){ ctx.save(); ctx.globalCompositeOperation='lighter'; for(const w of LVL.winds){ if(w[5]>=0) continue; const x0=w[0]*T-cam, x1=(w[2]+1)*T-cam, y0=w[1]*T, y1=(w[3]+1)*T; if(x1<-10||x0>W+10) continue;
     const g=ctx.createLinearGradient(0,y1,0,y0); g.addColorStop(0,'rgba(150,230,255,0.10)'); g.addColorStop(1,'rgba(150,230,255,0.02)'); ctx.fillStyle=g; ctx.fillRect(x0,y0,x1-x0,y1-y0);
     ctx.fillStyle='rgba(200,245,255,0.18)'; for(let i=0;i<Math.max(2,(x1-x0)/12);i++){ const sx=x0+((i*37)%Math.max(1,x1-x0-2)), len=14+(i%3)*6, sy=y1-((titleT*160+i*53)%(y1-y0+len)); ctx.fillRect(Math.round(sx),Math.round(sy),1,len); } } ctx.restore(); }
@@ -2128,7 +2117,6 @@ function r2DrawWorld(){
   drawAllies();
 }
 function r2Lights(L){
-  if(!SEQ) return;
   mechLights(L);
   for(const g of GENS) if(g.hp>0) L.push([g.x+14,g.y+10,60,0.7]);
   for(const f of FLIPS) L.push([f.x,f.y,60,0.8]);
@@ -2137,7 +2125,6 @@ function r2Lights(L){
   if(FLOOD&&FLOOD.y<H) L.push([player.x,FLOOD.y,60,0.3]);
 }
 function r2PostFx(){
-  if(!SEQ) return;
   const p=player;
   if(p&&p.headWet){ ctx.fillStyle='rgba(10,70,110,0.28)'; ctx.fillRect(0,0,W,H); }
   if(LVL.sun){ if(r2T.flare){ ctx.fillStyle='rgba(255,236,190,0.30)'; ctx.fillRect(0,0,W,H); } else if(r2T.warn){ const a=(Math.sin(titleT*14)+1)/2; ctx.fillStyle=`rgba(255,150,40,${0.06+a*0.1})`; ctx.fillRect(0,0,W,H); } }
@@ -2183,7 +2170,7 @@ function drawHUD2(){
     const wcol=who==='Д-Р ИЛИЕВА'?'#94ff57':'#7fd8ff'; ctx.fillStyle='rgba(4,14,18,0.82)'; ctx.fillRect(x,y,w,h); ctx.fillStyle=who?wcol:A; ctx.fillRect(x,y,2,h); ctx.fillRect(x+w-2,y,2,h);
     let ly=y+11; if(who){ ctx.font='600 7px "IBM Plex Mono",monospace'; ctx.fillStyle=wcol; ctx.fillText('◉ '+who,x+10,ly-1); ly+=10; ctx.font='600 9px "IBM Plex Mono",monospace'; }
     ctx.fillStyle='#eaf6f6'; for(const l of lines){ ctx.fillText(l,x+10,ly); ly+=12; } ctx.globalAlpha=1; }
-  ctx.font='600 6px "IBM Plex Mono",monospace'; ctx.fillStyle='rgba(200,240,240,0.5)'; ctx.textAlign='right'; ctx.fillText(SURV?(GAME.name+' · ОЦЕЛЯВАНЕ · СЕКТОР '+(survK+1)+' · '+D.name):LVL.training?(GAME.name+' · ТРЕНИРОВКА · '+D.name):(GAME.name+' · ГЛ. '+ROM[gChOf(LI)]+' · ЕП. '+LVL.n+' · '+D.name),W-6,9); ctx.textAlign='left';
+  ctx.font='600 6px "IBM Plex Mono",monospace'; ctx.fillStyle='rgba(200,240,240,0.5)'; ctx.textAlign='right'; ctx.fillText(SURV?(GAME.name+' · ОЦЕЛЯВАНЕ · СЕКТОР '+(survK+1)+' · '+D.name):LVL.training?(GAME.name+' · ТРЕНИРОВКА · '+D.name):(GAME.name+' · '+chShort(gChOf(LI))+' · ЕП. '+LVL.n+' · '+D.name),W-6,9); ctx.textAlign='left';
   if(SURV){ ctx.font='600 7px "IBM Plex Mono",monospace'; ctx.textAlign='right'; ctx.fillStyle='#ff6a8a'; ctx.fillText('♥'.repeat(Math.max(0,survLives)),W-6,19); ctx.fillStyle=A; ctx.fillText('ТОЧКИ '+(survScore+stats.kills*10),W-6-survLives*8-6,19); ctx.textAlign='left'; }
   ctx.restore();
 }
@@ -2191,7 +2178,7 @@ function drawHUD2(){
 function renderEps2(){
   overlay(0.82); centerText('ИЗБЕРИ ЕПИЗОД',50,'15px '+DFONT(),ACC());
   const ch=gChOf(menuSel), c=GCH[ch];
-  centerText((ch>0?'◀  ':'    ')+'ГЛАВА '+ROM[ch]+' · '+c.t+(ch<GCH.length-1&&GCH[ch+1].a<gUnl?'  ▶':'    '),74,'10px '+DFONT(),GAME.accent2);
+  centerText((ch>0?'◀  ':'    ')+chName(ch)+' · '+c.t+(ch<GCH.length-1&&GCH[ch+1].a<gUnl?'  ▶':'    '),74,'10px '+DFONT(),GAME.accent2);
   for(let i=c.a;i<=c.b;i++){ const l=GLV[i], r=i-c.a, y=96+r*18, on=i===menuSel, lock=i>=gUnl;
     if(on){ ctx.fillStyle=ACCA(0.12); ctx.fillRect(W/2-140,y-12,280,16); ctx.fillStyle=ACC(); ctx.fillRect(W/2-140,y-12,2,16); }
     ctx.font='10px '+DFONT(); ctx.textAlign='center'; ctx.fillStyle=lock?'#3e5558':on?ACC():'#b9cfd2';
@@ -3128,12 +3115,10 @@ document.querySelectorAll('#touch button[data-a]').forEach(b=>b.addEventListener
 audApply();
 
 /* ================= ИГРА: r1 ================= */
-/* ================= РЕЗОНАНС 1 · ГЛАВИ, ОТКЛЮЧЕНИ ЕПИЗОДИ ================= */
-const CHAPTERS=['СЕКТОР 7','ДЪЛБИНИТЕ','ПРОБИВЪТ','ЧУЖДИЯТ СВЯТ','ЗАВРЪЩАНЕТО'];
-const chLabel=c=>c===4?'БОНУС ГЛАВА':'ГЛАВА '+ROM[c];
-const chOf=i=>Math.floor(i/5);
-// отключените епизоди (rz.unlocked; стар запис 20 се чете като 21 — началото на бонус главата)
-let unlocked=clamp(parseInt(store.get('rz.unlocked','1'),10)||1,1,25); if(unlocked>=20&&unlocked<21) unlocked=21;
+/* ================= РЕЗОНАНС 1 · ГЛАВИТЕ ================= */
+// глава IV завършва с финален екран (fin), след него идва бонус главата със свои надписи и цвят
+const CH_R1=[{t:'СЕКТОР 7',a:0,b:4},{t:'ДЪЛБИНИТЕ',a:5,b:9},{t:'ПРОБИВЪТ',a:10,b:14},{t:'ЧУЖДИЯТ СВЯТ',a:15,b:19,fin:true},
+  {t:'ЗАВРЪЩАНЕТО',a:20,b:24,label:'БОНУС ГЛАВА',short:'БОНУС',done:'БОНУС ГЛАВАТА Е ЗАВЪРШЕНА',col:'#ffd36b',star:true}];
 const LEVELS=[];   // levels_c1…c5.js добавят по пет епизода
 
 /* ================= РЕЗОНАНС 1 · ГЛАВА I · СЕКТОР 7 ================= */
@@ -5411,15 +5396,25 @@ function svArena(type,d,o){
 }
 
 
+/* ================= РЕЗОНАНС 1 · ФИНАЛНИЯТ ЕКРАН (след глава IV и след бонус главата) ================= */
+function r1Win(){ overlay(0.9); const bonus=LI===LEVELS.length-1;
+  glitchTitle(bonus?'КРАЙ':'ОЦЕЛЯ!',W/2,84,38);
+  centerText(bonus?'Мина бонус главата на трудност „'+D.name+'“.':'Мина кампанията на трудност „'+D.name+'“.',110,'600 9px "IBM Plex Mono",monospace','#cfd8dc');
+  drawStats(totals,148);
+  if(!bonus) centerText('Отключи бонус главата „ЗАВРЪЩАНЕТО“',196,'600 9px "IBM Plex Mono",monospace','#ffd36b');
+  else centerText('„Вихрен“ е спасен. Благодарим ти за играта!',196,'600 9px "IBM Plex Mono",monospace','#94ff57');
+  if(winT>2&&blink()) centerText(bonus?'Z — към главното меню':'Z — към бонус главата · X — главно меню',238,'600 10px "IBM Plex Mono",monospace','#f3e6cf');
+}
+
 /* ================= РЕЗОНАНС (първата част) =================
-   Кампанията (levels_c1…c5.js), босовете, тренировката, влакчето и оцеляването със собствен генератор.
-   engine:1 — менюто на епизодите, HUD-ът и екраните са още тези на първата част (SEQ=false). */
+   Кампанията (levels_c1…c5.js), босовете, тренировката, влакчето, финалният екран и оцеляването със собствен генератор.
+   classic — нейният HUD и меню на епизодите (виж engine/series.js). */
 function r1Logo(){
   overlay(0.72); glitchTitle('РЕЗОНАНС',W/2,98,46);
   centerText('С  Е  К  Т  О  Р     7',126,'600 11px "IBM Plex Mono",monospace',ACC());
 }
 registerGame({
-  id:'r1', order:1, title:'РЕЗОНАНС 1', subtitle:'Сектор 7', name:'РЕЗОНАНС', engine:1, key:'rz',
+  id:'r1', order:1, title:'РЕЗОНАНС 1', subtitle:'Сектор 7', name:'РЕЗОНАНС', key:'rz', classic:true,
   blurb:'Първата част — „Резонанс“. Инцидентът в Сектор 7 на комплекса „Вихрен“.',
   desc:{intro:'Пътуване с влакчето до Сектор 7 — началото на историята.',
         training:'Курсът по безопасност — тук ще научиш управлението и правилата на играта.',
@@ -5427,12 +5422,13 @@ registerGame({
         survival:'Безкрайни сектори, всеки път различни. Колко ще издържиш?'},
   controls:'← → движение · Z стрелба · X скок · C клякане · Q оръжие · P / Esc пауза',
   intro:startTram, training:startTraining, introUpd:dt=>{ if(TR) updTram(dt); }, introRender:renderTram, drawLogo:r1Logo,
-  svPlan:r1SvPlan, genSector:r1GenSector,
+  levels:LEVELS, chapters:CH_R1, unlFix:u=>u===20?21:u,   // стар запис 20 (отпреди бонус главата) се чете като 21
+  renderWin:r1Win, svPlan:r1SvPlan, genSector:r1GenSector,
   accent:'#ffa62b', accentRgb:'255,166,43', accent2:'#94ff57', font:'"Russo One",sans-serif', textCol:'#cfd8dc', dimCol:'#7f8e97',
   suit:{suit:'#b5832b',suitD:'#7d5a1f',plate:'#4a5057',plateH:'#6d757d',dark:'#1d2125',helm:'#c9c3b4'},
   glitch:['rgba(120,255,90,0.55)','rgba(255,70,50,0.45)','#ffa62b'], hintCols:['#ffd9a0','#7fd8ff'],
   prog:PROG, menuCam:60,
-  debug:{enterR1:()=>enterGame('r1'), TRAIN_LVL, startTraining, startTram, updTram, get TR(){return TR}, get unlocked(){return unlocked}},
+  debug:{enterR1:()=>enterGame('r1'), TRAIN_LVL, startTraining, startTram, updTram, get TR(){return TR}, get unlocked(){return gUnl}},
 });
 
 if(!GAMES.length) throw new Error('Няма регистрирани игри'); setGame(GAMES[0].id);
@@ -5450,20 +5446,11 @@ function frame(now){
   else if(state==='svmenu'){ svMenuInput(); clearPressed(); }
   else if(state==='diff'){
     if(pressed.up){ menuSel=(menuSel+2)%3; SFX.menu(); } if(pressed.down){ menuSel=(menuSel+1)%3; SFX.menu(); }
-    if(ok()){ DI=menuSel; D=DIFFS[DI]; store.set('rz.diff',DI); SFX.menuOk(); if(modeSel===1) svEnter(); else if(SEQ){ state='eps'; menuSel=gUnl-1; } else { state='eps'; menuSel=unlocked-1; } }
+    if(ok()){ DI=menuSel; D=DIFFS[DI]; store.set('rz.diff',DI); SFX.menuOk(); if(modeSel===1) svEnter(); else { state='eps'; menuSel=gUnl-1; } }
     else if(pressed.jump||pressed.esc){ toMenu(modeSel===1?3:2); SFX.menu(); }
     clearPressed();
   }
-  else if(state==='eps'&&SEQ){ r2EpsInput(); clearPressed(); }
-  else if(state==='eps'){
-    { const ch=chOf(menuSel), lo=ch*5, hi=Math.min(ch*5+4,unlocked-1);
-      if(pressed.up&&menuSel>lo){ menuSel--; SFX.menu(); } if(pressed.down&&menuSel<hi){ menuSel++; SFX.menu(); }
-      if(pressed.right&&ch<4&&(ch+1)*5<unlocked){ menuSel=Math.min((ch+1)*5+(menuSel-lo),unlocked-1); SFX.menu(); }
-      if(pressed.left&&ch>0){ menuSel=(ch-1)*5+(menuSel-lo); SFX.menu(); } }
-    if(ok()){ SFX.menuOk(); if(menuSel===0) startTram(false); else { startEpisode(menuSel,false); totals={time:0,shots:0,hits:0,kills:0,deaths:0}; } }
-    else if(pressed.jump||pressed.esc){ state='diff'; menuSel=DI; SFX.menu(); }
-    clearPressed();
-  }
+  else if(state==='eps'){ r2EpsInput(); clearPressed(); }
   else if(state==='story'&&pressed.esc){ clearPressed(); toTitle(); }
   else if(state==='story'){ storyT+=dt; if(ok()){ if(storyT*45<parasLen(LVL.story)) storyT=999; else { state='play'; SFX.menuOk(); } } clearPressed(); }
   else if(state==='play'){
@@ -5476,17 +5463,17 @@ function frame(now){
   else if(state==='paused'){ if(pressed.esc||pressed.crouch){ clearPressed(); toTitle(); } else if(pressed.pause||ok()){ state='play'; if(AC) AC.resume(); } clearPressed(); }
   else if(state==='levelEnd'&&pressed.esc){ clearPressed(); toTitle(); }
   else if(state==='levelEnd'){ endT+=dt; acc+=dt; while(acc>=1/60){ for(const q of particles) q.life-=1/60; acc-=1/60; }
-    if(ok()){ if((endT-0.5)*45<parasLen(LVL.end)) endT=0.5+parasLen(LVL.end)/45; else if(endT>1.2){ SFX.menuOk(); if(LVL.training) finishTraining(); else if(SURV) startSurv(survK+1,true); else if(SEQ){ if(LI<GLV.length-1) startEpisode(LI+1,true); else { state='win'; winT=0; } } else if(LI<LEVELS.length-1&&LI!==19) startEpisode(LI+1,true); else { state='win'; winT=0; } } }
+    if(ok()){ if((endT-0.5)*45<parasLen(LVL.end)) endT=0.5+parasLen(LVL.end)/45; else if(endT>1.2){ SFX.menuOk(); if(LVL.training) finishTraining(); else if(SURV) startSurv(survK+1,true); else if(!epFinal(LI)) startEpisode(LI+1,true); else { state='win'; winT=0; } } }
     clearPressed(); }
-  else if(state==='win'&&SEQ){ winT+=dt; if(winT>2&&ok()){ SFX.menuOk(); toMenu(2); } clearPressed(); }
-  else if(state==='win'){ winT+=dt; if(winT>2){ if(LI===19&&ok()){ SFX.menuOk(); totals={time:0,shots:0,hits:0,kills:0,deaths:0}; startEpisode(20,false); } else if(ok()||(LI===19&&pressed.jump)) toTitle(); } clearPressed(); }
+  else if(state==='win'){ winT+=dt; if(winT>2){ const nx=LI<GLV.length-1;   // финал на глава, след която има още (r1: бонус главата) — Z продължава, X излиза
+      if(nx&&ok()){ SFX.menuOk(); totals={time:0,shots:0,hits:0,kills:0,deaths:0}; startEpisode(LI+1,false); } else if(ok()||(nx&&pressed.jump)){ SFX.menuOk(); toMenu(2); } } clearPressed(); }
   render(); audDraw();
   requestAnimationFrame(frame);
 }
 loadLevel(0); totals={time:0,shots:0,hits:0,kills:0,deaths:0};
 if(document.fonts&&document.fonts.load){ Promise.all([document.fonts.load('10px "Russo One"'),document.fonts.load('600 10px "IBM Plex Mono"')]).then(()=>{ prerender(); }).catch(()=>{}); }
 document.addEventListener('visibilitychange',()=>{ if(document.hidden&&state==='play'){ state='paused'; if(AC) AC.suspend(); } });
-window.__rz={get SEQ(){return SEQ},get R2(){return SEQ},get R3(){return GAME.id==='r3'},get GAME(){return GAME},GAMES,GHIST,setGame,enterGame,toMenu,menuItems,get gSel(){return gSel},get r2Sel(){return gSel},r2ToTitle:()=>toMenu(2),leaveR2:()=>enterGame(GAMES[0].id),get LEVELS2(){return GLV},hurtEnemy,get ECHO(){return ECHO},get PLATES(){return PLATES},get LIGHTS(){return LIGHTS},get TERMS(){return TERMS},get ALARM(){return ALARM},get NOISE(){return NOISE},get MST(){return MST},get FLOOD(){return FLOOD},get ESC(){return ESC},get CHASE(){return CHASE},get ERA(){return ERA},get FLIP(){return FLIP},get GENS(){return GENS},get LEVERS(){return LEVERS},get SHIFT(){return SHIFT},get ALLIES(){return ALLIES},switchEra,flipWorld,isWater,get pickups(){return pickups},get scientists(){return scientists},get barks(){return barks},solidAt,startBoss,respawn,get cp(){return cp},hurtBoss,get musOn(){return musOn},get AC(){return AC},get musBus(){return musBus},get sfxBus(){return sfxBus},get sfxOn(){return sfxOn},toggleMute,toggleMus,toggleSfx,svLoad,svSave,svClear,svEnter,svItems,get svSel(){return svSel},get svConf(){return svConf},get DI(){return DI},get survLives(){return survLives},get survSeed(){return survSeed},get keys(){return keys},get pressed(){return pressed},frame,get levels(){return SEQ?GLV:LEVELS},get unl(){return SEQ?gUnl:unlocked},resetClock(){titleT=0;acc=0;},svValidate,elecOn,finishTraining,get TRN(){return TRN},get msg(){return msg},get grav(){return G},completeLevel,get bmiss(){return bmiss},get LI(){return LI},startSurv,genLevel,get survK(){return survK},get survScore(){return survScore},set survSeed(v){survSeed=v},get LVL(){return LVL},get lifts(){return lifts},get tracks(){return tracks},get trains(){return trains},get gateOpen(){return gateOpen},get rockets(){return rockets},clearPressed,loadLevel,get map(){return map},get LV(){return LV},get player(){return player},get state(){return state},set state(v){state=v},get boss(){return boss},get enemies(){return enemies},get exitPortal(){return exitPortal},get enc(){return enc},update,setDiff(i){DI=i;D=DIFFS[i];},startEpisode,get cam(){return cam},set cam(v){cam=v},render,groundY};
+window.__rz={get SEQ(){return !GAME.classic},get R2(){return !GAME.classic},get R3(){return GAME.id==='r3'},get GAME(){return GAME},GAMES,GHIST,setGame,enterGame,toMenu,menuItems,get gSel(){return gSel},get r2Sel(){return gSel},r2ToTitle:()=>toMenu(2),leaveR2:()=>enterGame(GAMES[0].id),get LEVELS2(){return GLV},hurtEnemy,get ECHO(){return ECHO},get PLATES(){return PLATES},get LIGHTS(){return LIGHTS},get TERMS(){return TERMS},get ALARM(){return ALARM},get NOISE(){return NOISE},get MST(){return MST},get FLOOD(){return FLOOD},get ESC(){return ESC},get CHASE(){return CHASE},get ERA(){return ERA},get FLIP(){return FLIP},get GENS(){return GENS},get LEVERS(){return LEVERS},get SHIFT(){return SHIFT},get ALLIES(){return ALLIES},switchEra,flipWorld,isWater,get pickups(){return pickups},get scientists(){return scientists},get barks(){return barks},solidAt,startBoss,respawn,get cp(){return cp},hurtBoss,get musOn(){return musOn},get AC(){return AC},get musBus(){return musBus},get sfxBus(){return sfxBus},get sfxOn(){return sfxOn},toggleMute,toggleMus,toggleSfx,svLoad,svSave,svClear,svEnter,svItems,get svSel(){return svSel},get svConf(){return svConf},get DI(){return DI},get survLives(){return survLives},get survSeed(){return survSeed},get keys(){return keys},get pressed(){return pressed},frame,get levels(){return GLV},get unl(){return gUnl},resetClock(){titleT=0;acc=0;},svValidate,elecOn,finishTraining,get TRN(){return TRN},get msg(){return msg},get grav(){return G},completeLevel,get bmiss(){return bmiss},get LI(){return LI},startSurv,genLevel,get survK(){return survK},get survScore(){return survScore},set survSeed(v){survSeed=v},get LVL(){return LVL},get lifts(){return lifts},get tracks(){return tracks},get trains(){return trains},get gateOpen(){return gateOpen},get rockets(){return rockets},clearPressed,loadLevel,get map(){return map},get LV(){return LV},get player(){return player},get state(){return state},set state(v){state=v},get boss(){return boss},get enemies(){return enemies},get exitPortal(){return exitPortal},get enc(){return enc},update,setDiff(i){DI=i;D=DIFFS[i];},startEpisode,get cam(){return cam},set cam(v){cam=v},render,groundY};
 for(const g of GAMES) if(g.debug) Object.defineProperties(window.__rz,Object.getOwnPropertyDescriptors(g.debug));
 requestAnimationFrame(frame);
 })();

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Сравнение A/B на сборките: работното копие срещу commit (по подразбиране HEAD).
 
-  python3 tools/ab.py [ref] [--suite] [--keep]
+  python3 tools/ab.py [ref] [--suite] [--pixels] [--keep]
 
 1. Изважда src/ на ref (git archive) във временна папка и сглобява двете версии: само публикуваните части
    (games/series.json), всичките 7 части и всичките 7 с --offline.
@@ -9,13 +9,19 @@
 3. С --suite пуска `node tools/run.js <сборка> suite` (отпечатъци на оцеляването за всички части + smoke)
    върху двете сборки с всички части и показва разликите. Проверките са от работното копие и за двете версии.
    Числата от Node се сравняват само с числа от Node (населението на секторите зависи от JS двигателя).
+4. С --pixels записва двете сборки с всички части като docs/_ab_old.html и docs/_ab_new.html (не се commit-ват) за проверката
+   `pixels` в браузъра. Вмъква се кука, която създава канвите с willReadFrequently: така Chrome ги рисува с процесора от
+   самото начало и картината не зависи от това кога би ги прехвърлил от видеокартата. В конзолата на всяка проба:
+     await import('/tools/checks.js'); rzChecks.run('pixels', {ref:'save'})      // на _ab_old.html
+     await import('/tools/checks.js'); rzChecks.run('pixels', {ref:'compare'})   // на _ab_new.html → rzChecks.result.разлики
+   За пълна картина на менюто на епизодите отключи епизодите преди зареждане (напр. localStorage 'rz.unlocked'='23').
 """
 import difflib, glob, os, shutil, subprocess, sys, tempfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ALL = ['r1', 'r2', 'r3', 'r4', 'r5', 'r6', 'r7']
 args = sys.argv[1:]
-suite = '--suite' in args; keep = '--keep' in args
+suite = '--suite' in args; keep = '--keep' in args; pixels = '--pixels' in args
 args = [a for a in args if not a.startswith('--')]
 ref = args[0] if args else 'HEAD'
 
@@ -58,6 +64,15 @@ if suite:
     for x in d[:40]: print('    ' + x)
     for x in sb:
         if x.startswith(('baseline', 'smoke', 'грешка')): print('    ' + x)
+
+if pixels:   # канвите — с willReadFrequently (процесорът рисува от самото начало)
+    hook = ("<script>{const g=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(t,o){"
+            "return g.call(this,t,t==='2d'?Object.assign({},o,{willReadFrequently:true}):o)}}</script>")
+    for src, dst in [('a_всички_7', '_ab_old.html'), ('b_всички_7', '_ab_new.html')]:
+        h = open(os.path.join(tmp, src, 'index.html'), encoding='utf-8').read()
+        i = h.index('<head>') + len('<head>')
+        open(os.path.join(ROOT, 'docs', dst), 'w', encoding='utf-8').write(h[:i] + hook + h[i:])
+    print('  проби за pixels: docs/_ab_old.html (A) и docs/_ab_new.html (B) — не се commit-ват')
 
 if not keep: shutil.rmtree(tmp, ignore_errors=True)
 sys.exit(0 if same else 1)
