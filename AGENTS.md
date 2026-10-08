@@ -29,7 +29,9 @@ python3 src/win/make_exe.py            # dist/Rezonans-windows/ (Rezonans-x64.ex
 - Само Go (`brew install go`), без cgo — сглобява се и от Mac; иконата, манифестът и версията се вграждат с go-winres.
 - Кодът е в `src/win/` (`main.go` — прозорец с WebView2, `go.mod`/`go.sum`, `make_exe.py`). Играта е вградена в .exe;
   при старт се записва в `%LOCALAPPDATA%\Rezonans\game\`, записите са в `%LOCALAPPDATA%\Rezonans\WebView2`.
-- Проверено на Windows (2026-10-08): работи според очакванията. На Mac .exe не може да се пусне — промени в `main.go`
+- Проверено на Windows (2026-10-08): работи според очакванията; `--selftest` — шрифтовете са налични, без JS грешки,
+  записите оцеляват между стартиранията (`runs` расте). Играта се зарежда от `file://` нарочно (go-webview2 няма
+  virtual host на високо ниво) — localStorage там работи, не го „поправяй“. На Mac .exe не може да се пусне — промени в `main.go`
   трябва да се пробват на Windows: `Rezonans-x64.exe --selftest` → прозорче с JSON и `%LOCALAPPDATA%\Rezonans\selftest.json`.
 - Без подпис: SmartScreen пита веднъж („More info“ → „Run anyway“).
 
