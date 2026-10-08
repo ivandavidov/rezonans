@@ -6,6 +6,7 @@ iOS и Android сами заоблят/изрязват формата.
   apple-touch-icon.png      180×180  iPhone („Добави към началния екран“)
   icon-192.png, icon-512.png         Android, purpose „any“ (manifest)
   icon-maskable-192/512.png          Android, purpose „maskable“ — вълната е в безопасния кръг (80 %)
+  mac_icns(път)                      macOS: заоблен квадрат 824/1024 със сянка, прозрачни полета (src/mac/make_app.py)
 Рисува се в 512 и се смалява; прерисува се само ако icon.py е по-нов от файловете.
 """
 import math, os, struct, zlib
@@ -59,18 +60,20 @@ def render(S, fit=1.0):
     return out
 
 def shrink(img, T):
-    """смаляване с усредняване по площ"""
-    S = len(img); f = S / T; out = []
+    """смаляване с усредняване по площ (RGB или RGBA с предварително умножена прозрачност)"""
+    S = len(img); f = S / T; out = []; n = len(img[0][0])
     for ty in range(T):
         y0, y1 = ty * f, (ty + 1) * f; row = []
         for tx in range(T):
-            x0, x1 = tx * f, (tx + 1) * f; acc = [0.0, 0.0, 0.0]; wsum = 0.0
+            x0, x1 = tx * f, (tx + 1) * f; acc = [0.0] * n; wsum = 0.0
             for sy in range(int(y0), min(S, math.ceil(y1))):
                 wy = min(y1, sy + 1) - max(y0, sy)
                 for sx in range(int(x0), min(S, math.ceil(x1))):
                     w = wy * (min(x1, sx + 1) - max(x0, sx)); p = img[sy][sx]
-                    acc[0] += p[0] * w; acc[1] += p[1] * w; acc[2] += p[2] * w; wsum += w
-            row.append(tuple(v / wsum for v in acc))
+                    if n == 4: w *= p[3] / 255; acc[3] += w * 255
+                    acc[0] += p[0] * w; acc[1] += p[1] * w; acc[2] += p[2] * w; wsum += w if n == 3 else 0
+            if n == 4: a = acc[3] / (f * f); row.append(tuple(v / (acc[3] / 255) for v in acc[:3]) + (a,) if acc[3] else (0, 0, 0, 0))
+            else: row.append(tuple(v / wsum for v in acc))
         out.append(row)
     return out
 
@@ -80,6 +83,46 @@ def png(img):
     chunk = lambda t, d: struct.pack('>I', len(d)) + t + d + struct.pack('>I', zlib.crc32(t + d) & 0xffffffff)
     return (b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', S, S, 8, 2, 0, 0, 0))
             + chunk(b'IDAT', zlib.compress(raw, 9)) + chunk(b'IEND', b''))
+
+def png4(img):
+    S = len(img)
+    raw = b''.join(b'\x00' + bytes(max(0, min(255, round(v))) for p in row for v in p) for row in img)
+    chunk = lambda t, d: struct.pack('>I', len(d)) + t + d + struct.pack('>I', zlib.crc32(t + d) & 0xffffffff)
+    return (b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', S, S, 8, 6, 0, 0, 0))
+            + chunk(b'IDAT', zlib.compress(raw, 9)) + chunk(b'IEND', b''))
+
+def mac_icon(S=1024):
+    """иконата за macOS по шаблона на Apple: заоблен квадрат 824/1024, мека сянка отдолу, прозрачно около него"""
+    A = round(S * 824 / 1024); h, rad, off = A / 2, A * 0.2237, (S - A) // 2
+    art = render(A)
+    def sd(px, py):                             # разстояние до заобления квадрат (отрицателно вътре)
+        qx, qy = abs(px) - (h - rad), abs(py) - (h - rad)
+        return math.hypot(max(qx, 0), max(qy, 0)) + min(max(qx, qy), 0) - rad
+    img = []
+    for y in range(S):
+        row = []
+        for x in range(S):
+            px, py = x + 0.5 - S / 2, y + 0.5 - S / 2
+            cov = max(0.0, min(1.0, 0.5 - sd(px, py)))
+            sh = 0.3 * max(0.0, min(1.0, 0.5 - sd(px, py - S * 0.012) / (S * 0.022)))
+            a = cov + sh * (1 - cov)
+            if not a: row.append((0, 0, 0, 0)); continue
+            c = art[min(A - 1, max(0, y - off))][min(A - 1, max(0, x - off))] if cov else (0, 0, 0)
+            row.append(tuple(v * cov / a for v in c) + (a * 255,))
+        img.append(row)
+    return img
+
+def mac_icns(path):
+    """AppIcon.icns (iconutil); прерисува се само ако icon.py е по-нов"""
+    import shutil, subprocess, tempfile
+    if os.path.exists(path) and os.path.getmtime(path) >= os.path.getmtime(__file__): return
+    img = mac_icon(1024); sizes = {1024: img}
+    for n in (512, 256, 128, 64, 32, 16): sizes[n] = shrink(sizes[n * 2], n)
+    d = tempfile.mkdtemp(); iset = os.path.join(d, 'AppIcon.iconset'); os.mkdir(iset)
+    for n in (16, 32, 128, 256, 512):
+        open(os.path.join(iset, f'icon_{n}x{n}.png'), 'wb').write(png4(sizes[n]))
+        open(os.path.join(iset, f'icon_{n}x{n}@2x.png'), 'wb').write(png4(sizes[n * 2]))
+    subprocess.run(['iconutil', '-c', 'icns', iset, '-o', path], check=True); shutil.rmtree(d)
 
 FILES = ['apple-touch-icon.png', 'icon-192.png', 'icon-512.png', 'icon-maskable-192.png', 'icon-maskable-512.png']
 

@@ -1,5 +1,16 @@
+# стари локални артефакти
 rezonans.html
 test.html
 rezonans_src.zip
 
+# локални настройки на агента
 .claude/
+
+# генерира се: Mac приложението (src/mac/make_app.py)
+/build/
+/dist/
+
+# системни и временни
+.DS_Store
+__pycache__/
+*.pyc

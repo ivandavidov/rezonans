@@ -4,6 +4,8 @@
   python3 src/build.py                 → docs/index.html (игрите от games/series.json)
   python3 src/build.py r1 r3           → само изброените игри (за проба)
   python3 src/build.py --out x.html …  → друго име на изхода
+  python3 src/build.py --offline …     → без връзки навън: шрифтовете (src/fonts/) са вградени, без икони/manifest
+                                         (за Mac приложението — src/mac/make_app.py)
 
 Изходът е самостоятелен HTML документ (doctype, <head>, <body>) — готов за отваряне
 в браузър и за публикуване (напр. GitHub Pages от папка docs/). До него се записват
@@ -25,6 +27,8 @@ ROOT=os.path.dirname(os.path.abspath(__file__))
 P=lambda *a: os.path.join(ROOT,*a)
 args=sys.argv[1:]; out=os.path.join(os.path.dirname(ROOT),'docs','index.html')
 if '--out' in args: i=args.index('--out'); out=args[i+1]; del args[i:i+2]
+offline='--offline' in args
+if offline: args.remove('--offline')
 series=args or json.load(open(P('games','series.json')))
 games=[(gid,json.load(open(P('games',gid,'game.json'),encoding='utf-8'))) for gid in series]
 s=open(P('base','rezonans_v21.html'),encoding='utf-8').read()
@@ -43,6 +47,15 @@ def cut(a,b_end,new):
 fams=''.join('&family='+f.replace(' ','+') for _,g in games for f in g.get('fonts',[]))
 rep('const dt=Math.min(0.05,(now-last)/1000);','const dt=Math.max(0,Math.min(0.05,(now-last)/1000));')   # първият кадър може да е с отрицателно dt
 rep('family=IBM+Plex+Mono:wght@400;600&family=Russo+One&display=swap','family=IBM+Plex+Mono:wght@400;600&family=Russo+One'+fams+'&display=swap')
+if offline:   # шрифтовете от src/fonts/ (fetch.py) се вграждат като data: — нищо не се тегли отвън
+    import base64
+    if not os.path.exists(P('fonts','fonts.css')): raise SystemExit('няма src/fonts/fonts.css — пусни python3 src/fonts/fetch.py')
+    need={'IBM Plex Mono','Russo One'}|{f.split(':')[0] for _,g in games for f in g.get('fonts',[])}
+    blocks=[b for b in re.findall(r'@font-face\s*\{[^}]*\}',open(P('fonts','fonts.css'),encoding='utf-8').read()) if re.search(r"font-family:\s*'([^']+)'",b).group(1) in need]
+    if {re.search(r"font-family:\s*'([^']+)'",b).group(1) for b in blocks}!=need: raise SystemExit('src/fonts/ няма всички шрифтове — пусни python3 src/fonts/fetch.py')
+    ff=re.sub(r'url\(files/([^)]+)\)',lambda m:'url(data:font/woff2;base64,'+base64.b64encode(open(P('fonts','files',m.group(1)),'rb').read()).decode()+')','\n'.join(blocks))
+    a=s.index('<link rel="preconnect" href="https://fonts.googleapis.com">'); b=s.index('rel="stylesheet">',a)+len('rel="stylesheet">')
+    s=s[:a]+'<style>\n'+ff+'\n</style>'+s[b:]
 css='\n'.join(l for _,g in games for l in g.get('css',[]))
 rep('@media (pointer:coarse){.touch{display:flex}.keys{display:none}}','body.has-e .acts{grid-template-columns:repeat(5,56px)}\n'+css+'\n@media (pointer:coarse){.touch{display:flex}.keys{display:none}}')
 rep('    <span><kbd>P</kbd>пауза</span>\n','    <span><kbd>P</kbd>/<kbd>Esc</kbd>пауза</span>\n    <span id="ekey" style="display:none"><kbd>E</kbd></span>\n')
@@ -264,6 +277,13 @@ i=s.index('</style>')+len('</style>')
 head,body=s[:i].strip(),s[i:].strip()
 icon=('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#080b0d"/>'
       '<path d="M3 16h5l3-9 5 18 4-14 3 5h6" fill="none" stroke="#ffa62b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>')
+home='' if offline else '''<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-title" content="Резонанс">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+'''
 doc=f'''<!doctype html>
 <html lang="bg">
 <head>
@@ -272,13 +292,7 @@ doc=f'''<!doctype html>
 <meta name="description" content="Резонанс — поредица ретро екшън игри, които се играят направо в браузъра.">
 <meta name="theme-color" content="#080b0d">
 <link rel="icon" href="data:image/svg+xml,{quote(icon)}">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="manifest" href="manifest.webmanifest">
-<meta name="apple-mobile-web-app-title" content="Резонанс">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
-{head}
+{home}{head}
 <style>html,body{{margin:0}}</style>
 </head>
 <body>
@@ -289,6 +303,7 @@ doc=f'''<!doctype html>
 os.makedirs(os.path.dirname(os.path.abspath(out)),exist_ok=True)
 open(out,'w',encoding='utf-8').write(doc)
 # начален екран — до HTML файла: иконите (iPhone: apple-touch-icon; Android: icon-*.png) и manifest-ът за Android
+if offline: print('built', out, len(doc), 'games:', ', '.join(g for g,_ in games), '(offline)'); raise SystemExit
 sys.dont_write_bytecode=True; import icon; odir=os.path.dirname(os.path.abspath(out)); icon.write_all(odir)
 man=json.dumps({'name':'Резонанс','short_name':'Резонанс','description':'Поредица ретро екшън игри, които се играят направо в браузъра.',
   'lang':'bg','id':'./','start_url':'./','scope':'./','display':'fullscreen','background_color':'#080b0d','theme_color':'#080b0d','categories':['games'],

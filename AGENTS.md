@@ -13,12 +13,29 @@ python3 src/build.py
 За проба с част от игрите: `python3 src/build.py r1 r3 --out /tmp/proba.html`.
 По подразбиране (`games/series.json`) се публикува само `r1`; всички части: `python3 src/build.py r1 r2 r3 r4 r5 r6 r7`.
 
+## Mac приложение и офлайн сборка
+```
+python3 src/mac/make_app.py            # dist/Резонанс.app (частите като сайта); --zip → и архив
+```
+- Само Command Line Tools (`swiftc`, `iconutil`, `codesign`), без Xcode; универсално (arm64 + x86_64), macOS 13+, локален подпис.
+- Играта вътре е `python3 src/build.py --offline`: шрифтовете от `src/fonts/` са вградени, без икони/manifest и без връзки навън.
+- Кодът е в `src/mac/` (`main.swift` — прозорец с WKWebView, `make_app.py` — сглобяване). Проверка без ръце:
+  `dist/Резонанс.app/Contents/MacOS/Rezonans --selftest [--snapshot снимка.png]` → JSON (шрифтове, записи, JS грешки).
+- Нов шрифт в някой `game.json` → `python3 src/fonts/fetch.py` (тегли от Google Fonts, само кирилица и латиница).
+
 ## Какво не се пипа на ръка
 - **`docs/index.html`**, иконите и **`docs/manifest.webmanifest`** — генерират се. Всяка промяна се прави в `src/` и се пуска сборката.
   Пресглобените файлове се commit-ват заедно с промените в `src/`.
 - **`src/base/rezonans_v21.html`** — оригиналният двигател. Промени в него се правят като
   точкови замени `rep(старо, ново)` в `build.py`, не в самия файл.
 - `docs/.nojekyll` трябва да остане (иначе GitHub Pages прекарва файла през Jekyll).
+- **`src/fonts/fonts.css`, `src/fonts/files/`, `src/fonts/licenses/`** — генерират се от `src/fonts/fetch.py`, но се commit-ват
+  (офлайн сборката не трябва да зависи от мрежата). Лицензите (SIL OFL) остават до шрифтовете.
+
+## Какво се commit-ва
+- Да: `src/` (вкл. `src/fonts/` и `src/mac/`) и генерираното в `docs/` — сайтът се публикува оттам.
+- Не (в `.gitignore`): `build/` и `dist/` (Mac приложението се сглобява локално), `.DS_Store`, `__pycache__/`,
+  старите артефакти в корена, `.claude/`.
 
 ## Как е сглобен кодът
 - Всички `engine/*.js` и `games/<id>/*.js` се вмъкват **в едно и също IIFE** на базовия файл

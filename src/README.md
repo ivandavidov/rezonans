@@ -4,6 +4,8 @@
 src/
   build.py              сборка → docs/index.html (един самостоятелен HTML документ)
   icon.py               иконите за начален екран → docs/ (iPhone 180, Android 192/512 + maskable), без зависимости
+  fonts/                шрифтовете за офлайн сборката (fetch.py ги тегли веднъж от Google Fonts; SIL OFL в licenses/)
+  mac/                  Mac приложение: main.swift (WKWebView) + make_app.py → dist/Резонанс.app
   base/rezonans_v21.html оригиналният двигател + първата част
   engine/               общ код за всички части
     series.js           регистър на игрите, еднаквото меню, навигация с Esc
@@ -37,6 +39,16 @@ src/
 ## Какво се публикува
 `games/series.json` е само `["r1"]` — по подразбиране се сглобява и публикува първата част.
 Всички части: `python3 src/build.py r1 r2 r3 r4 r5 r6 r7` (папките им остават в `games/`).
+
+## Mac приложение
+```
+python3 src/mac/make_app.py            # dist/Резонанс.app — частите като сайта
+python3 src/mac/make_app.py r1 … r7    # с изброените части; --zip → и dist/Rezonans-mac.zip
+```
+Нужни са само Command Line Tools (`xcode-select --install`), не Xcode. Приложението е универсално
+(Apple Silicon + Intel, macOS 13+), с локален подпис: на този Mac се отваря направо, на чужд — десен бутон → Отвори.
+Играта вътре е `build.py --offline` (шрифтовете от `src/fonts/` са вградени). Нов шрифт в game.json →
+`python3 src/fonts/fetch.py`. Проверка: `dist/Резонанс.app/Contents/MacOS/Rezonans --selftest`.
 
 ## Махане на част
 Изтрий id-то ѝ от `games/series.json`. Връзките към нея изчезват от всички менюта.
