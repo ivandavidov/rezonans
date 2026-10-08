@@ -66,5 +66,5 @@ function renderSplash(){
   overlay(0.62); glitchTitle('РЕЗОНАНС',W/2,96,46);
   if(blink()) centerText('Натисни Z или кликни, за да започнеш',166,'600 10px "IBM Plex Mono",monospace','#f3e6cf');
   centerText('← → движение · Z стрелба · X скок · C клякане · Q оръжие',224,'600 7px "IBM Plex Mono",monospace','#7f8e97');
-  centerText('M звук · P / Esc пауза',238,'600 7px "IBM Plex Mono",monospace','#7f8e97');
+  centerText('M звук · N музика · B ефекти · P / Esc пауза',238,'600 7px "IBM Plex Mono",monospace','#7f8e97');
 }

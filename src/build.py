@@ -52,8 +52,26 @@ rep("document.fonts.load('600 10px \"IBM Plex Mono\"')]","document.fonts.load('6
 # ---------- куки в двигателя (SEQ = двигател на продълженията) ----------
 rep("  LVL.deco();\n  convTiles=[];","  LVL.deco(); if(SEQ) for(let ty=0;ty<ROWS;ty++) for(let tx=0;tx<COLS;tx++) if('B=-H'.includes(map[ty][tx])) drawTile(tx,ty);\n  convTiles=[];")
 rep('U=ctrl&&keys.up, Dn=ctrl&&keys.down','U=ctrl&&(SEQ&&FLIP?keys.down:keys.up), Dn=ctrl&&(SEQ&&FLIP?keys.up:keys.down)')
-rep("KeyM:'mute',","KeyM:'mute',KeyE:'era',")
+rep("KeyM:'mute',","KeyM:'mute',KeyN:'music',KeyB:'sfx',KeyE:'era',")
 rep("Escape:'pause'","Escape:'esc'")
+# звук (engine/audio.js): музиката и ефектите се спират поотделно; M спира всичко, ако нещо свири
+rep("function toggleMute(){ muted=!muted; if(master) master.gain.value=muted?0:0.85; }\n","")
+rep("master.gain.value=muted?0:0.85;","master.gain.value=0.85;")
+rep("sfxBus=AC.createGain(); sfxBus.gain.value=0.9;","sfxBus=AC.createGain(); sfxBus.gain.value=sfxOn?0.9:0;")
+rep("musBus=AC.createGain(); musBus.gain.value=0.5;","musBus=AC.createGain(); musBus.gain.value=musOn?0.5:0;")
+rep("function mSched(){\n  if(!AC||AC.state!=='running') return;","function mSched(){\n  if(!AC||AC.state!=='running'||!musOn) return;")
+rep("if(k==='mute'&&!e.repeat) toggleMute();","if(!e.repeat){ if(k==='mute') toggleMute(); else if(k==='music') toggleMus(); else if(k==='sfx') toggleSfx(); }")
+rep("document.querySelectorAll('#touch button').forEach","document.querySelectorAll('#touch button[data-k]').forEach")
+rep('<button class="u" data-k="up">▲</button>','<button class="am" id="bmus" data-a="mus" aria-label="музика">♪</button><button class="u" data-k="up">▲</button><button class="as" id="bsfx" data-a="sfx" aria-label="ефекти">FX</button>')
+rep('.pad .u{grid-column:2;grid-row:1}','.pad .am,.pad .as{grid-row:1;width:72%;height:72%;align-self:start;font-size:11px;border-style:dashed}.pad .am{grid-column:1;justify-self:start}.pad .as{grid-column:3;justify-self:end}.touch button.off{opacity:.35}\n.pad .u{grid-column:2;grid-row:1}')
+# тъч бутони на тесен екран: действията на два реда (горе Q C [E], долу X Z), размерът следва ширината — нищо не излиза извън екрана
+rep('@media (max-width:420px){.pad{grid-template-columns:repeat(3,44px);grid-template-rows:repeat(2,44px)}.acts{grid-template-columns:repeat(4,46px)}.acts button{height:46px}}',
+    '@media (max-width:540px){.touch{--u:min(56px,calc((100vw - 68px)/5))}body.has-e .touch{--u:min(56px,calc((100vw - 76px)/6))}'
+    '.pad{grid-template-columns:repeat(3,var(--u));grid-template-rows:repeat(2,var(--u))}.acts,body.has-e .acts{grid-template-columns:repeat(2,var(--u));grid-template-rows:repeat(2,var(--u))}body.has-e .acts{grid-template-columns:repeat(3,var(--u))}.acts button{height:var(--u)}'
+    '.acts [data-k=swap]{grid-area:1/1}.acts [data-k=crouch]{grid-area:1/2}.acts [data-k=jump]{grid-area:2/1}.acts [data-k=fire]{grid-area:2/2}'
+    'body.has-e .acts [data-k=era]{grid-area:1/3}body.has-e .acts [data-k=jump]{grid-area:2/2}body.has-e .acts [data-k=fire]{grid-area:2/3}}')
+rep('    <span><kbd>M</kbd>звук</span>\n','    <span><kbd>M</kbd>звук</span>\n    <span><kbd>N</kbd>музика</span>\n    <span><kbd>B</kbd>ефекти</span>\n')
+rep("  render();\n  requestAnimationFrame(frame);","  render(); audDraw();\n  requestAnimationFrame(frame);")
 rep("function drawEmitter(){\n  if(LVL.n!==1) return;","function drawEmitter(){\n  if(LVL.n!==1||SEQ) return;")
 rep("const LV=document.createElement('canvas');","let LV=document.createElement('canvas');")
 rep("LI=i; LVL=obj||LEVELS[i];","LI=i; LVL=obj||(SEQ?GLV:LEVELS)[i];")
@@ -98,6 +116,9 @@ rep("pylon:(e,dt)=>{e.anim+=dt;}})[e.type](e,dt);","pylon:(e,dt)=>{e.anim+=dt;}}
 rep("    if(b.grav) b.vy+=G*dt;","    if(b.grav) b.vy+=G*edt;")
 rep("    b.x+=b.vx*dt; b.y+=b.vy*dt; b.life-=dt;","    b.x+=b.vx*edt; b.y+=b.vy*edt; b.life-=edt;")
 rep("  for(const o of orbs){ o.x+=o.vx*dt; o.life-=dt;","  for(const o of orbs){ o.x+=o.vx*edt; o.life-=edt;")
+# вълни: спускат се и паяци/зомбита — само войниците викат по радиото; репликата е на първия войник (не на първия враг)
+rep("function spawnWave(list){\n  let i=0;","function spawnWave(list){\n  let i=0, said=false;")
+rep("enemies.push(e); sfxAt('radio',e); if(i===0) bark(e,'Ето го!',1.5); }","enemies.push(e);\n      if(type==='soldier'){ sfxAt('radio',e); if(!said){ said=true; const B=LVL.barks||['Ето го!','Огън!','Там е!']; bark(e,B[Math.floor(rnd(B.length))],1.5); } }\n      else { const sn={crab:'crabIdle',zombie:'zgroan',shocker:'growl'}[type]; if(sn) sfxAt(sn,e); } }")
 rep("function radio(t){ showMsg(t,0,'Д-Р ИЛИЕВА');","function radio(t){ showMsg(t,0,GAME.radioWho||'Д-Р ИЛИЕВА');")
 # тонът: зашеметеният враг замръзва
 rep("    e.hitT-=dt; e.flashT=(e.flashT||0)-dt;\n","    e.hitT-=dt; e.flashT=(e.flashT||0)-dt;\n    if(e.stunT>0){ e.stunT-=dt; continue; }\n")
@@ -129,7 +150,7 @@ rep("centerText(LVL.training?'ПОДГОТОВКА · ПРЕДИ СЕКТОР 7'
 rep("centerText((LVL.training?'ТРЕНИРОВКАТА Е ЗАВЪРШЕНА':","centerText((SEQ&&!LVL.training?(LI===GCH[gChOf(LI)].b?'ГЛАВА '+ROM[gChOf(LI)]+' ЗАВЪРШЕНА':'ЕПИЗОД '+LVL.n+' ПРЕМИНАТ'):LVL.training?'ТРЕНИРОВКАТА Е ЗАВЪРШЕНА':")
 rep("centerText(LVL.training?(TRN&&TRN.fromMenu?'Z — към менюто':'Z — към Сектор 7'):","centerText(SEQ&&!LVL.training?(LI<GLV.length-1?'Z — към следващия епизод':'Z — продължи'):LVL.training?(TRN&&TRN.fromMenu?'Z — към менюто':(LVL.hdrN||'Z — към Сектор 7')):")
 rep("  if(state==='win'){ overlay(0.9); const bonus=LI===24;","  if(state==='win'&&SEQ){ GAME.renderWin(); }\n  else if(state==='win'){ overlay(0.9); const bonus=LI===24;")
-rep("Z или P — продължи · C — главно меню","Z или P — продължи · Esc — изход в менюто")
+rep("Z или P — продължи · C — главно меню',148,'600 9px \"IBM Plex Mono\",monospace','#cfd8dc');","Z или P — продължи · Esc — изход в менюто',148,'600 9px \"IBM Plex Mono\",monospace','#cfd8dc'); audPauseLine();")
 rep("'Esc / Enter / Q — пропусни интрото'","'Enter / Q — пропусни интрото  ·  Esc — назад'")
 s=s.replace('Z потвърди · X назад','Z потвърди · Esc / X назад').replace('Z начало · X назад','Z начало · Esc / X назад')
 
@@ -143,7 +164,7 @@ rep("  if(state==='title'){ cam=(Math.sin(titleT*0.05)*0.5+0.5)*60; if(ok()){ in
     "  if(state==='title'){ cam=(Math.sin(titleT*0.05)*0.5+0.5)*(GAME.menuCam||60); if(ok()){ initAudio(); SFX.menuOk(); toMenu(modeSel+2); } clearPressed(); }\n  else if(state==='tram'){ if(TR) updTram(dt); clearPressed(); }\n  else if(state==='gintro'){ GAME.introUpd(dt); clearPressed(); }\n  else if(state==='gmenu'){ cam=(Math.sin(titleT*0.05)*0.5+0.5)*(GAME.menuCam||60); gmenuInput(); clearPressed(); }")
 cut("  else if(state==='mode'){\n","    clearPressed();\n  }\n","")
 rep("  else if(state==='survOver'){","  else if((state==='survOver'||state==='win')&&pressed.esc){ clearPressed(); toTitle(); }\n  else if(state==='survOver'){")
-rep("if(modeSel===1) startSurv(0,false); else { state='eps'; menuSel=unlocked-1; } }","if(modeSel===1) startSurv(0,false); else if(SEQ){ state='eps'; menuSel=gUnl-1; } else { state='eps'; menuSel=unlocked-1; } }")
+rep("if(modeSel===1) startSurv(0,false); else { state='eps'; menuSel=unlocked-1; } }","if(modeSel===1) svEnter(); else if(SEQ){ state='eps'; menuSel=gUnl-1; } else { state='eps'; menuSel=unlocked-1; } }")
 rep("    else if(pressed.jump){ state='mode'; menuSel=modeSel; SFX.menu(); }","    else if(pressed.jump||pressed.esc){ toMenu(modeSel===1?3:2); SFX.menu(); }")
 rep("  else if(state==='eps'){\n    { const ch=chOf(menuSel)","  else if(state==='eps'&&SEQ){ r2EpsInput(); clearPressed(); }\n  else if(state==='eps'){\n    { const ch=chOf(menuSel)")
 rep("    else if(pressed.jump){ state='diff'; menuSel=DI; SFX.menu(); }","    else if(pressed.jump||pressed.esc){ state='diff'; menuSel=DI; SFX.menu(); }")
@@ -162,14 +183,22 @@ rep("if(LVL.arena) bossMul*=BOSS_NORM[LVL.arena.type]||1;","if(LVL.arena) bossMu
 rep("const survBest=(i=DI)=>parseInt(store.get('rz.best'+i,'0'),10)||0;","const survBest=(i=DI)=>parseInt(store.get(KEY('best')+i,'0'),10)||0;")
 rep("const survBestK=(i=DI)=>parseInt(store.get('rz.bestK'+i,'0'),10)||0;","const survBestK=(i=DI)=>parseInt(store.get(KEY('bestK')+i,'0'),10)||0;")
 rep("store.set('rz.best'+DI,score); store.set('rz.bestK'+DI,sector);","store.set(KEY('best')+DI,score); store.set(KEY('bestK')+DI,sector);")
+# запазен напредък (engine/svsave.js): startSurv(k,запис) продължава от запис, всеки нов сектор се записва
+rep("set(k,v){try{localStorage.setItem(k,String(v));}catch(e){}}};","set(k,v){try{localStorage.setItem(k,String(v));}catch(e){}},del(k){try{localStorage.removeItem(k);}catch(e){}}};")
+rep("function startSurv(k,carry){\n  const prev=carry?player:null;","function startSurv(k,carry){\n  const sv=carry&&carry!==true?carry:null; if(sv) carry=false; const prev=carry?player:null;")
+rep("survNewBest=false; survStartBest=survBest(); }","survNewBest=false; survStartBest=survBest(); if(sv){ survSeed=sv.seed; survScore=sv.score|0; } }")
+rep("  state='play'; mInt=0; storyT=0;\n  showMsg('СЕКТОР '","  if(sv) svApply(sv); svSave(k);\n  state='play'; mInt=0; storyT=0;\n  showMsg('СЕКТОР '")
+rep("  if(state==='survOver'){ renderSurvOver(); return; }","  if(state==='svmenu'){ renderSvMenu(); return; }\n  if(state==='survOver'){ renderSurvOver(); return; }")
+rep("  else if(state==='diff'){\n","  else if(state==='svmenu'){ svMenuInput(); clearPressed(); }\n  else if(state==='diff'){\n")
+rep("' · рекорд: '+bestTxt(menuSel),214,'600 8px \"IBM Plex Mono\",monospace','#94ff57');","' · рекорд: '+bestTxt(menuSel),214,'600 8px \"IBM Plex Mono\",monospace','#94ff57'); if(modeSel===1) svDiffNote(menuSel);")
 
 # ---------- тестов достъп ----------
 a=s.index('window.__rz={'); b=s.index('\n',a)
-s=s[:a]+"window.__rz={get SEQ(){return SEQ},get R2(){return SEQ},get R3(){return GAME.id==='r3'},get GAME(){return GAME},GAMES,GHIST,setGame,enterGame,toMenu,menuItems,get gSel(){return gSel},get r2Sel(){return gSel},r2ToTitle:()=>toMenu(2),leaveR2:()=>enterGame(GAMES[0].id),get LEVELS2(){return GLV},hurtEnemy,get ECHO(){return ECHO},get PLATES(){return PLATES},get LIGHTS(){return LIGHTS},get TERMS(){return TERMS},get ALARM(){return ALARM},get NOISE(){return NOISE},get MST(){return MST},get FLOOD(){return FLOOD},get ESC(){return ESC},get CHASE(){return CHASE},get ERA(){return ERA},get FLIP(){return FLIP},get GENS(){return GENS},get LEVERS(){return LEVERS},get SHIFT(){return SHIFT},get ALLIES(){return ALLIES},switchEra,flipWorld,isWater,get pickups(){return pickups},get scientists(){return scientists},startBoss,respawn,get cp(){return cp},hurtBoss,"+s[a+len('window.__rz={'):b]+"\nfor(const g of GAMES) if(g.debug) Object.defineProperties(window.__rz,Object.getOwnPropertyDescriptors(g.debug));"+s[b:]
+s=s[:a]+"window.__rz={get SEQ(){return SEQ},get R2(){return SEQ},get R3(){return GAME.id==='r3'},get GAME(){return GAME},GAMES,GHIST,setGame,enterGame,toMenu,menuItems,get gSel(){return gSel},get r2Sel(){return gSel},r2ToTitle:()=>toMenu(2),leaveR2:()=>enterGame(GAMES[0].id),get LEVELS2(){return GLV},hurtEnemy,get ECHO(){return ECHO},get PLATES(){return PLATES},get LIGHTS(){return LIGHTS},get TERMS(){return TERMS},get ALARM(){return ALARM},get NOISE(){return NOISE},get MST(){return MST},get FLOOD(){return FLOOD},get ESC(){return ESC},get CHASE(){return CHASE},get ERA(){return ERA},get FLIP(){return FLIP},get GENS(){return GENS},get LEVERS(){return LEVERS},get SHIFT(){return SHIFT},get ALLIES(){return ALLIES},switchEra,flipWorld,isWater,get pickups(){return pickups},get scientists(){return scientists},get barks(){return barks},startBoss,respawn,get cp(){return cp},hurtBoss,get musOn(){return musOn},get AC(){return AC},get musBus(){return musBus},get sfxBus(){return sfxBus},get sfxOn(){return sfxOn},toggleMute,toggleMus,toggleSfx,svLoad,svSave,svClear,svEnter,svItems,get svSel(){return svSel},get svConf(){return svConf},get DI(){return DI},get survLives(){return survLives},get survSeed(){return survSeed},"+s[a+len('window.__rz={'):b]+"\nfor(const g of GAMES) if(g.debug) Object.defineProperties(window.__rz,Object.getOwnPropertyDescriptors(g.debug));"+s[b:]
 
 # ---------- код: двигател + игрите от поредицата ----------
 def rd(*p): return open(P(*p),encoding='utf-8').read()
-code=['/* ================= ДВИГАТЕЛ ================= */']+[rd('engine',f) for f in ['series.js','sequel.js','world.js','mech.js','mech2.js','mech3.js','mech4.js','mech5.js','survival.js']]
+code=['/* ================= ДВИГАТЕЛ ================= */']+[rd('engine',f) for f in ['series.js','sequel.js','world.js','mech.js','mech2.js','mech3.js','mech4.js','mech5.js','survival.js','svsave.js','audio.js']]
 for gid,g in games:
     code.append(f'/* ================= ИГРА: {gid} ================= */')
     code+= [rd('games',gid,f) for f in g['files']]

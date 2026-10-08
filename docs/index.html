@@ -33,11 +33,12 @@ kbd{display:inline-block;min-width:1.6em;padding:1px 6px;margin-right:4px;border
 .touch button{font:600 13px var(--mono);color:var(--amber);background:#16120a;border:1px solid #5a4520;border-radius:10px;touch-action:none;-webkit-tap-highlight-color:transparent}
 .touch button:active,.touch button.on{background:#3a2a0e}
 .acts button{height:56px;border-radius:50%}
+.pad .am,.pad .as{grid-row:1;width:72%;height:72%;align-self:start;font-size:11px;border-style:dashed}.pad .am{grid-column:1;justify-self:start}.pad .as{grid-column:3;justify-self:end}.touch button.off{opacity:.35}
 .pad .u{grid-column:2;grid-row:1}.pad .l{grid-column:1;grid-row:2}.pad .d{grid-column:2;grid-row:2}.pad .r{grid-column:3;grid-row:2}
 body.has-e .acts{grid-template-columns:repeat(5,56px)}
 
 @media (pointer:coarse){.touch{display:flex}.keys{display:none}}
-@media (max-width:420px){.pad{grid-template-columns:repeat(3,44px);grid-template-rows:repeat(2,44px)}.acts{grid-template-columns:repeat(4,46px)}.acts button{height:46px}}
+@media (max-width:540px){.touch{--u:min(56px,calc((100vw - 68px)/5))}body.has-e .touch{--u:min(56px,calc((100vw - 76px)/6))}.pad{grid-template-columns:repeat(3,var(--u));grid-template-rows:repeat(2,var(--u))}.acts,body.has-e .acts{grid-template-columns:repeat(2,var(--u));grid-template-rows:repeat(2,var(--u))}body.has-e .acts{grid-template-columns:repeat(3,var(--u))}.acts button{height:var(--u)}.acts [data-k=swap]{grid-area:1/1}.acts [data-k=crouch]{grid-area:1/2}.acts [data-k=jump]{grid-area:2/1}.acts [data-k=fire]{grid-area:2/2}body.has-e .acts [data-k=era]{grid-area:1/3}body.has-e .acts [data-k=jump]{grid-area:2/2}body.has-e .acts [data-k=fire]{grid-area:2/3}}
 </style>
 <style>html,body{margin:0}</style>
 </head>
@@ -53,12 +54,14 @@ body.has-e .acts{grid-template-columns:repeat(5,56px)}
     <span><kbd>C</kbd>клякане</span>
     <span><kbd>Q</kbd>или <kbd>1</kbd>–<kbd>6</kbd>оръжие</span>
     <span><kbd>M</kbd>звук</span>
+    <span><kbd>N</kbd>музика</span>
+    <span><kbd>B</kbd>ефекти</span>
     <span><kbd>P</kbd>/<kbd>Esc</kbd>пауза</span>
     <span id="ekey" style="display:none"><kbd>E</kbd></span>
   </div>
   <div class="touch" id="touch">
     <div class="pad">
-      <button class="u" data-k="up">▲</button><button class="l" data-k="left">◀</button><button class="d" data-k="down">▼</button><button class="r" data-k="right">▶</button>
+      <button class="am" id="bmus" data-a="mus" aria-label="музика">♪</button><button class="u" data-k="up">▲</button><button class="as" id="bsfx" data-a="sfx" aria-label="ефекти">FX</button><button class="l" data-k="left">◀</button><button class="d" data-k="down">▼</button><button class="r" data-k="right">▶</button>
     </div>
     <div class="acts">
       <button data-k="swap">Q<br>оръж.</button><button data-k="crouch">C<br>клек</button><button data-k="jump">X<br>скок</button><button data-k="fire">Z<br>огън</button><button data-k="era" id="ebtn" style="display:none">E</button>
@@ -79,7 +82,7 @@ const sgn=v=>v<0?-1:1;
 function hash(x,y){let h=(x*374761393+y*668265263)|0;h=Math.imul(h^(h>>>13),1274126177);return ((h^(h>>>16))>>>0)/4294967295;}
 const angDiff=(a,b)=>{let d=a-b;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;return d;};
 const ov=(a,b)=>a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
-const store={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:v;}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,String(v));}catch(e){}}};
+const store={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:v;}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,String(v));}catch(e){}},del(k){try{localStorage.removeItem(k);}catch(e){}}};
 
 /* ================= DIFFICULTY ================= */
 const DIFFS=[
@@ -103,10 +106,10 @@ function initAudio(){
   if(AC){ if(AC.state==='suspended'&&state!=='paused') AC.resume(); return; }
   try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ AC=null; return; }
   const comp=AC.createDynamicsCompressor(); comp.threshold.value=-12; comp.knee.value=10; comp.ratio.value=5; comp.attack.value=0.003; comp.release.value=0.2;
-  master=AC.createGain(); master.gain.value=muted?0:0.85; master.connect(comp); comp.connect(AC.destination);
+  master=AC.createGain(); master.gain.value=0.85; master.connect(comp); comp.connect(AC.destination);
   const conv=AC.createConvolver(); conv.buffer=impulse(2.4,2.8); const wet=AC.createGain(); wet.gain.value=0.3; conv.connect(wet); wet.connect(master);
-  sfxBus=AC.createGain(); sfxBus.gain.value=0.9; sfxBus.connect(master); const s2=AC.createGain(); s2.gain.value=0.22; sfxBus.connect(s2); s2.connect(conv);
-  musBus=AC.createGain(); musBus.gain.value=0.5; musBus.connect(master); const m2=AC.createGain(); m2.gain.value=0.35; musBus.connect(m2); m2.connect(conv);
+  sfxBus=AC.createGain(); sfxBus.gain.value=sfxOn?0.9:0; sfxBus.connect(master); const s2=AC.createGain(); s2.gain.value=0.22; sfxBus.connect(s2); s2.connect(conv);
+  musBus=AC.createGain(); musBus.gain.value=musOn?0.5:0; musBus.connect(master); const m2=AC.createGain(); m2.gain.value=0.35; musBus.connect(m2); m2.connect(conv);
   noiseBuf=AC.createBuffer(1,AC.sampleRate*2,AC.sampleRate); const d=noiseBuf.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
   startDrone(); mNext=AC.currentTime+0.15; setInterval(mSched,30);
 }
@@ -220,7 +223,7 @@ function pad(f,t,d,v){ const g=AC.createGain(); g.gain.setValueAtTime(0.0001,t);
 function bell(f,t){ osc({t0:t,type:'sine',f,t:1.6,v:0.06,out:musBus}); osc({t0:t,type:'sine',f:f*2.76,t:0.6,v:0.02,out:musBus}); }
 function arp(f,t,d){ osc({t0:t,type:mAlien?'triangle':'square',f,t:d,v:mAlien?0.06:0.045,lp:2200,out:musBus}); }
 function mSched(){
-  if(!AC||AC.state!=='running') return;
+  if(!AC||AC.state!=='running'||!musOn) return;
   if(mNext<AC.currentTime) mNext=AC.currentTime+0.05;
   while(mNext<AC.currentTime+0.15){ const spb=60/(bossMusic?132:mBpm)/4; mPlay(mStep,mNext,spb); mNext+=spb; mStep=(mStep+1)%64; }
 }
@@ -243,7 +246,6 @@ function mPlay(s,t,spb){
     if(mAlien&&st%4===2&&Math.random()<0.3) arp(mtof(P.ch[Math.floor(Math.random()*3)]+24+tr),t,spb*3);
   }
 }
-function toggleMute(){ muted=!muted; if(master) master.gain.value=muted?0:0.85; }
 
 /* ================= THEMES ================= */
 const TH={
@@ -1638,12 +1640,12 @@ function drawSky(){ ctx.drawImage(SKY.base,0,0); for(const L of SKY.layers){ con
 
 /* ================= INPUT ================= */
 const keys={}, pressed={};
-const CODES={ArrowLeft:'left',ArrowRight:'right',ArrowUp:'up',ArrowDown:'down',KeyZ:'fire',KeyX:'jump',KeyC:'crouch',KeyQ:'swap',Digit1:'w1',Digit2:'w2',Digit3:'w3',Digit4:'w4',Digit5:'w5',Digit6:'w6',KeyM:'mute',KeyE:'era',KeyP:'pause',Escape:'esc',Enter:'enter',Space:'enter'};
-addEventListener('keydown',e=>{ const k=CODES[e.code]; if(!k) return; e.preventDefault(); initAudio(); if(!keys[k]) pressed[k]=true; keys[k]=true; if(k==='mute'&&!e.repeat) toggleMute(); });
+const CODES={ArrowLeft:'left',ArrowRight:'right',ArrowUp:'up',ArrowDown:'down',KeyZ:'fire',KeyX:'jump',KeyC:'crouch',KeyQ:'swap',Digit1:'w1',Digit2:'w2',Digit3:'w3',Digit4:'w4',Digit5:'w5',Digit6:'w6',KeyM:'mute',KeyN:'music',KeyB:'sfx',KeyE:'era',KeyP:'pause',Escape:'esc',Enter:'enter',Space:'enter'};
+addEventListener('keydown',e=>{ const k=CODES[e.code]; if(!k) return; e.preventDefault(); initAudio(); if(!keys[k]) pressed[k]=true; keys[k]=true; if(!e.repeat){ if(k==='mute') toggleMute(); else if(k==='music') toggleMus(); else if(k==='sfx') toggleSfx(); } });
 addEventListener('keyup',e=>{ const k=CODES[e.code]; if(!k) return; keys[k]=false; });
 addEventListener('blur',()=>{ for(const k in keys) keys[k]=false; if(state==='play'){ state='paused'; if(AC) AC.suspend(); } });
 cv.addEventListener('pointerdown',()=>{ initAudio(); cv.focus(); if(state==='title') pressed.enter=true; });
-document.querySelectorAll('#touch button').forEach(b=>{
+document.querySelectorAll('#touch button[data-k]').forEach(b=>{
   const k=b.dataset.k; const on=e=>{e.preventDefault(); initAudio(); if(!keys[k]) pressed[k]=true; keys[k]=true; b.classList.add('on');};
   const off=e=>{e.preventDefault(); keys[k]=false; b.classList.remove('on');};
   b.addEventListener('pointerdown',on); b.addEventListener('pointerup',off); b.addEventListener('pointercancel',off); b.addEventListener('pointerleave',off);
@@ -1725,10 +1727,12 @@ function startEncounter(spec){
   if(spec.msg) showMsg(spec.msg,2.5);
 }
 function spawnWave(list){
-  let i=0;
+  let i=0, said=false;
   for(const [type,tx,via,flag,row] of list){
     if(!allow(flag)) continue;
-    if(via==='drop'){ const e=makeEnemy(type,tx*T+8,4*T+12); e.alert=true; e.tag='enc'; e.cd=0.9*D.react; enemies.push(e); sfxAt('radio',e); if(i===0) bark(e,'Ето го!',1.5); }
+    if(via==='drop'){ const e=makeEnemy(type,tx*T+8,4*T+12); e.alert=true; e.tag='enc'; e.cd=0.9*D.react; enemies.push(e);
+      if(type==='soldier'){ sfxAt('radio',e); if(!said){ said=true; const B=LVL.barks||['Ето го!','Огън!','Там е!']; bark(e,B[Math.floor(rnd(B.length))],1.5); } }
+      else { const sn={crab:'crabIdle',zombie:'zgroan',shocker:'growl'}[type]; if(sn) sfxAt(sn,e); } }
     else portalSpawn(type,tx*T+8,row!=null?(row+1)*T:groundY(tx),i*0.3,'enc');
     i++;
   }
@@ -3019,14 +3023,15 @@ function svArena(type,d,o){
 }
 
 function startSurv(k,carry){
-  const prev=carry?player:null;
+  const sv=carry&&carry!==true?carry:null; if(sv) carry=false; const prev=carry?player:null;
   SURV=true; survK=k; bossMul=0.75+0.2*Math.floor(k/5); ehpMul=1+0.03*k;
-  if(!carry){ survScore=0; survLives=[3,2,1][DI]; survSeed=(Date.now()%90000)+10000; survNewBest=false; survStartBest=survBest(); }
+  if(!carry){ survScore=0; survLives=[3,2,1][DI]; survSeed=(Date.now()%90000)+10000; survNewBest=false; survStartBest=survBest(); if(sv){ survSeed=sv.seed; survScore=sv.score|0; } }
   loadLevel(-1,genLevel(k)); if(LVL.arena) bossMul*=BOSS_NORM[LVL.arena.type]||1; if(SEQ&&LVL.arena&&(GAME.bossMulOne||[]).includes(LVL.arena.type)) bossMul=1;
   const p=player;
   if(prev){ for(const w of ORDER) if(prev.weapons[w]) p.weapons[w]=true;
     for(const kk in p.ammo){ p.ammo[kk].mag=Math.max(p.ammo[kk].mag,prev.ammo[kk].mag); p.ammo[kk].res=Math.max(p.ammo[kk].res,prev.ammo[kk].res); }
     p.armor=prev.armor; p.hp=Math.min(100,Math.max(1,prev.hp)+(DI===0?50:25)); if(p.weapons[prev.cur]) p.cur=prev.cur; }
+  if(sv) svApply(sv); svSave(k);
   state='play'; mInt=0; storyT=0;
   showMsg('СЕКТОР '+(k+1)+' · '+LVL.themeName+(LVL.muts&&LVL.muts.length?' · '+LVL.muts.map(m=>MUT_NAME[m]).join(', '):'')+(LVL.isBoss?' · БОС':''),3.5);
 }
@@ -3590,12 +3595,13 @@ function render(){
   renderWorld();
   if(state==='title'){ renderSplash(); return; }
   if(state==='gmenu'){ renderGMenu(); return; }
+  if(state==='svmenu'){ renderSvMenu(); return; }
   if(state==='survOver'){ renderSurvOver(); return; }
   if(state==='diff'){
     overlay(0.8); centerText('ИЗБЕРИ ТРУДНОСТ',58,'16px '+DFONT(),ACC());
     menuList(DIFFS.map(d=>({t:d.name})),menuSel,100,24);
     const d=DIFFS[menuSel]; centerText(d.desc[0],184,'600 8px "IBM Plex Mono",monospace','#cfd8dc'); centerText(d.desc[1],197,'600 8px "IBM Plex Mono",monospace','#cfd8dc');
-    if(modeSel===1) centerText('Оцеляване · животи: '+[3,2,1][menuSel]+' · рекорд: '+bestTxt(menuSel),214,'600 8px "IBM Plex Mono",monospace','#94ff57');
+    if(modeSel===1) centerText('Оцеляване · животи: '+[3,2,1][menuSel]+' · рекорд: '+bestTxt(menuSel),214,'600 8px "IBM Plex Mono",monospace','#94ff57'); if(modeSel===1) svDiffNote(menuSel);
     centerText('↑ ↓ избор · Z потвърди · Esc / X назад',244,'600 7px "IBM Plex Mono",monospace','#7f8e97');
     return;
   }
@@ -3627,7 +3633,7 @@ function render(){
   if(state==='dead'){ overlay(Math.min(0.7,deadT*0.8)); ctx.fillStyle=`rgba(120,0,0,${Math.min(0.25,deadT*0.3)})`; ctx.fillRect(0,0,W,H);
     centerText('ЗАГИНА',122,'30px '+DFONT(),'#ff5a45');
     if(deadT>1) centerText(SURV?(survLives>1?'Z — продължи ('+(survLives-1===1?'остава 1 живот':'остават '+(survLives-1)+' живота')+')':'Z — край на оцеляването'):'Z — опитай отново от последната контролна точка',148,'600 10px "IBM Plex Mono",monospace','#f3e6cf'); }
-  if(state==='paused'){ overlay(0.6); centerText('ПАУЗА',124,'28px '+DFONT(),ACC()); centerText('Z или P — продължи · Esc — изход в менюто',148,'600 9px "IBM Plex Mono",monospace','#cfd8dc'); }
+  if(state==='paused'){ overlay(0.6); centerText('ПАУЗА',124,'28px '+DFONT(),ACC()); centerText('Z или P — продължи · Esc — изход в менюто',148,'600 9px "IBM Plex Mono",monospace','#cfd8dc'); audPauseLine(); }
   if(state==='levelEnd'&&SURV){ overlay(Math.min(0.85,endT*0.8)); if(endT>0.5){ centerText((LVL.isBoss?'БОСЪТ Е ПОВАЛЕН · ':'')+'СЕКТОР '+(survK+1)+' ПРЕМИНАТ',60,'600 9px "IBM Plex Mono",monospace','#94ff57'); glitchTitle('ТОЧКИ '+survScore,W/2,100,26); drawStats(stats,150);
       centerText('Следва: сектор '+(survK+2)+' · '+THEME_NAME[svPlan(survK+1).theme]+(svPlan(survK+1).boss?' · БОС':''),204,'600 8px "IBM Plex Mono",monospace','#cfd8dc');
       if(endT>1.2&&blink()) centerText('Z — напред',240,'600 10px "IBM Plex Mono",monospace','#f3e6cf'); } }
@@ -4043,7 +4049,7 @@ function renderSplash(){
   overlay(0.62); glitchTitle('РЕЗОНАНС',W/2,96,46);
   if(blink()) centerText('Натисни Z или кликни, за да започнеш',166,'600 10px "IBM Plex Mono",monospace','#f3e6cf');
   centerText('← → движение · Z стрелба · X скок · C клякане · Q оръжие',224,'600 7px "IBM Plex Mono",monospace','#7f8e97');
-  centerText('M звук · P / Esc пауза',238,'600 7px "IBM Plex Mono",monospace','#7f8e97');
+  centerText('M звук · N музика · B ефекти · P / Esc пауза',238,'600 7px "IBM Plex Mono",monospace','#7f8e97');
 }
 
 /* ================= ДВИГАТЕЛ НА ПРОДЪЛЖЕНИЯТА (engine ≥ 2) =================
@@ -5259,6 +5265,91 @@ function svZero(k,plan,att){
     spawns, triggers, lifts:[], lasers, vents:[], crushers:[], tracks:[], exit, arena:null, gate:null, chunkLog:[{id:'zerog',x:2}], themeName:zt.name, isBoss:false, muts:plan.muts.slice(), attempt:att};
 }
 
+/* ================= ДВИГАТЕЛ · ОЦЕЛЯВАНЕ: запазен напредък =================
+   За всяка трудност се пази един запис KEY('svSave')+DI — началото на най-далечния достигнат сектор:
+   номер, семе (същите сектори), точки и екипировка. Записва се при влизане в сектор, само ако е по-далеч
+   от запазения. „Продължи“ тръгва от този сектор с пълни животи; точките и рекордът продължават да растат.
+   След избор на трудност (ако има запис или рекорд) се показва менюто ПРОДЪЛЖИ · НОВО НАЧАЛО · ИЗЧИСТИ. */
+let svSel=0, svConf=false, svClrT=-9;
+const svKey=(i=DI)=>KEY('svSave')+i;
+function svLoad(i=DI){ try{ const o=JSON.parse(store.get(svKey(i),'')); return o&&o.k>0?o:null; }catch(e){ return null; } }
+function svSave(k){
+  const o=svLoad(); if(k<1||(o&&o.k>=k)) return;
+  const p=player, a={}; for(const w in p.ammo) a[w]=[p.ammo[w].mag,p.ammo[w].res];
+  store.set(svKey(),JSON.stringify({k,seed:survSeed,score:survScore,w:Object.keys(p.weapons).filter(w=>p.weapons[w]),a,ar:p.armor,hp:Math.round(p.hp),cur:p.cur}));
+}
+function svApply(o){
+  const p=player; for(const w of o.w||[]) if(ORDER.includes(w)) p.weapons[w]=true;
+  for(const w in o.a||{}) if(p.ammo[w]){ p.ammo[w].mag=Math.max(p.ammo[w].mag,o.a[w][0]|0); p.ammo[w].res=Math.max(p.ammo[w].res,o.a[w][1]|0); }
+  p.armor=o.ar|0; p.hp=clamp(o.hp|0,1,100); if(p.weapons[o.cur]) p.cur=o.cur;
+}
+function svClear(i=DI){ for(const k of [KEY('best')+i,KEY('bestK')+i,svKey(i)]) store.del(k); svClrT=titleT; }
+function svItems(){
+  if(svConf) return [{t:'НЕ, ЗАПАЗИ ГИ',k:'no'},{t:'ДА, ИЗЧИСТИ',k:'yes'}];
+  const o=svLoad(); return (o?[{t:'ПРОДЪЛЖИ · СЕКТОР '+(o.k+1),k:'cont'}]:[]).concat([{t:'НОВО НАЧАЛО',k:'new'},{t:'ИЗЧИСТИ ПРОГРЕСА',k:'clr'}]);
+}
+/* след избор на трудност: без запис и рекорд — направо в сектор 1 */
+function svEnter(){ if(!svLoad()&&!survBest()) return startSurv(0,false); state='svmenu'; svSel=0; svConf=false; }
+function svMenuInput(){
+  const it=svItems(), n=it.length;
+  if(pressed.up){ svSel=(svSel+n-1)%n; SFX.menu(); } if(pressed.down){ svSel=(svSel+1)%n; SFX.menu(); }
+  if(pressed.jump||pressed.esc){ SFX.menu(); if(svConf){ svConf=false; svSel=svItems().length-1; } else { state='diff'; menuSel=DI; } return; }
+  if(!ok()) return; SFX.menuOk(); const k=it[svSel].k;
+  if(k==='cont') startSurv(svLoad().k,svLoad());
+  else if(k==='new') startSurv(0,false);
+  else if(k==='clr'){ svConf=true; svSel=0; }
+  else if(k==='no'){ svConf=false; svSel=svItems().length-1; }
+  else { svClear(); svConf=false; state='diff'; menuSel=DI; }
+}
+function renderSvMenu(){
+  overlay(0.8); centerText('ОЦЕЛЯВАНЕ · '+D.name,58,'16px '+DFONT(),ACC());
+  const it=svItems(), o=svLoad(), f='600 8px "IBM Plex Mono",monospace';
+  menuList(it,svSel,100,24);
+  const k=it[svSel].k, y=100+it.length*24+12;
+  const d=svConf?['Рекордът и запазеният напредък на трудност „'+D.name+'“ ще бъдат изтрити.','Това не може да се отмени.']
+    :k==='cont'?['Продължаваш от началото на сектор '+(o.k+1)+' с '+o.score+' точки и екипировката от тогава.','Животи: '+'♥'.repeat([3,2,1][DI])+' (пълни)']
+    :k==='new'?['Започваш от сектор 1 с нови сектори.','Запазеният напредък остава, докато не стигнеш по-далеч.']
+    :['Изтрива рекорда и запазения напредък на тази трудност.','Следващото оцеляване започва начисто.'];
+  centerText(d[0],y,f,'#cfd8dc'); centerText(d[1],y+13,f,'#cfd8dc');
+  centerText('Рекорд: '+bestTxt(DI),214,f,GAME.accent2||'#94ff57');
+  centerText('↑ ↓ избор · Z потвърди · Esc / X назад',244,'600 7px "IBM Plex Mono",monospace','#7f8e97');
+}
+/* ред под екрана за трудност */
+function svDiffNote(i){
+  if(titleT-svClrT<2.5&&i===DI) return centerText('Прогресът е изчистен.',227,'600 8px "IBM Plex Mono",monospace',ACC());
+  const o=svLoad(i); if(o) centerText('Запазен напредък: сектор '+(o.k+1)+' · '+o.score+' точки',227,'600 8px "IBM Plex Mono",monospace','#cfd8dc');
+}
+
+/* ================= ДВИГАТЕЛ · ЗВУК: музика и ефекти поотделно =================
+   M — целият звук: ако свири каквото и да е, спира всичко; ако всичко е спряно, пуска всичко.
+   N — само музиката, B — само ефектите. На тъч екран — бутоните в горните ъгли на кръстачката.
+   Изборът е общ за цялата поредица ('rz.audio'); по подразбиране — само ефекти. */
+let musOn=false, sfxOn=true, audT=-9;
+{ const v=store.get('rz.audio',''); if(/^[01]{2}$/.test(v)){ musOn=v[0]==='1'; sfxOn=v[1]==='1'; } }
+function audApply(){
+  muted=!musOn&&!sfxOn;
+  for(const [id,on] of [['bmus',musOn],['bsfx',sfxOn]]){ const b=document.getElementById(id); if(b) b.classList.toggle('off',!on); }
+  if(!AC) return; const t=AC.currentTime;
+  musBus.gain.setTargetAtTime(musOn?0.5:0,t,0.05); sfxBus.gain.setTargetAtTime(sfxOn?0.9:0,t,0.03);
+}
+function audSet(m,s){ musOn=m; sfxOn=s; store.set('rz.audio',(m?'1':'0')+(s?'1':'0')); audT=titleT; audApply(); }
+function toggleMute(){ if(musOn||sfxOn) audSet(false,false); else audSet(true,true); }
+const toggleMus=()=>audSet(!musOn,sfxOn), toggleSfx=()=>audSet(musOn,!sfxOn);
+const audTxt=()=>'музика: '+(musOn?'вкл.':'изкл.')+' (N) · ефекти: '+(sfxOn?'вкл.':'изкл.')+' (B) · всичко (M)';
+/* кратко съобщение след превключване — над всички екрани; в игра е долу, за да не закрива радиото */
+function audDraw(){
+  const a=titleT-audT; if(a<0||a>1.8) return;
+  ctx.setTransform(S,0,0,S,0,0); ctx.globalAlpha=Math.min(1,(1.8-a)*3);
+  const tx=(musOn?'МУЗИКА ВКЛ.':'МУЗИКА ИЗКЛ.')+'   ·   '+(sfxOn?'ЕФЕКТИ ВКЛ.':'ЕФЕКТИ ИЗКЛ.');
+  const y=['play','paused','dead','levelEnd'].includes(state)?H-52:14;
+  ctx.font='600 8px "IBM Plex Mono",monospace'; const w=ctx.measureText(tx).width+16;
+  ctx.fillStyle='rgba(4,6,8,0.85)'; ctx.fillRect(Math.round(W/2-w/2),y,Math.round(w),15); ctx.fillStyle=ACCA(0.8); ctx.fillRect(Math.round(W/2-w/2),y,2,15);
+  centerText(tx,y+10,'600 8px "IBM Plex Mono",monospace','#e8edf0'); ctx.globalAlpha=1;
+}
+function audPauseLine(){ centerText(audTxt(),166,'600 7px "IBM Plex Mono",monospace','#7f8e97'); }
+document.querySelectorAll('#touch button[data-a]').forEach(b=>b.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); initAudio(); b.dataset.a==='mus'?toggleMus():toggleSfx(); }));
+audApply();
+
 /* ================= ИГРА: r1 ================= */
 /* ================= РЕЗОНАНС (първата част) =================
    Кампанията, тренировката, интрото и оцеляването са в оригиналния двигател (engine 1). */
@@ -5295,9 +5386,10 @@ function frame(now){
   else if(state==='gmenu'){ cam=(Math.sin(titleT*0.05)*0.5+0.5)*(GAME.menuCam||60); gmenuInput(); clearPressed(); }
   else if((state==='survOver'||state==='win')&&pressed.esc){ clearPressed(); toTitle(); }
   else if(state==='survOver'){ winT+=dt; if(winT>1.5&&ok()) toTitle(); clearPressed(); }
+  else if(state==='svmenu'){ svMenuInput(); clearPressed(); }
   else if(state==='diff'){
     if(pressed.up){ menuSel=(menuSel+2)%3; SFX.menu(); } if(pressed.down){ menuSel=(menuSel+1)%3; SFX.menu(); }
-    if(ok()){ DI=menuSel; D=DIFFS[DI]; store.set('rz.diff',DI); SFX.menuOk(); if(modeSel===1) startSurv(0,false); else if(SEQ){ state='eps'; menuSel=gUnl-1; } else { state='eps'; menuSel=unlocked-1; } }
+    if(ok()){ DI=menuSel; D=DIFFS[DI]; store.set('rz.diff',DI); SFX.menuOk(); if(modeSel===1) svEnter(); else if(SEQ){ state='eps'; menuSel=gUnl-1; } else { state='eps'; menuSel=unlocked-1; } }
     else if(pressed.jump||pressed.esc){ toMenu(modeSel===1?3:2); SFX.menu(); }
     clearPressed();
   }
@@ -5327,13 +5419,13 @@ function frame(now){
     clearPressed(); }
   else if(state==='win'&&SEQ){ winT+=dt; if(winT>2&&ok()){ SFX.menuOk(); toMenu(2); } clearPressed(); }
   else if(state==='win'){ winT+=dt; if(winT>2){ if(LI===19&&ok()){ SFX.menuOk(); totals={time:0,shots:0,hits:0,kills:0,deaths:0}; startEpisode(20,false); } else if(ok()||(LI===19&&pressed.jump)) toTitle(); } clearPressed(); }
-  render();
+  render(); audDraw();
   requestAnimationFrame(frame);
 }
 loadLevel(0); totals={time:0,shots:0,hits:0,kills:0,deaths:0};
 if(document.fonts&&document.fonts.load){ Promise.all([document.fonts.load('10px "Russo One"'),document.fonts.load('600 10px "IBM Plex Mono"')]).then(()=>{ prerender(); }).catch(()=>{}); }
 document.addEventListener('visibilitychange',()=>{ if(document.hidden&&state==='play'){ state='paused'; if(AC) AC.suspend(); } });
-window.__rz={get SEQ(){return SEQ},get R2(){return SEQ},get R3(){return GAME.id==='r3'},get GAME(){return GAME},GAMES,GHIST,setGame,enterGame,toMenu,menuItems,get gSel(){return gSel},get r2Sel(){return gSel},r2ToTitle:()=>toMenu(2),leaveR2:()=>enterGame(GAMES[0].id),get LEVELS2(){return GLV},hurtEnemy,get ECHO(){return ECHO},get PLATES(){return PLATES},get LIGHTS(){return LIGHTS},get TERMS(){return TERMS},get ALARM(){return ALARM},get NOISE(){return NOISE},get MST(){return MST},get FLOOD(){return FLOOD},get ESC(){return ESC},get CHASE(){return CHASE},get ERA(){return ERA},get FLIP(){return FLIP},get GENS(){return GENS},get LEVERS(){return LEVERS},get SHIFT(){return SHIFT},get ALLIES(){return ALLIES},switchEra,flipWorld,isWater,get pickups(){return pickups},get scientists(){return scientists},startBoss,respawn,get cp(){return cp},hurtBoss,svValidate,elecOn,startTraining,finishTraining,TRAIN_LVL,get TRN(){return TRN},get msg(){return msg},get grav(){return G},startTram,updTram,get TR(){return TR},completeLevel,get bmiss(){return bmiss},get LI(){return LI},get unlocked(){return unlocked},startSurv,genLevel,get survK(){return survK},get survScore(){return survScore},set survSeed(v){survSeed=v},get LVL(){return LVL},get lifts(){return lifts},get tracks(){return tracks},get trains(){return trains},get gateOpen(){return gateOpen},get rockets(){return rockets},clearPressed,loadLevel,get map(){return map},get LV(){return LV},get player(){return player},get state(){return state},set state(v){state=v},get boss(){return boss},get enemies(){return enemies},get exitPortal(){return exitPortal},get enc(){return enc},update,setDiff(i){DI=i;D=DIFFS[i];},startEpisode,get cam(){return cam},set cam(v){cam=v},render,groundY};
+window.__rz={get SEQ(){return SEQ},get R2(){return SEQ},get R3(){return GAME.id==='r3'},get GAME(){return GAME},GAMES,GHIST,setGame,enterGame,toMenu,menuItems,get gSel(){return gSel},get r2Sel(){return gSel},r2ToTitle:()=>toMenu(2),leaveR2:()=>enterGame(GAMES[0].id),get LEVELS2(){return GLV},hurtEnemy,get ECHO(){return ECHO},get PLATES(){return PLATES},get LIGHTS(){return LIGHTS},get TERMS(){return TERMS},get ALARM(){return ALARM},get NOISE(){return NOISE},get MST(){return MST},get FLOOD(){return FLOOD},get ESC(){return ESC},get CHASE(){return CHASE},get ERA(){return ERA},get FLIP(){return FLIP},get GENS(){return GENS},get LEVERS(){return LEVERS},get SHIFT(){return SHIFT},get ALLIES(){return ALLIES},switchEra,flipWorld,isWater,get pickups(){return pickups},get scientists(){return scientists},get barks(){return barks},startBoss,respawn,get cp(){return cp},hurtBoss,get musOn(){return musOn},get AC(){return AC},get musBus(){return musBus},get sfxBus(){return sfxBus},get sfxOn(){return sfxOn},toggleMute,toggleMus,toggleSfx,svLoad,svSave,svClear,svEnter,svItems,get svSel(){return svSel},get svConf(){return svConf},get DI(){return DI},get survLives(){return survLives},get survSeed(){return survSeed},svValidate,elecOn,startTraining,finishTraining,TRAIN_LVL,get TRN(){return TRN},get msg(){return msg},get grav(){return G},startTram,updTram,get TR(){return TR},completeLevel,get bmiss(){return bmiss},get LI(){return LI},get unlocked(){return unlocked},startSurv,genLevel,get survK(){return survK},get survScore(){return survScore},set survSeed(v){survSeed=v},get LVL(){return LVL},get lifts(){return lifts},get tracks(){return tracks},get trains(){return trains},get gateOpen(){return gateOpen},get rockets(){return rockets},clearPressed,loadLevel,get map(){return map},get LV(){return LV},get player(){return player},get state(){return state},set state(v){state=v},get boss(){return boss},get enemies(){return enemies},get exitPortal(){return exitPortal},get enc(){return enc},update,setDiff(i){DI=i;D=DIFFS[i];},startEpisode,get cam(){return cam},set cam(v){cam=v},render,groundY};
 for(const g of GAMES) if(g.debug) Object.defineProperties(window.__rz,Object.getOwnPropertyDescriptors(g.debug));
 requestAnimationFrame(frame);
 })();

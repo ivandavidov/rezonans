@@ -9,6 +9,7 @@ python3 src/build.py
 ```
 Изходът е `docs/index.html` — един самостоятелен HTML документ, който GitHub Pages публикува от `docs/`.
 За проба с част от игрите: `python3 src/build.py r1 r3 --out /tmp/proba.html`.
+По подразбиране (`games/series.json`) се публикува само `r1`; всички части: `python3 src/build.py r1 r2 r3 r4 r5 r6 r7`.
 
 ## Какво не се пипа на ръка
 - **`docs/index.html`** — генерира се. Всяка промяна се прави в `src/` и се пуска сборката.
