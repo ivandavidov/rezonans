@@ -20,7 +20,7 @@ function echoEndRec(){ if(ECHO.rec.length<12){ ECHO={mode:'idle',rec:[],t:0,i:0}
 function mechUpdate(dt){
   const p=player;
   // echo
-  if(GAME.echo&&pressed.era&&!ERAD&&!p.dead){
+  if(E_ACT==='echo'){
     if(ECHO.mode==='idle'){ ECHO={mode:'rec',rec:[],t:0,i:0,shots:stats.shots}; if(AC){ osc({type:'sine',f:880,t:0.12,v:0.1}); } if(!MST.echoHint&&!LVL.echo){ MST.echoHint=1; } }
     else if(ECHO.mode==='rec') echoEndRec();
     else { ECHO={mode:'idle',rec:[],t:0,i:0}; if(AC) osc({type:'sine',f:440,f2:220,t:0.2,v:0.08}); }

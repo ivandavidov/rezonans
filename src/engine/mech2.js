@@ -33,7 +33,7 @@ function timeScale(){ return STILL.k; }
 function mech2Update(dt){
   const p=player; if(!p) return;
   const tx0=(p.x+p.w/2)/T; STILL.son=!!LVL.sonar||!!(LVL.sonarZones&&LVL.sonarZones.some(z=>tx0>=z[0]&&tx0<=z[1]));
-  if(!GAME.echo&&pressed.era&&!ERAD&&!p.dead){ if(STILL.son) sonarPing(); else if(LVL.freq) freqNext(); }
+  if(E_ACT==='sonar') sonarPing(); else if(E_ACT==='freq') freqNext();
   sonarCd=Math.max(0,sonarCd-dt); fqBlockT=Math.max(0,fqBlockT-dt);
   for(const s of SONAR) s.t+=dt; SONAR=SONAR.filter(s=>s.t<1.6);
   const tx=(p.x+p.w/2)/T; STILL.on=!p.dead&&(!!LVL.still||!!(LVL.stillZones&&LVL.stillZones.some(z=>tx>=z[0]&&tx<=z[1])));

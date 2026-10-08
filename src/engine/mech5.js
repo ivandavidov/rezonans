@@ -14,7 +14,6 @@ function mech5Load(){ CURS=[]; TAPE=null; if(!LVL) return; for(const [cmd,tx,row
   if(LVL.tape) tapeInit(LVL.tape); }
 function mech5Respawn(){ for(const c of CURS) c.cd=0; }
 function curNear(c){ const p=player; if(!p||p.dead) return false; return Math.abs(p.x+p.w/2-(c.tx*T+8))<15&&Math.abs(p.y+p.h-(c.row+1)*T)<22; }
-function mech5Near(){ return CURS.some(c=>!c.done&&c.cd<=0&&curNear(c)); }
 function pokeTiles(rects){
   const one=()=>{ for(const [x0,y0,x1,y1,ch] of rects){ for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++) if(map[y]&&x>=0&&x<COLS) map[y][x]=ch; redrawCols(Math.max(0,x0),Math.min(COLS-1,x1)); } };
   if(!ERAD){ one(); return; }
@@ -38,7 +37,7 @@ function runCursor(c){
 function mech5Update(dt){
   const p=player; if(!p) return;
   for(const c of CURS){ c.cd=Math.max(0,c.cd-dt); c.flash=Math.max(0,c.flash-dt*2); }
-  if(pressed.era&&!p.dead){ const c=CURS.find(c=>!c.done&&curNear(c)); if(c){ pressed.era=false; if(c.cd>0){ cursorBeep(false); showMsg('Курсорът още мига… изчакай '+c.cd.toFixed(1)+' s.',1); } else runCursor(c); } }
+  if(E_ACT==='cursor'){ const c=CURS.find(c=>!c.done&&curNear(c)); if(c.cd>0){ cursorBeep(false); showMsg('Курсорът още мига… изчакай '+c.cd.toFixed(1)+' s.',1); } else runCursor(c); }
   if(TAPE) tapeUpdate(dt);
 }
 /* ---------- касетата ---------- */

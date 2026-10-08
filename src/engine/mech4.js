@@ -18,7 +18,7 @@ function tonePulse(){
 function mech4Update(dt){
   const p=player; if(!p) return;
   toneCd=Math.max(0,toneCd-dt);
-  if(LVL.tone&&!GAME.echo&&pressed.era&&!ERAD&&!p.dead&&!STILL.son&&!LVL.freq&&!LVL.flares) tonePulse();
+  if(E_ACT==='tone') tonePulse();
   for(const t of TONEP) t.t+=dt; TONEP=TONEP.filter(t=>t.t<1.2);
   if(tdoorT>0){ tdoorT-=dt; if(tdoorT<=0){ const inside=TDOORS.some(([tx,ty])=>ov(p,{x:tx*T,y:ty*T,w:T,h:T})); if(inside) tdoorT=0.2; else SOLID.add('t'); } }
 }

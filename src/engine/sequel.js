@@ -206,6 +206,18 @@ function updShifters(){
   }
 }
 
+/* ---------- клавиш E: едно действие на кадър ----------
+   Приоритет: курсор до играча → епохи (в ниво с епохи E е само за тях) → ехо (GAME.echo) → сонар → тон-честота → ракета → тон. */
+let E_ACT=null;
+function eAction(p){
+  if(!pressed.era||p.dead) return null;
+  if(CURS.some(c=>!c.done&&curNear(c))) return 'cursor';
+  if(ERAD) return eraCd<=0?'era':null;
+  if(GAME.echo) return 'echo';
+  const tx=(p.x+p.w/2)/T; if(LVL.sonar||LVL.sonarZones&&LVL.sonarZones.some(z=>tx>=z[0]&&tx<=z[1])) return 'sonar';
+  return LVL.freq?'freq':LVL.flares?'flare':LVL.tone?'tone':null;
+}
+
 /* ---------- per-frame update ---------- */
 function r2Update(dt){
   const p=player;
@@ -223,8 +235,8 @@ function r2Update(dt){
   // levers
   for(const v of LEVERS){ const r={x:v.x*T,y:v.y*T-24,w:16,h:24}; v.near=ov(p,r); if(v.near&&!v.on&&pressed.up&&!p.dead){ v.on=true; SFX.armor(); shake=3; if(v.fn) v.fn(v); } }
   updDrains(dt);
-  // eras
-  eraCd-=dt; if(pressed.era&&ERAD&&!p.dead&&eraCd<=0&&!mech5Near()){ if(switchEra()) eraCd=0.45; }
+  // клавиш E (eAction) — решава се тук, всяко действие се изпълнява на обичайното си място; епохите са първи
+  eraCd-=dt; E_ACT=eAction(p); if(E_ACT==='era'&&switchEra()) eraCd=0.45;
   mechUpdate(dt);
   // flips
   flipCd-=dt;

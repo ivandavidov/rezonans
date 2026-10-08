@@ -33,7 +33,7 @@ function isLit(x,y){
 function mech3Update(dt){
   const p=player; if(!p) return;
   flareCd=Math.max(0,flareCd-dt);
-  if(LVL.flares&&!GAME.echo&&pressed.era&&!ERAD&&!p.dead&&!STILL.son&&!LVL.freq) throwFlare();
+  if(E_ACT==='flare') throwFlare();
   // ракети
   for(const f of FLARES){ f.t+=dt; if(!f.stuck){ f.vy+=G*0.8*dt; const nx=f.x+f.vx*dt, ny=f.y+f.vy*dt; if(solidAt(nx,ny)){ if(solidAt(f.x,ny)){ f.vy=0; f.vx*=0.4; if(Math.abs(f.vx)<20) f.stuck=true; } else f.vx=-f.vx*0.3; } else { f.x=nx; f.y=ny; } }
     if(Math.random()<dt*30) part(f.x,f.y,rnd(-30,30),rnd(-60,-10),0.4,Math.random()<0.5?'#ff6a4a':'#fff0c0',1.5,60); }
