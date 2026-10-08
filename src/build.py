@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """Сборка на поредицата „Резонанс“ в един HTML файл.
 
-  python3 src/build.py                 → rezonans.html + test.html (игрите от games/series.json)
+  python3 src/build.py                 → docs/index.html (игрите от games/series.json)
   python3 src/build.py r1 r3           → само изброените игри (за проба)
   python3 src/build.py --out x.html …  → друго име на изхода
+
+Изходът е самостоятелен HTML документ (doctype, <head>, <body>) — готов за отваряне
+в браузър и за публикуване (напр. GitHub Pages от папка docs/).
 
 Слоеве:
   base/rezonans_v21.html  оригиналният двигател и първата част (не се пипа на ръка)
@@ -16,9 +19,10 @@
 после id-то в games/series.json. Махане: изтрий id-то от series.json — нищо друго не се променя.
 """
 import json, os, re, sys
+from urllib.parse import quote
 ROOT=os.path.dirname(os.path.abspath(__file__))
 P=lambda *a: os.path.join(ROOT,*a)
-args=sys.argv[1:]; out='rezonans.html'
+args=sys.argv[1:]; out=os.path.join(os.path.dirname(ROOT),'docs','index.html')
 if '--out' in args: i=args.index('--out'); out=args[i+1]; del args[i:i+2]
 series=args or json.load(open(P('games','series.json')))
 games=[(gid,json.load(open(P('games',gid,'game.json'),encoding='utf-8'))) for gid in series]
@@ -183,7 +187,29 @@ import collections
 tops=collections.Counter(a or b for a,b in re.findall(r'^(?:function\s+(\w+)|(?:const|let)\s+(\w+)\s*=)',s,re.M))
 dup=[k for k,v in tops.items() if v>1]
 if dup: raise SystemExit('дублирани глобални имена: '+', '.join(dup))
-open(out,'w',encoding='utf-8').write(s)
-tout=os.path.join(os.path.dirname(out),'test.html') if os.path.basename(out)=='rezonans.html' else os.path.splitext(out)[0]+'_test.html'
-open(tout,'w',encoding='utf-8').write('<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body>'+s+'</body></html>')
-print('built', out, len(s), 'games:', ', '.join(g for g,_ in games))
+
+# ---------- изход: пълноценен HTML документ ----------
+# base е фрагмент (title, шрифтове, style, после разметка и script) — style отива в <head>, останалото в <body>
+i=s.index('</style>')+len('</style>')
+head,body=s[:i].strip(),s[i:].strip()
+icon=('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#080b0d"/>'
+      '<path d="M3 16h5l3-9 5 18 4-14 3 5h6" fill="none" stroke="#ffa62b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>')
+doc=f'''<!doctype html>
+<html lang="bg">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Резонанс — поредица ретро екшън игри, които се играят направо в браузъра.">
+<meta name="theme-color" content="#080b0d">
+<link rel="icon" href="data:image/svg+xml,{quote(icon)}">
+{head}
+<style>html,body{{margin:0}}</style>
+</head>
+<body>
+{body}
+</body>
+</html>
+'''
+os.makedirs(os.path.dirname(os.path.abspath(out)),exist_ok=True)
+open(out,'w',encoding='utf-8').write(doc)
+print('built', out, len(doc), 'games:', ', '.join(g for g,_ in games))

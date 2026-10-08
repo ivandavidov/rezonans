@@ -1,4 +1,12 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><title>Резонанс</title>
+<!doctype html>
+<html lang="bg">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Резонанс — поредица ретро екшън игри, които се играят направо в браузъра.">
+<meta name="theme-color" content="#080b0d">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20rx%3D%226%22%20fill%3D%22%23080b0d%22/%3E%3Cpath%20d%3D%22M3%2016h5l3-9%205%2018%204-14%203%205h6%22%20fill%3D%22none%22%20stroke%3D%22%23ffa62b%22%20stroke-width%3D%223%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E">
+<title>Резонанс</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Russo+One&display=swap" rel="stylesheet">
@@ -31,7 +39,9 @@ body.has-e .acts{grid-template-columns:repeat(5,56px)}
 @media (pointer:coarse){.touch{display:flex}.keys{display:none}}
 @media (max-width:420px){.pad{grid-template-columns:repeat(3,44px);grid-template-rows:repeat(2,44px)}.acts{grid-template-columns:repeat(4,46px)}.acts button{height:46px}}
 </style>
-
+<style>html,body{margin:0}</style>
+</head>
+<body>
 <div class="wrap">
   <div class="screen"><canvas id="game" tabindex="0" aria-label="Игра Резонанс"></canvas></div>
   <div class="keys">
@@ -5328,4 +5338,5 @@ for(const g of GAMES) if(g.debug) Object.defineProperties(window.__rz,Object.get
 requestAnimationFrame(frame);
 })();
 </script>
-</body></html>
+</body>
+</html>
