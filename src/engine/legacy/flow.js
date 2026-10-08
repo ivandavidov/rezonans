@@ -10,7 +10,7 @@ function respawn(){
   r2PreRespawn(); const p=player; p.x=cp*T+3; p.h=26; p.crouch=false; p.y=groundY(cp)-26; p.vx=p.vy=0; p.hp=100; p.dead=false; p.inv=1.5; p.climb=false; p.hurtAgo=9;
   if(p.ammo.pistol.res+p.ammo.pistol.mag<34) p.ammo.pistol.res=34-p.ammo.pistol.mag;
   if(!hasAmmo(p.cur)) autoSwitch();
-  ebullets=[];grenades=[];orbs=[];bolts=[];bmiss=[]; for(const e of enemies) if(e.type!=='turret'&&e.type!=='nest'&&e.type!=='pylon') e.alert=false;
+  ebullets=[];grenades=[];orbs=[];bolts=[];bmiss=[]; for(const e of enemies) if(!FOES[e.type].fixed) e.alert=false;
   if(enc&&enc.active){
     enemies=enemies.filter(e=>e.tag!=='enc'); portals=portals.filter(q=>q.tag!=='enc');
     if(enc.doorIn) setDoor(enc.doorIn,'.');
@@ -18,8 +18,8 @@ function respawn(){
     enc=null;
   }
   if(bossActive&&boss&&!boss.dead){
-    enemies=enemies.filter(e=>!e.summoned&&e.tag!=='pylon'); portals=portals.filter(q=>q.tag!=='boss');
-    boss=makeBoss(); boss.hp*=bossMul; boss.max*=bossMul; if(boss.type!=='heli') boss.t=1.2;
+    enemies=enemies.filter(e=>!e.summoned); portals=portals.filter(q=>q.tag!=='boss');
+    boss=makeBoss(); boss.hp*=bossMul; boss.max*=bossMul; if(!BOSSES[boss.type].keepT) boss.t=1.2;
     const d=LVL.arena.door!=null?LVL.arena.door:LVL.arena.x0;
     for(const b of barrels) if(b.tx>d){ b.dead=false; b.hp=15; b.fuse=-1; }
     for(const k of pickups) if(k.tx>d) k.taken=false;

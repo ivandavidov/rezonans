@@ -55,7 +55,7 @@ function mechUpdate(dt){
   for(const s of MST.snow){ s[1]+=(30+s[2]*30)*dt; s[0]+=(GWIND*0.12+Math.sin(lvT+s[3]*9)*8)*dt; if(s[1]>H){ s[1]=-2; s[0]=Math.random()*W; } if(s[0]<0) s[0]+=W; if(s[0]>W) s[0]-=W; }
   mech5Update(dt); mech2Update(dt); mech3Update(dt); mech4Update(dt);
 }
-function mechSpawn(t,x){ x=clamp(x,3*T,(COLS-3)*T); const tx=Math.floor(x/T); if(!DIMS[t]) return; const fl=t==='flyer'||t==='drone'; const e=makeEnemy(t,tx*T+8,fl?groundY(tx)-4*T:groundY(tx)); e.alert=true; e.summoned=true; enemies.push(e); for(let i=0;i<14;i++) part(tx*T+8,(fl?groundY(tx)-4*T:groundY(tx))-12,rnd(-60,60),rnd(-90,10),0.5,'#ff3b4f',2,0); if(AC) SFX.portal&&SFX.portal(0.5); }
+function mechSpawn(t,x){ x=clamp(x,3*T,(COLS-3)*T); const tx=Math.floor(x/T); if(!DIMS[t]) return; const fl=!!FOES[t].fly; const e=makeEnemy(t,tx*T+8,fl?groundY(tx)-4*T:groundY(tx)); e.alert=true; e.summoned=true; enemies.push(e); for(let i=0;i<14;i++) part(tx*T+8,(fl?groundY(tx)-4*T:groundY(tx))-12,rnd(-60,60),rnd(-90,10),0.5,'#ff3b4f',2,0); if(AC) SFX.portal&&SFX.portal(0.5); }
 function mechAlarm(l){ if(LVL.onAlarm){ LVL.onAlarm(); return; } if(ALARM<=0){ showMsg('ТРЕВОГА! Засякоха те.',2); shake=4; if(MST.alarmN<6){ const p=player; for(const s of [-1,1]){ mechSpawn(LVL.alarmFoe||'soldier',p.x+s*rnd(7,10)*T); MST.alarmN++; } } } ALARM=7; }
 /* ---------- drawing ---------- */
 function mechDrawBack(){ mech2DrawBack(); mech3DrawBack();

@@ -43,7 +43,7 @@ function r2Respawn(){
   if(CHASE&&!CHASE.done) CHASE.x=Math.min(CHASE.x,p.x-LVL.chase.lead*T);
   if(ESC){ ESC.hp=ESC.max; ESC.state='follow'; ESC.x=p.x-p.face*16; ESC.y=p.y+p.h-ESC.h; ESC.vx=ESC.vy=0; }
   for(const a of ALLIES){ a.x=p.x; a.y=p.y-30; }
-  if(GENS.length&&LVL.arena&&LVL.arena.type==='breach') for(const g of GENS){ g.hp=g.max; }
+  if(LVL.arena&&(BOSSES[LVL.arena.type]||{}).onRespawn) BOSSES[LVL.arena.type].onRespawn();
   GWIND=0;
 }
 function r2ExitOk(){
@@ -308,7 +308,7 @@ function r2Lights(L){
   for(const g of GENS) if(g.hp>0) L.push([g.x+14,g.y+10,60,0.7]);
   for(const f of FLIPS) L.push([f.x,f.y,60,0.8]);
   for(const a of ALLIES) L.push([a.x,a.y,56,0.7]);
-  for(const e of enemies) if(!e.dead&&(e.type==='jelly'||e.type==='drone')) L.push([e.x+e.w/2,e.y+e.h/2,40,0.6]);
+  for(const e of enemies) if(!e.dead&&FOES[e.type].glow) L.push([e.x+e.w/2,e.y+e.h/2,40,0.6]);
   if(FLOOD&&FLOOD.y<H) L.push([player.x,FLOOD.y,60,0.3]);
 }
 function r2PostFx(){
@@ -380,7 +380,7 @@ defItem('air',{take:k=>{ const p=player; if(p.air>=99) return false; p.air=Math.
 defItem('air',{draw:(k,x,y)=>{ const a=titleT*3+k.bob; for(let i=0;i<3;i++){ const bx=x+6+Math.sin(a+i*2)*3, by=y+8-((titleT*14+i*6)%14); ctx.strokeStyle='rgba(220,250,255,0.85)'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(bx,by,2+i*0.6,0,7); ctx.stroke(); } ctx.fillStyle='rgba(160,230,255,0.25)'; ctx.beginPath(); ctx.arc(x+6,y+4,7,0,7); ctx.fill(); }});
 
 /* ---------- new enemies ---------- */
-defFoes('dims',{fish:[16,8,24],jelly:[12,14,20],imp:[12,12,24],drone:[14,10,36],mite:[8,8,5],tent:[14,60,90]});
+defFoes('dims',{fish:[16,8,24],jelly:[12,14,20],imp:[12,12,24],drone:[14,10,36],mite:[8,8,5],tent:[14,60,90]}); defFoes('glow',{jelly:true,drone:true}); defFoes('fly',{drone:true});
 function inWaterE(e,x,y){ return isWater(x,y); }
 defFoe('fish',{upd:(e,dt)=>{
   if(!isWater(e.x+e.w/2,e.y+e.h/2)){ e.dry=(e.dry||0)+dt; physics(e,dt); if(e.dry>1.5) hurtEnemy(e,999,0,true); return; } e.dry=0;

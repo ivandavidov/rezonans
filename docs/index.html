@@ -93,9 +93,13 @@ const store={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:v;}c
 
 /* ================= РЕГИСТРИ НА СЪДЪРЖАНИЕТО =================
    Двигателят вика съдържанието по тип; частите (и двигателят — за общото) го описват с def*():
-     defFoe(id,{dims,upd,draw})   враг или подвижен обект: размери [w,h,hp], обновяване (e,dt), рисуване (e)
+     defFoe(id,{dims,upd,draw})   враг или подвижен обект: размери [w,h,hp], обновяване (e,dt), рисуване (e);
+                                  флагове: fixed (закотвен: без физика като мъртъв, асансьорите и токът не го пипат, остава нащрек),
+                                  noCrush, fly (появява се във въздуха), mech, human, glow (меко сияние); light(e,L) — своя светлина
      defBoss(id,{make,hurt,upd,draw,intro,name,col,sfx,norm,onTone,onCmd})   бос; norm — множител на здравето в оцеляването,
-                                  onTone(разстояние) — реакция на тона (mech4), onCmd(курсор) — на команда (mech5)
+                                  onTone(разстояние) — реакция на тона (mech4), onCmd(курсор) — на команда (mech5);
+                                  portal (голям портал при появата), dieSfx, keepT (таймерът не се нулира при прераждане),
+                                  glow(b) — основната светлина [x,y,r,a], lights(L) — още светлини, onRespawn() — при прераждане в арената
      defItem(id,{take,draw})      предмет: take(k) → false, ако не е взет; draw(k,x,y)
      defTile(fn), defBack(fn)     собствен вид на плочките / на фона (fn връща true, ако е нарисувала)
    defFoes/defBosses(поле,{id:стойност,…}) задават едно поле на няколко наведнъж. Вече зададено поле спира играта с ясна грешка.
@@ -644,7 +648,7 @@ function hurtPlayer(d,kx=0,hazard){
 }
 function hurtEnemy(e,d,kx=0,quiet){
   if(e.dead) return; if(e.fq!=null&&LVL.freq&&e.fq!==FREQ){ e.hitT=0.04; sparks(e.x+e.w/2,e.y+e.h/2,2,'#a8a8b8'); return; } e.hp-=d; e.hitT=0.08; if(e.type!=='turret') e.vx+=kx; e.alert=true;
-  const cx=e.x+e.w/2, cy=e.y+e.h/2, mech=e.type==='turret'||e.type==='pylon'||e.type==='target'||!!e.mech, alien=e.type!=='soldier'&&e.type!=='zombie';
+  const cx=e.x+e.w/2, cy=e.y+e.h/2, mech=!!FOES[e.type].mech||!!e.mech, alien=!FOES[e.type].human;
   if(!quiet){ if(mech) sparks(cx,cy,4); else blood(cx,cy,alien,5); }
   if(e.type==='shocker'&&e.state==='charge'&&Math.random()<0.35){ e.state='stagger'; e.t=0.45; }
   if(e.hp<=0){ e.dead=true; e.deadT=0; stats.kills++;
@@ -975,6 +979,7 @@ function updScientist(s,dt){ if(s.esc) return updEscort(s,dt);
 defFoes('dims',{crab:[12,8,20],shocker:[14,28,60],soldier:[12,26,60],turret:[12,10,50],flyer:[14,10,24],zombie:[12,26,55],nest:[20,16,90],guard:[16,30,110],target:[14,23,1]});
 defFoes('upd',{crab:updCrab,shocker:updShocker,soldier:updSoldier,turret:updTurret,flyer:updFlyer,zombie:updZombie,nest:updNest,guard:updGuard,target:updTarget});
 defFoes('draw',{crab:drawCrab,shocker:drawShocker,soldier:drawSoldier,turret:drawTurret,flyer:drawFlyer,zombie:drawZombie,nest:drawNest,guard:drawGuard,target:drawTarget});
+defFoes('fixed',{turret:true,nest:true}); defFoes('noCrush',{flyer:true,nest:true}); defFoes('fly',{flyer:true}); defFoes('mech',{turret:true,target:true}); defFoes('human',{soldier:true,zombie:true});
 
 /* ================= LIFTS, LASERS, VENTS ================= */
 function liftPos(l){ const per=l.per||5, t=((lvT+(l.off||0)*per)%per+per)%per, half=per/2, dw=Math.min(1,half*0.35), mv=half-dw; const u=t<mv?t/mv:t<half?1:t<half+mv?1-(t-half)/mv:0, e=0.5-0.5*Math.cos(Math.PI*u); return [(l.x0+(l.x1-l.x0)*e)*T,(l.y0+(l.y1-l.y0)*e)*T]; }
@@ -990,7 +995,7 @@ function updHazards(dt){
   const p=player;
   for(const l of lasers){ l.hitCd-=dt; const st=lzState(l); if(st===2&&!l.was&&Math.abs(l.tx*T-p.x)<300) sfxAt('laser',{x:l.tx*T,y:l.r0*T,w:0}); l.was=st===2;
     if(st===2){ const r={x:l.tx*T+6,y:l.r0*T,w:4,h:(l.r1-l.r0+1)*T}; if(l.hitCd<=0&&!p.dead&&ov(r,p)){ p.inv=0; hurtPlayer(20,sgn(p.x+p.w/2-(l.tx*T+8))*120); l.hitCd=0.6; sparks(l.tx*T+8,p.y+p.h/2,6,'#ff6a6a'); }
-      for(const e of enemies) if(!e.dead&&e.type!=='turret'&&e.type!=='nest'&&e.type!=='pylon'&&ov(r,e)){ e.lz=(e.lz||0)-dt; if(e.lz<=0){ e.lz=0.4; hurtEnemy(e,15,0,true); } } } }
+      for(const e of enemies) if(!e.dead&&!FOES[e.type].fixed&&ov(r,e)){ e.lz=(e.lz||0)-dt; if(e.lz<=0){ e.lz=0.4; hurtEnemy(e,15,0,true); } } } }
   for(const v of vents){ v.hitCd-=dt; const st=vtState(v), x=v.tx*T;
     if(st===2&&!v.was&&Math.abs(x-p.x)<300) sfxAt('steam',{x,y:14*T,w:0}); v.was=st===2;
     if(Math.abs(x-cam-W/2)<W){ if(st===2){ for(let i=0;i<2;i++) part(x+8+rnd(-5,5),15*T-2,rnd(-12,12),rnd(-160,-110),rnd(0.35,0.5),'#e8f0f4',rnd(3,5),-60,2); } else if(st===1&&Math.random()<0.3) part(x+8+rnd(-4,4),15*T-2,rnd(-6,6),rnd(-50,-30),0.4,'#c8d4da',3,0,2); }
@@ -1014,7 +1019,7 @@ function updCrushers(dt){
     c.last=r.pos;
     if(r.pos>0.25){
       if(c.hitCd<=0&&!p.dead&&ov(r,p)){ c.hitCd=1; p.inv=0; hurtPlayer(60,sgn(p.x+p.w/2-(r.x+r.w/2))*320); p.vy=-150; }
-      for(const e of enemies) if(!e.dead&&e.type!=='flyer'&&e.type!=='nest'&&e.type!=='pylon'&&ov(r,e)) hurtEnemy(e,999,0);
+      for(const e of enemies) if(!e.dead&&!FOES[e.type].noCrush&&ov(r,e)) hurtEnemy(e,999,0);
     }
   }
 }
@@ -1068,12 +1073,12 @@ function startBoss(){
   const a=LVL.arena; setCp(a.cp!=null?a.cp:a.door+2); bossActive=true;
   if(a.door!=null){ setDoor([a.door,a.r0,a.r1],'D'); SFX.door(); shake=6; }
   boss=makeBoss(); boss.hp*=bossMul; boss.max*=bossMul;
-  if(['colossus','warden','guardian'].includes(a.type)) portals.push({x:boss.x+boss.w/2,y:boss.y+boss.h/2,t:0,spawned:true,type:'boss',big:true});
+  if(BOSSES[a.type].portal) portals.push({x:boss.x+boss.w/2,y:boss.y+boss.h/2,t:0,spawned:true,type:'boss',big:true});
   SFX.alarm(3); sfxAt(bossSfx(boss.type),boss); bossMusic=true;
   showMsg(BOSSES[a.type].intro,4.5);
 }
 function hurtBoss(d,blast){ BOSSES[boss.type].hurt(d,blast); }
-function bossDie(){ const b=boss; b.hp=0; b.dead=true; b.deathT=0; b.vx=0; b.vy=0; stats.kills++; sfxAt(b.type==='warden'?'warden':(b.type==='heli'||b.mech)?'boom':'roar',b); for(const e of enemies) if(e.summoned&&!e.dead) hurtEnemy(e,999,0); }
+function bossDie(){ const b=boss; b.hp=0; b.dead=true; b.deathT=0; b.vx=0; b.vy=0; stats.kills++; sfxAt(BOSSES[b.type].dieSfx||(b.mech?'boom':'roar'),b); for(const e of enemies) if(e.summoned&&!e.dead) hurtEnemy(e,999,0); }
 function bossDeathFx(b,dt){
   b.deathT+=dt; b.boomT-=dt;
   if(b.boomT<=0&&b.deathT<2.6){ b.boomT=0.22; const ex=b.x+rnd(b.w),ey=b.y+rnd(b.h), mc=b.mech; for(let i=0;i<16;i++){const a=rnd(6.28),s=rnd(30,150);part(ex,ey,Math.cos(a)*s,Math.sin(a)*s,rnd(0.3,0.6),['#fff1a8',mc?'#ff6a1a':'#9dff5a','#ffb53a'][i%3],rnd(2,4),40,1);} sfxAt('boom',b); shake=7; light(ex,ey,120,0.9,mc?'rgba(255,150,40,':'rgba(160,255,90,'); if(mc) for(let i=0;i<4;i++) part(ex,ey,rnd(-20,20),rnd(-50,-20),rnd(0.8,1.4),'#2a2a2a',rnd(4,7),-10,2); else blood(ex,ey,true,10); }
@@ -1226,7 +1231,7 @@ function respawn(){
   r2PreRespawn(); const p=player; p.x=cp*T+3; p.h=26; p.crouch=false; p.y=groundY(cp)-26; p.vx=p.vy=0; p.hp=100; p.dead=false; p.inv=1.5; p.climb=false; p.hurtAgo=9;
   if(p.ammo.pistol.res+p.ammo.pistol.mag<34) p.ammo.pistol.res=34-p.ammo.pistol.mag;
   if(!hasAmmo(p.cur)) autoSwitch();
-  ebullets=[];grenades=[];orbs=[];bolts=[];bmiss=[]; for(const e of enemies) if(e.type!=='turret'&&e.type!=='nest'&&e.type!=='pylon') e.alert=false;
+  ebullets=[];grenades=[];orbs=[];bolts=[];bmiss=[]; for(const e of enemies) if(!FOES[e.type].fixed) e.alert=false;
   if(enc&&enc.active){
     enemies=enemies.filter(e=>e.tag!=='enc'); portals=portals.filter(q=>q.tag!=='enc');
     if(enc.doorIn) setDoor(enc.doorIn,'.');
@@ -1234,8 +1239,8 @@ function respawn(){
     enc=null;
   }
   if(bossActive&&boss&&!boss.dead){
-    enemies=enemies.filter(e=>!e.summoned&&e.tag!=='pylon'); portals=portals.filter(q=>q.tag!=='boss');
-    boss=makeBoss(); boss.hp*=bossMul; boss.max*=bossMul; if(boss.type!=='heli') boss.t=1.2;
+    enemies=enemies.filter(e=>!e.summoned); portals=portals.filter(q=>q.tag!=='boss');
+    boss=makeBoss(); boss.hp*=bossMul; boss.max*=bossMul; if(!BOSSES[boss.type].keepT) boss.t=1.2;
     const d=LVL.arena.door!=null?LVL.arena.door:LVL.arena.x0;
     for(const b of barrels) if(b.tx>d){ b.dead=false; b.hp=15; b.fuse=-1; }
     for(const k of pickups) if(k.tx>d) k.taken=false;
@@ -1263,13 +1268,13 @@ function update(dt){
   if(LVL.fires) for(const [fx,fy] of LVL.fires){ if(Math.abs(fx-cam-W/2)>W) continue; if(Math.random()<dt*40) part(fx+rnd(-10,10),fy,rnd(-8,8),rnd(-60,-25),rnd(0.4,0.9),Math.random()<0.5?'#ffb53a':'#ff6a1a',rnd(1,3),-30,1); if(Math.random()<dt*6) part(fx+rnd(-6,6),fy-20,rnd(-6,6),rnd(-30,-15),rnd(1.5,2.5),'#2a2224',rnd(4,7),-5,2); }
   let threat=false; const ccx=cam+W/2;
   for(const e of enemies){
-    if(e.dead){ e.deadT+=dt; if(e.type!=='turret'&&e.type!=='nest'&&e.type!=='pylon'&&e.y<ROWS*T+60){ e.vx*=0.9; physics(e,dt); } continue; }
+    if(e.dead){ e.deadT+=dt; if(!FOES[e.type].fixed&&e.y<ROWS*T+60){ e.vx*=0.9; physics(e,dt); } continue; }
     if(Math.abs(e.x-ccx)>440) continue;
     e.hitT-=dt; e.flashT=(e.flashT||0)-dt;
     if(e.stunT>0){ e.stunT-=dt; continue; }
     FOES[e.type].upd(e,edt);
     if(!e.dead&&ACID_DIE[e.type]&&rectHas(e.x,e.y+e.h-6,e.w,6,'~')){ hurtEnemy(e,e.hp+1,0,true); for(let i=0;i<10;i++) part(e.x+rnd(e.w),e.y+e.h-4,rnd(-30,30),rnd(-90,-30),rnd(0.3,0.6),'#9dff6a',2,200); }
-    if(e.type!=='flyer'&&e.type!=='turret'&&e.type!=='nest'&&e.type!=='pylon'&&e.onGround&&elecOn()&&onTile(e,'Z')){ e.elecT-=dt; if(e.elecT<=0){ e.elecT=0.25; hurtEnemy(e,10,0,true); sparks(e.x+e.w/2,e.y+e.h,3,'#bfe8ff'); } }
+    if(!FOES[e.type].fixed&&!FOES[e.type].fly&&e.onGround&&elecOn()&&onTile(e,'Z')){ e.elecT-=dt; if(e.elecT<=0){ e.elecT=0.25; hurtEnemy(e,10,0,true); sparks(e.x+e.w/2,e.y+e.h,3,'#bfe8ff'); } }
     if(e.y>ROWS*T+40){ e.dead=true; e.deadT=99; }
     if(e.alert&&Math.abs(e.x-p.x)<380) threat=true;
   }
@@ -1540,20 +1545,17 @@ function drawLights(){
   for(const b of ebullets) if(b.orb) L.push([b.x,b.y,30,0.7]);
   for(const e of enemies) if(!e.dead&&e.type==='shocker'&&e.state==='charge') L.push([e.x+e.w/2+e.face*8,e.y+8,46,0.7]);
   if(torch) for(const e of enemies) if(!e.dead&&e.type!=='nest'&&e.x>cam-40&&e.x<cam+W+40) L.push([e.x+e.w/2,e.y+e.h/2,30,0.45]);
-  if(boss&&!boss.dead) L.push([boss.x+boss.w/2,boss.y+(boss.type==='warden'?boss.h/2:26),boss.type==='warden'?90:70,0.7]);
+  if(boss&&!boss.dead){ const g=BOSSES[boss.type].glow; L.push(g?g(boss):[boss.x+boss.w/2,boss.y+26,70,0.7]); }
   if(exitPortal) L.push([exitPortal.x,exitPortal.y,120,1]);
   for(const t of trains) L.push([t.dir>0?t.x+TL:t.x,13*T+20,90,0.9]);
   for(const b of ebullets) if(b.hornet||b.acid) L.push([b.x,b.y,24,0.6]);
   for(const l of lasers) if(lzState(l)===2&&Math.abs(l.tx*T-cam-W/2)<W) L.push([l.tx*T+8,(l.r0+l.r1)*T/2,70,0.7]);
   if(LVL.liftStyle==='float') for(const l of lifts) L.push([l.x+l.w/2,l.y,40,0.5]);
-  for(const e of enemies) if(e.type==='pylon'&&!e.dead) L.push([e.x+e.w/2,e.y,50,0.8]);
-  if(boss&&boss.type==='guardian'&&boss.state==='beam') L.push([cam+W/2,boss.beamY,260,0.8]);
-  if(boss&&boss.type==='worm'&&boss.rise>0.2) L.push([boss.emX,boss.y+10,70,0.6]);
+  for(const e of enemies){ const lt=FOES[e.type].light; if(lt&&!e.dead) lt(e,L); }
+  if(boss&&BOSSES[boss.type].lights) BOSSES[boss.type].lights(L);
   for(const r of rockets) L.push([r.x,r.y,40,0.8]);
   for(const m of bmiss) L.push([m.x,m.y,34,0.7]);
-  if(boss&&boss.type==='titan'&&boss.state==='laser') L.push([cam+W/2,boss.beamY,260,0.8]);
   if(LVL.fires) for(const [fx,fy] of LVL.fires) L.push([fx,fy-10,80+Math.sin(titleT*13+fx)*8,0.8]);
-  if(boss&&boss.type==='heli'&&!boss.dead) L.push([player.x+player.w/2,player.y+player.h,50,0.35]);
   if(LVL.sw) L.push([LVL.sw[0]*T+8,LVL.sw[1]*T,40,0.6]);
   r2Lights(L);
   lc.globalCompositeOperation='source-over'; lc.clearRect(0,0,240,136); lc.fillStyle=`rgba(3,5,9,${torch?Math.min(amb,0.7):Math.min(amb*0.65,0.36)})`; lc.fillRect(0,0,240,136);
@@ -1885,7 +1887,7 @@ function r2Respawn(){
   if(CHASE&&!CHASE.done) CHASE.x=Math.min(CHASE.x,p.x-LVL.chase.lead*T);
   if(ESC){ ESC.hp=ESC.max; ESC.state='follow'; ESC.x=p.x-p.face*16; ESC.y=p.y+p.h-ESC.h; ESC.vx=ESC.vy=0; }
   for(const a of ALLIES){ a.x=p.x; a.y=p.y-30; }
-  if(GENS.length&&LVL.arena&&LVL.arena.type==='breach') for(const g of GENS){ g.hp=g.max; }
+  if(LVL.arena&&(BOSSES[LVL.arena.type]||{}).onRespawn) BOSSES[LVL.arena.type].onRespawn();
   GWIND=0;
 }
 function r2ExitOk(){
@@ -2150,7 +2152,7 @@ function r2Lights(L){
   for(const g of GENS) if(g.hp>0) L.push([g.x+14,g.y+10,60,0.7]);
   for(const f of FLIPS) L.push([f.x,f.y,60,0.8]);
   for(const a of ALLIES) L.push([a.x,a.y,56,0.7]);
-  for(const e of enemies) if(!e.dead&&(e.type==='jelly'||e.type==='drone')) L.push([e.x+e.w/2,e.y+e.h/2,40,0.6]);
+  for(const e of enemies) if(!e.dead&&FOES[e.type].glow) L.push([e.x+e.w/2,e.y+e.h/2,40,0.6]);
   if(FLOOD&&FLOOD.y<H) L.push([player.x,FLOOD.y,60,0.3]);
 }
 function r2PostFx(){
@@ -2222,7 +2224,7 @@ defItem('air',{take:k=>{ const p=player; if(p.air>=99) return false; p.air=Math.
 defItem('air',{draw:(k,x,y)=>{ const a=titleT*3+k.bob; for(let i=0;i<3;i++){ const bx=x+6+Math.sin(a+i*2)*3, by=y+8-((titleT*14+i*6)%14); ctx.strokeStyle='rgba(220,250,255,0.85)'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(bx,by,2+i*0.6,0,7); ctx.stroke(); } ctx.fillStyle='rgba(160,230,255,0.25)'; ctx.beginPath(); ctx.arc(x+6,y+4,7,0,7); ctx.fill(); }});
 
 /* ---------- new enemies ---------- */
-defFoes('dims',{fish:[16,8,24],jelly:[12,14,20],imp:[12,12,24],drone:[14,10,36],mite:[8,8,5],tent:[14,60,90]});
+defFoes('dims',{fish:[16,8,24],jelly:[12,14,20],imp:[12,12,24],drone:[14,10,36],mite:[8,8,5],tent:[14,60,90]}); defFoes('glow',{jelly:true,drone:true}); defFoes('fly',{drone:true});
 function inWaterE(e,x,y){ return isWater(x,y); }
 defFoe('fish',{upd:(e,dt)=>{
   if(!isWater(e.x+e.w/2,e.y+e.h/2)){ e.dry=(e.dry||0)+dt; physics(e,dt); if(e.dry>1.5) hurtEnemy(e,999,0,true); return; } e.dry=0;
@@ -2394,7 +2396,7 @@ function mechUpdate(dt){
   for(const s of MST.snow){ s[1]+=(30+s[2]*30)*dt; s[0]+=(GWIND*0.12+Math.sin(lvT+s[3]*9)*8)*dt; if(s[1]>H){ s[1]=-2; s[0]=Math.random()*W; } if(s[0]<0) s[0]+=W; if(s[0]>W) s[0]-=W; }
   mech5Update(dt); mech2Update(dt); mech3Update(dt); mech4Update(dt);
 }
-function mechSpawn(t,x){ x=clamp(x,3*T,(COLS-3)*T); const tx=Math.floor(x/T); if(!DIMS[t]) return; const fl=t==='flyer'||t==='drone'; const e=makeEnemy(t,tx*T+8,fl?groundY(tx)-4*T:groundY(tx)); e.alert=true; e.summoned=true; enemies.push(e); for(let i=0;i<14;i++) part(tx*T+8,(fl?groundY(tx)-4*T:groundY(tx))-12,rnd(-60,60),rnd(-90,10),0.5,'#ff3b4f',2,0); if(AC) SFX.portal&&SFX.portal(0.5); }
+function mechSpawn(t,x){ x=clamp(x,3*T,(COLS-3)*T); const tx=Math.floor(x/T); if(!DIMS[t]) return; const fl=!!FOES[t].fly; const e=makeEnemy(t,tx*T+8,fl?groundY(tx)-4*T:groundY(tx)); e.alert=true; e.summoned=true; enemies.push(e); for(let i=0;i<14;i++) part(tx*T+8,(fl?groundY(tx)-4*T:groundY(tx))-12,rnd(-60,60),rnd(-90,10),0.5,'#ff3b4f',2,0); if(AC) SFX.portal&&SFX.portal(0.5); }
 function mechAlarm(l){ if(LVL.onAlarm){ LVL.onAlarm(); return; } if(ALARM<=0){ showMsg('ТРЕВОГА! Засякоха те.',2); shake=4; if(MST.alarmN<6){ const p=player; for(const s of [-1,1]){ mechSpawn(LVL.alarmFoe||'soldier',p.x+s*rnd(7,10)*T); MST.alarmN++; } } } ALARM=7; }
 /* ---------- drawing ---------- */
 function mechDrawBack(){ mech2DrawBack(); mech3DrawBack();
@@ -2816,7 +2818,7 @@ function svTry2(k,plan,att,simple){
   const ground=n=>{ for(let i=0;i<n;i++){ colG(b.x,b.gy); b.x++; } };
   const stepTo=ty=>{ let guard=0; while(b.gy!==ty&&guard++<20){ const d=ty-b.gy; b.gy+=d<0?-Math.min(-d,ri(1,2)):Math.min(d,ri(1,3)); ground(ri(2,4)); } };
   const loot=(x,y,good)=>{ const roll=r(); let t; if(good) t=roll<0.35?'battery':roll<0.6&&k>=2?'grenade':roll<0.8&&k>=6?'rockets':'health'; else t=roll<0.4?'health':roll<0.8?'ammo':'battery'; fixed.push([t,x,y-1]); };
-  const foeT=(onGround,B)=>{ let pool=((B&&tg.foesB)||tg.foes).slice(); if(onGround) pool=pool.filter(t=>t!=='flyer'); if(k>=6&&theme!=='sea') pool.push('guard'); if(k>=4&&tg.turret&&!onGround) pool.push('soldier'); return pick(pool.length?pool:['crab']); };
+  const foeT=(onGround,B)=>{ let pool=((B&&tg.foesB)||tg.foes).slice(); if(onGround) pool=pool.filter(t=>t!=='flyer'); if(k>=6&&!tg.noGuard) pool.push('guard'); if(k>=4&&tg.turret&&!onGround) pool.push('soldier'); return pick(pool.length?pool:['crab']); };
   const F={
     terrain(){ const n=ri(8,16), x0=b.x; for(let i=0;i<n;i++){ if(i>1&&ch(0.22)){ b.gy=clamp(b.gy+(ch(0.5)?-ri(1,2):ri(1,2)),GMIN,15); } colG(b.x,b.gy); b.x++; }
       for(let j=ri(0,2);j>0;j--){ const x=x0+ri(1,n-3), w=ri(1,2), h=ri(1,3); if(gtop[x]===gtop[x+w-1]&&gtop[x]-h>GMIN-2) fill(x,gtop[x]-h,x+w-1,gtop[x]-1,'B'); } },
@@ -2922,7 +2924,7 @@ function svTry2(k,plan,att,simple){
       decos.push(()=>ghostShrine(x,fy)); triggers.push({x:x+1,fn:()=>{ if(ALLIES.length<3){ addGhost(); showMsg(ALLIES.length===1?'Дух на жител от града се присъедини към теб. Духовете стрелят по враговете.':'Още един дух те последва.',2.6); } }}); },
   };
   const W_={terrain:3,stairs:2,gaps:2.2,chain:2,tower:tg.tower?1.4:0.5,liftH:tg.lift?1:0,liftV:tg.lift?0.9:0,crawl:sky?0.4:0.9,
-    lasers:tg.laser?1.3:0,crushers:tg.crush?1.4:0,conveyor:tg.conv?1.4:0,encounter:k>=1&&!era?1:0,nests:tg.nest?1.2:0,perch:0.8,islands:tg.wind?1.2:0,drop:0.7,zfloor:theme==='b70'?1:0,secret:0.7,
+    lasers:tg.laser?1.3:0,crushers:tg.crush?1.4:0,conveyor:tg.conv?1.4:0,encounter:k>=1&&!era?1:0,nests:tg.nest?1.2:0,perch:0.8,islands:tg.wind?1.2:0,drop:0.7,zfloor:tg.zfloor?1:0,secret:0.7,
     pool:tg.water?2.6:0,sluice:tg.lever?1.3:0,updraft:tg.wind?2.4:0,eraWall:era?2.6:0,eraBridge:era?1.8:0,shift:tg.shift?2:0,shrine:tg.ghost?1.5:0,stealth:tg.stealth?2.2:0,term:tg.term?1.5:0,plate:tg.plate?2.2:0,rhythm:tg.rhythm?2.2:0,freq:tg.freq?2.4:0};
   const PRIMARY=tg.freq?'freq':tg.stealth?'stealth':tg.plate?'plate':tg.rhythm?'rhythm':tg.water?'pool':era?'eraWall':tg.wind?'updraft':tg.shift?'shift':tg.ghost?'shrine':tg.conv?'conveyor':null;
   // ----- build -----
@@ -4501,7 +4503,7 @@ function drawWorm(){
 }
 function spawnPylons(){ for(const [tx,row] of LVL.arena.pylons){ const e=makeEnemy('pylon',tx*T,row*T); e.tag='pylon'; e.alert=true; enemies.push(e); sparks(tx*T,row*T-12,10,'#8ad8ff'); } }
 const pylonsAlive=()=>enemies.some(e=>e.tag==='pylon'&&!e.dead);
-function makeGuardian(){ const a=LVL.arena; spawnPylons(); return {type:'guardian',x:a.bx*T-20,y:15*T-56,w:40,h:56,hp:800*D.bhp,max:800*D.bhp,face:-1,state:'intro',t:2,vx:0,vy:0,hitT:0,phase:1,anim:0,dead:false,deathT:0,boomT:0,contactCd:0,shieldDown:false,shieldT:0,onGround:true}; }
+function makeGuardian(){ const a=LVL.arena; enemies=enemies.filter(e=>e.tag!=='pylon'); spawnPylons(); return {type:'guardian',x:a.bx*T-20,y:15*T-56,w:40,h:56,hp:800*D.bhp,max:800*D.bhp,face:-1,state:'intro',t:2,vx:0,vy:0,hitT:0,phase:1,anim:0,dead:false,deathT:0,boomT:0,contactCd:0,shieldDown:false,shieldT:0,onGround:true}; }
 function hurtGuardian(d,blast){
   const b=boss; if(!b||b.dead||b.state==='intro') return;
   if(!b.shieldDown){ sparks(b.x+b.w/2+rnd(-22,22),b.y+rnd(6,46),3,'#8ad8ff'); if(Math.random()<0.25) sfxAt('deflect',b); return; }
@@ -4893,6 +4895,11 @@ function drawTitan(){
 }
 /* ---------- регистрация (engine/defs.js) ---------- */
 defFoes('dims',{pylon:[10,20,100],egg:[10,12,25]});
+defFoe('pylon',{fixed:true,noCrush:true,mech:true,light:(e,L)=>L.push([e.x+e.w/2,e.y,50,0.8])});
+defBosses('portal',{colossus:true,warden:true,guardian:true}); defBosses('dieSfx',{warden:'warden',heli:'boom'}); defBoss('heli',{keepT:true});
+defBoss('warden',{glow:b=>[b.x+b.w/2,b.y+b.h/2,90,0.7]});
+defBosses('lights',{guardian:L=>{ if(boss.state==='beam') L.push([cam+W/2,boss.beamY,260,0.8]); }, worm:L=>{ if(boss.rise>0.2) L.push([boss.emX,boss.y+10,70,0.6]); },
+  titan:L=>{ if(boss.state==='laser') L.push([cam+W/2,boss.beamY,260,0.8]); }, heli:L=>{ if(!boss.dead) L.push([player.x+player.w/2,player.y+player.h,50,0.35]); }});
 const updPylon=(e,dt)=>{e.anim+=dt;};
 defBosses('make',{colossus:makeColossus,warden:makeWarden,heli:makeHeli,worm:makeWorm,guardian:makeGuardian,exo:makeExo,tank:makeTank,hunter:makeHunter,queen:makeQueen,titan:makeTitan});
 defBosses('hurt',{colossus:hurtColossus,heli:hurtHeli,warden:hurtWarden,worm:hurtWorm,guardian:hurtGuardian,exo:hurtExo,tank:hurtTank,hunter:hurtHunter,queen:hurtQueen,titan:hurtTitan});

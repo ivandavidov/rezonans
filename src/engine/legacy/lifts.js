@@ -12,7 +12,7 @@ function updHazards(dt){
   const p=player;
   for(const l of lasers){ l.hitCd-=dt; const st=lzState(l); if(st===2&&!l.was&&Math.abs(l.tx*T-p.x)<300) sfxAt('laser',{x:l.tx*T,y:l.r0*T,w:0}); l.was=st===2;
     if(st===2){ const r={x:l.tx*T+6,y:l.r0*T,w:4,h:(l.r1-l.r0+1)*T}; if(l.hitCd<=0&&!p.dead&&ov(r,p)){ p.inv=0; hurtPlayer(20,sgn(p.x+p.w/2-(l.tx*T+8))*120); l.hitCd=0.6; sparks(l.tx*T+8,p.y+p.h/2,6,'#ff6a6a'); }
-      for(const e of enemies) if(!e.dead&&e.type!=='turret'&&e.type!=='nest'&&e.type!=='pylon'&&ov(r,e)){ e.lz=(e.lz||0)-dt; if(e.lz<=0){ e.lz=0.4; hurtEnemy(e,15,0,true); } } } }
+      for(const e of enemies) if(!e.dead&&!FOES[e.type].fixed&&ov(r,e)){ e.lz=(e.lz||0)-dt; if(e.lz<=0){ e.lz=0.4; hurtEnemy(e,15,0,true); } } } }
   for(const v of vents){ v.hitCd-=dt; const st=vtState(v), x=v.tx*T;
     if(st===2&&!v.was&&Math.abs(x-p.x)<300) sfxAt('steam',{x,y:14*T,w:0}); v.was=st===2;
     if(Math.abs(x-cam-W/2)<W){ if(st===2){ for(let i=0;i<2;i++) part(x+8+rnd(-5,5),15*T-2,rnd(-12,12),rnd(-160,-110),rnd(0.35,0.5),'#e8f0f4',rnd(3,5),-60,2); } else if(st===1&&Math.random()<0.3) part(x+8+rnd(-4,4),15*T-2,rnd(-6,6),rnd(-50,-30),0.4,'#c8d4da',3,0,2); }

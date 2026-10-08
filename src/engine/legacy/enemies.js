@@ -162,4 +162,5 @@ function updScientist(s,dt){ if(s.esc) return updEscort(s,dt);
 defFoes('dims',{crab:[12,8,20],shocker:[14,28,60],soldier:[12,26,60],turret:[12,10,50],flyer:[14,10,24],zombie:[12,26,55],nest:[20,16,90],guard:[16,30,110],target:[14,23,1]});
 defFoes('upd',{crab:updCrab,shocker:updShocker,soldier:updSoldier,turret:updTurret,flyer:updFlyer,zombie:updZombie,nest:updNest,guard:updGuard,target:updTarget});
 defFoes('draw',{crab:drawCrab,shocker:drawShocker,soldier:drawSoldier,turret:drawTurret,flyer:drawFlyer,zombie:drawZombie,nest:drawNest,guard:drawGuard,target:drawTarget});
+defFoes('fixed',{turret:true,nest:true}); defFoes('noCrush',{flyer:true,nest:true}); defFoes('fly',{flyer:true}); defFoes('mech',{turret:true,target:true}); defFoes('human',{soldier:true,zombie:true});
 

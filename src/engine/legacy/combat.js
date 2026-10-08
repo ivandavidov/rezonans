@@ -11,7 +11,7 @@ function hurtPlayer(d,kx=0,hazard){
 }
 function hurtEnemy(e,d,kx=0,quiet){
   if(e.dead) return; if(e.fq!=null&&LVL.freq&&e.fq!==FREQ){ e.hitT=0.04; sparks(e.x+e.w/2,e.y+e.h/2,2,'#a8a8b8'); return; } e.hp-=d; e.hitT=0.08; if(e.type!=='turret') e.vx+=kx; e.alert=true;
-  const cx=e.x+e.w/2, cy=e.y+e.h/2, mech=e.type==='turret'||e.type==='pylon'||e.type==='target'||!!e.mech, alien=e.type!=='soldier'&&e.type!=='zombie';
+  const cx=e.x+e.w/2, cy=e.y+e.h/2, mech=!!FOES[e.type].mech||!!e.mech, alien=!FOES[e.type].human;
   if(!quiet){ if(mech) sparks(cx,cy,4); else blood(cx,cy,alien,5); }
   if(e.type==='shocker'&&e.state==='charge'&&Math.random()<0.35){ e.state='stagger'; e.t=0.45; }
   if(e.hp<=0){ e.dead=true; e.deadT=0; stats.kills++;

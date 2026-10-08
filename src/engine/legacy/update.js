@@ -14,13 +14,13 @@ function update(dt){
   if(LVL.fires) for(const [fx,fy] of LVL.fires){ if(Math.abs(fx-cam-W/2)>W) continue; if(Math.random()<dt*40) part(fx+rnd(-10,10),fy,rnd(-8,8),rnd(-60,-25),rnd(0.4,0.9),Math.random()<0.5?'#ffb53a':'#ff6a1a',rnd(1,3),-30,1); if(Math.random()<dt*6) part(fx+rnd(-6,6),fy-20,rnd(-6,6),rnd(-30,-15),rnd(1.5,2.5),'#2a2224',rnd(4,7),-5,2); }
   let threat=false; const ccx=cam+W/2;
   for(const e of enemies){
-    if(e.dead){ e.deadT+=dt; if(e.type!=='turret'&&e.type!=='nest'&&e.type!=='pylon'&&e.y<ROWS*T+60){ e.vx*=0.9; physics(e,dt); } continue; }
+    if(e.dead){ e.deadT+=dt; if(!FOES[e.type].fixed&&e.y<ROWS*T+60){ e.vx*=0.9; physics(e,dt); } continue; }
     if(Math.abs(e.x-ccx)>440) continue;
     e.hitT-=dt; e.flashT=(e.flashT||0)-dt;
     if(e.stunT>0){ e.stunT-=dt; continue; }
     FOES[e.type].upd(e,edt);
     if(!e.dead&&ACID_DIE[e.type]&&rectHas(e.x,e.y+e.h-6,e.w,6,'~')){ hurtEnemy(e,e.hp+1,0,true); for(let i=0;i<10;i++) part(e.x+rnd(e.w),e.y+e.h-4,rnd(-30,30),rnd(-90,-30),rnd(0.3,0.6),'#9dff6a',2,200); }
-    if(e.type!=='flyer'&&e.type!=='turret'&&e.type!=='nest'&&e.type!=='pylon'&&e.onGround&&elecOn()&&onTile(e,'Z')){ e.elecT-=dt; if(e.elecT<=0){ e.elecT=0.25; hurtEnemy(e,10,0,true); sparks(e.x+e.w/2,e.y+e.h,3,'#bfe8ff'); } }
+    if(!FOES[e.type].fixed&&!FOES[e.type].fly&&e.onGround&&elecOn()&&onTile(e,'Z')){ e.elecT-=dt; if(e.elecT<=0){ e.elecT=0.25; hurtEnemy(e,10,0,true); sparks(e.x+e.w/2,e.y+e.h,3,'#bfe8ff'); } }
     if(e.y>ROWS*T+40){ e.dead=true; e.deadT=99; }
     if(e.alert&&Math.abs(e.x-p.x)<380) threat=true;
   }

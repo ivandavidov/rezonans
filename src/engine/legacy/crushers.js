@@ -10,7 +10,7 @@ function updCrushers(dt){
     c.last=r.pos;
     if(r.pos>0.25){
       if(c.hitCd<=0&&!p.dead&&ov(r,p)){ c.hitCd=1; p.inv=0; hurtPlayer(60,sgn(p.x+p.w/2-(r.x+r.w/2))*320); p.vy=-150; }
-      for(const e of enemies) if(!e.dead&&e.type!=='flyer'&&e.type!=='nest'&&e.type!=='pylon'&&ov(r,e)) hurtEnemy(e,999,0);
+      for(const e of enemies) if(!e.dead&&!FOES[e.type].noCrush&&ov(r,e)) hurtEnemy(e,999,0);
     }
   }
 }

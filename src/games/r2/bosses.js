@@ -46,6 +46,7 @@ defBoss('deep',{draw:()=>{ const b=boss; if(b.rise<=0.02||(b.dead&&b.deathT>2.6)
   tint=null; ctx.restore(); }});
 
 /* ---------- 2. ПРОБИВЪТ ---------- */
+defBoss('breach',{onRespawn:()=>{ for(const g of GENS) g.hp=g.max; }});   // генераторите се възстановяват при прераждане
 defBoss('breach',{make:()=>{ const a=LVL.arena, tot=[45,60,72][DI]; for(const g of GENS){ g.hp=g.max; }
   return {type:'breach',x:AX()+15*T-34,y:2.2*T,w:68,h:60,hp:tot,max:tot,state:'intro',t:2,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,spawnT:2,beamT:6,beam:null,flyT:10}; }});
 defBoss('breach',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead) return; b.hitT=0.05; if(Math.random()<0.3) sparks(b.x+b.w/2+rnd(-20,20),b.y+b.h/2+rnd(-20,20),3,'#ff9af0'); }});

@@ -218,20 +218,17 @@ function drawLights(){
   for(const b of ebullets) if(b.orb) L.push([b.x,b.y,30,0.7]);
   for(const e of enemies) if(!e.dead&&e.type==='shocker'&&e.state==='charge') L.push([e.x+e.w/2+e.face*8,e.y+8,46,0.7]);
   if(torch) for(const e of enemies) if(!e.dead&&e.type!=='nest'&&e.x>cam-40&&e.x<cam+W+40) L.push([e.x+e.w/2,e.y+e.h/2,30,0.45]);
-  if(boss&&!boss.dead) L.push([boss.x+boss.w/2,boss.y+(boss.type==='warden'?boss.h/2:26),boss.type==='warden'?90:70,0.7]);
+  if(boss&&!boss.dead){ const g=BOSSES[boss.type].glow; L.push(g?g(boss):[boss.x+boss.w/2,boss.y+26,70,0.7]); }
   if(exitPortal) L.push([exitPortal.x,exitPortal.y,120,1]);
   for(const t of trains) L.push([t.dir>0?t.x+TL:t.x,13*T+20,90,0.9]);
   for(const b of ebullets) if(b.hornet||b.acid) L.push([b.x,b.y,24,0.6]);
   for(const l of lasers) if(lzState(l)===2&&Math.abs(l.tx*T-cam-W/2)<W) L.push([l.tx*T+8,(l.r0+l.r1)*T/2,70,0.7]);
   if(LVL.liftStyle==='float') for(const l of lifts) L.push([l.x+l.w/2,l.y,40,0.5]);
-  for(const e of enemies) if(e.type==='pylon'&&!e.dead) L.push([e.x+e.w/2,e.y,50,0.8]);
-  if(boss&&boss.type==='guardian'&&boss.state==='beam') L.push([cam+W/2,boss.beamY,260,0.8]);
-  if(boss&&boss.type==='worm'&&boss.rise>0.2) L.push([boss.emX,boss.y+10,70,0.6]);
+  for(const e of enemies){ const lt=FOES[e.type].light; if(lt&&!e.dead) lt(e,L); }
+  if(boss&&BOSSES[boss.type].lights) BOSSES[boss.type].lights(L);
   for(const r of rockets) L.push([r.x,r.y,40,0.8]);
   for(const m of bmiss) L.push([m.x,m.y,34,0.7]);
-  if(boss&&boss.type==='titan'&&boss.state==='laser') L.push([cam+W/2,boss.beamY,260,0.8]);
   if(LVL.fires) for(const [fx,fy] of LVL.fires) L.push([fx,fy-10,80+Math.sin(titleT*13+fx)*8,0.8]);
-  if(boss&&boss.type==='heli'&&!boss.dead) L.push([player.x+player.w/2,player.y+player.h,50,0.35]);
   if(LVL.sw) L.push([LVL.sw[0]*T+8,LVL.sw[1]*T,40,0.6]);
   r2Lights(L);
   lc.globalCompositeOperation='source-over'; lc.clearRect(0,0,240,136); lc.fillStyle=`rgba(3,5,9,${torch?Math.min(amb,0.7):Math.min(amb*0.65,0.36)})`; lc.fillRect(0,0,240,136);

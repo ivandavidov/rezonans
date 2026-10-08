@@ -157,7 +157,7 @@ function drawWorm(){
 }
 function spawnPylons(){ for(const [tx,row] of LVL.arena.pylons){ const e=makeEnemy('pylon',tx*T,row*T); e.tag='pylon'; e.alert=true; enemies.push(e); sparks(tx*T,row*T-12,10,'#8ad8ff'); } }
 const pylonsAlive=()=>enemies.some(e=>e.tag==='pylon'&&!e.dead);
-function makeGuardian(){ const a=LVL.arena; spawnPylons(); return {type:'guardian',x:a.bx*T-20,y:15*T-56,w:40,h:56,hp:800*D.bhp,max:800*D.bhp,face:-1,state:'intro',t:2,vx:0,vy:0,hitT:0,phase:1,anim:0,dead:false,deathT:0,boomT:0,contactCd:0,shieldDown:false,shieldT:0,onGround:true}; }
+function makeGuardian(){ const a=LVL.arena; enemies=enemies.filter(e=>e.tag!=='pylon'); spawnPylons(); return {type:'guardian',x:a.bx*T-20,y:15*T-56,w:40,h:56,hp:800*D.bhp,max:800*D.bhp,face:-1,state:'intro',t:2,vx:0,vy:0,hitT:0,phase:1,anim:0,dead:false,deathT:0,boomT:0,contactCd:0,shieldDown:false,shieldT:0,onGround:true}; }
 function hurtGuardian(d,blast){
   const b=boss; if(!b||b.dead||b.state==='intro') return;
   if(!b.shieldDown){ sparks(b.x+b.w/2+rnd(-22,22),b.y+rnd(6,46),3,'#8ad8ff'); if(Math.random()<0.25) sfxAt('deflect',b); return; }
@@ -549,6 +549,11 @@ function drawTitan(){
 }
 /* ---------- регистрация (engine/defs.js) ---------- */
 defFoes('dims',{pylon:[10,20,100],egg:[10,12,25]});
+defFoe('pylon',{fixed:true,noCrush:true,mech:true,light:(e,L)=>L.push([e.x+e.w/2,e.y,50,0.8])});
+defBosses('portal',{colossus:true,warden:true,guardian:true}); defBosses('dieSfx',{warden:'warden',heli:'boom'}); defBoss('heli',{keepT:true});
+defBoss('warden',{glow:b=>[b.x+b.w/2,b.y+b.h/2,90,0.7]});
+defBosses('lights',{guardian:L=>{ if(boss.state==='beam') L.push([cam+W/2,boss.beamY,260,0.8]); }, worm:L=>{ if(boss.rise>0.2) L.push([boss.emX,boss.y+10,70,0.6]); },
+  titan:L=>{ if(boss.state==='laser') L.push([cam+W/2,boss.beamY,260,0.8]); }, heli:L=>{ if(!boss.dead) L.push([player.x+player.w/2,player.y+player.h,50,0.35]); }});
 const updPylon=(e,dt)=>{e.anim+=dt;};
 defBosses('make',{colossus:makeColossus,warden:makeWarden,heli:makeHeli,worm:makeWorm,guardian:makeGuardian,exo:makeExo,tank:makeTank,hunter:makeHunter,queen:makeQueen,titan:makeTitan});
 defBosses('hurt',{colossus:hurtColossus,heli:hurtHeli,warden:hurtWarden,worm:hurtWorm,guardian:hurtGuardian,exo:hurtExo,tank:hurtTank,hunter:hurtHunter,queen:hurtQueen,titan:hurtTitan});

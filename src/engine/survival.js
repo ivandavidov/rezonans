@@ -40,7 +40,7 @@ function svTry2(k,plan,att,simple){
   const ground=n=>{ for(let i=0;i<n;i++){ colG(b.x,b.gy); b.x++; } };
   const stepTo=ty=>{ let guard=0; while(b.gy!==ty&&guard++<20){ const d=ty-b.gy; b.gy+=d<0?-Math.min(-d,ri(1,2)):Math.min(d,ri(1,3)); ground(ri(2,4)); } };
   const loot=(x,y,good)=>{ const roll=r(); let t; if(good) t=roll<0.35?'battery':roll<0.6&&k>=2?'grenade':roll<0.8&&k>=6?'rockets':'health'; else t=roll<0.4?'health':roll<0.8?'ammo':'battery'; fixed.push([t,x,y-1]); };
-  const foeT=(onGround,B)=>{ let pool=((B&&tg.foesB)||tg.foes).slice(); if(onGround) pool=pool.filter(t=>t!=='flyer'); if(k>=6&&theme!=='sea') pool.push('guard'); if(k>=4&&tg.turret&&!onGround) pool.push('soldier'); return pick(pool.length?pool:['crab']); };
+  const foeT=(onGround,B)=>{ let pool=((B&&tg.foesB)||tg.foes).slice(); if(onGround) pool=pool.filter(t=>t!=='flyer'); if(k>=6&&!tg.noGuard) pool.push('guard'); if(k>=4&&tg.turret&&!onGround) pool.push('soldier'); return pick(pool.length?pool:['crab']); };
   const F={
     terrain(){ const n=ri(8,16), x0=b.x; for(let i=0;i<n;i++){ if(i>1&&ch(0.22)){ b.gy=clamp(b.gy+(ch(0.5)?-ri(1,2):ri(1,2)),GMIN,15); } colG(b.x,b.gy); b.x++; }
       for(let j=ri(0,2);j>0;j--){ const x=x0+ri(1,n-3), w=ri(1,2), h=ri(1,3); if(gtop[x]===gtop[x+w-1]&&gtop[x]-h>GMIN-2) fill(x,gtop[x]-h,x+w-1,gtop[x]-1,'B'); } },
@@ -146,7 +146,7 @@ function svTry2(k,plan,att,simple){
       decos.push(()=>ghostShrine(x,fy)); triggers.push({x:x+1,fn:()=>{ if(ALLIES.length<3){ addGhost(); showMsg(ALLIES.length===1?'Дух на жител от града се присъедини към теб. Духовете стрелят по враговете.':'Още един дух те последва.',2.6); } }}); },
   };
   const W_={terrain:3,stairs:2,gaps:2.2,chain:2,tower:tg.tower?1.4:0.5,liftH:tg.lift?1:0,liftV:tg.lift?0.9:0,crawl:sky?0.4:0.9,
-    lasers:tg.laser?1.3:0,crushers:tg.crush?1.4:0,conveyor:tg.conv?1.4:0,encounter:k>=1&&!era?1:0,nests:tg.nest?1.2:0,perch:0.8,islands:tg.wind?1.2:0,drop:0.7,zfloor:theme==='b70'?1:0,secret:0.7,
+    lasers:tg.laser?1.3:0,crushers:tg.crush?1.4:0,conveyor:tg.conv?1.4:0,encounter:k>=1&&!era?1:0,nests:tg.nest?1.2:0,perch:0.8,islands:tg.wind?1.2:0,drop:0.7,zfloor:tg.zfloor?1:0,secret:0.7,
     pool:tg.water?2.6:0,sluice:tg.lever?1.3:0,updraft:tg.wind?2.4:0,eraWall:era?2.6:0,eraBridge:era?1.8:0,shift:tg.shift?2:0,shrine:tg.ghost?1.5:0,stealth:tg.stealth?2.2:0,term:tg.term?1.5:0,plate:tg.plate?2.2:0,rhythm:tg.rhythm?2.2:0,freq:tg.freq?2.4:0};
   const PRIMARY=tg.freq?'freq':tg.stealth?'stealth':tg.plate?'plate':tg.rhythm?'rhythm':tg.water?'pool':era?'eraWall':tg.wind?'updraft':tg.shift?'shift':tg.ghost?'shrine':tg.conv?'conveyor':null;
   // ----- build -----
