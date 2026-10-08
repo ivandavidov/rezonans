@@ -65,22 +65,31 @@ rep("document.querySelectorAll('#touch button').forEach","document.querySelector
 rep('<button class="u" data-k="up">▲</button>','<button class="am" id="bmus" data-a="mus" aria-label="музика">♪</button><button class="u" data-k="up">▲</button><button class="as" id="bsfx" data-a="sfx" aria-label="ефекти">FX</button>')
 rep('.pad .u{grid-column:2;grid-row:1}','.pad .am,.pad .as{grid-row:1;width:72%;height:72%;align-self:start;font-size:11px;border-style:dashed}.pad .am{grid-column:1;justify-self:start}.pad .as{grid-column:3;justify-self:end}.touch button.off{opacity:.35}\n.pad .u{grid-column:2;grid-row:1}')
 # тъч бутони: Esc (пауза в игра, назад в менютата) — малък бутон над действията
-rep('<div class="acts">\n      ','<div class="acts">\n      <button class="esc" data-k="esc" aria-label="пауза / назад">Esc · пауза</button>')
+rep('<div class="acts">\n      ','<div class="acts">\n      <button class="esc" data-k="esc" aria-label="пауза / назад">Esc<span class="eh"> · пауза</span></button>')
 rep('.acts button{height:56px;border-radius:50%}','.acts button{height:56px;border-radius:50%;grid-row:2}'
     '.acts .esc{grid-row:1;grid-column:1/-1;justify-self:end;height:30px;padding:0 12px;border-radius:10px;border-style:dashed;font-size:11px}')
 # тесен екран: действията на два реда (горе Q C [E], долу X Z), размерът следва ширината — нищо не излиза извън екрана
-# хоризонтален тъч екран: стрелките вляво, екранът в средата, бутоните вдясно (две колони: Q C / [E] / X Z)
+# хоризонтален тъч екран: полето винаги е на цялата височина; контролите са полупрозрачни групи долу встрани (зоната на палците, над HUD-а):
+# вляво ▲ / ◀ ▶ / ▼, вдясно [E] / C Q / X Z (огън и скок един до друг); Esc, ♪ и FX — в горните ъгли (♪ над FX), далеч от палците.
+# Бутоните са толкова тесни, колкото позволява страничното място (мин. 40px); при 16:9 застъпват ръба на полето.
+# Само за широки екрани (≥ 8:5, т.е. телефони); таблет 4:3 / 3:2 остава с контролите под полето.
 rep('@media (max-width:420px){.pad{grid-template-columns:repeat(3,44px);grid-template-rows:repeat(2,44px)}.acts{grid-template-columns:repeat(4,46px)}.acts button{height:46px}}',
     '@media (max-width:540px){.touch{--u:min(56px,calc((100vw - 68px)/5))}body.has-e .touch{--u:min(56px,calc((100vw - 76px)/6))}'
     '.pad{grid-template-columns:repeat(3,var(--u));grid-template-rows:repeat(2,var(--u))}.acts,body.has-e .acts{grid-template-columns:repeat(2,var(--u));grid-template-rows:auto repeat(2,var(--u))}body.has-e .acts{grid-template-columns:repeat(3,var(--u))}.acts button{height:var(--u)}'
     '.acts [data-k=swap]{grid-area:2/1}.acts [data-k=crouch]{grid-area:2/2}.acts [data-k=jump]{grid-area:3/1}.acts [data-k=fire]{grid-area:3/2}'
     'body.has-e .acts [data-k=era]{grid-area:2/3}body.has-e .acts [data-k=jump]{grid-area:3/2}body.has-e .acts [data-k=fire]{grid-area:3/3}}\n'
-    '@media (pointer:coarse) and (orientation:landscape){.wrap{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"pad screen acts";align-items:center;gap:12px;padding:12px;height:100%}'
-    '.touch{display:contents;--u:clamp(40px,calc((45vw - 72px)/5),56px)}.screen{grid-area:screen;justify-self:center;width:min(100%,calc((100vh - 24px)*1.7647))}'
-    '.pad{grid-area:pad;grid-template-columns:repeat(3,var(--u));grid-template-rows:repeat(2,var(--u))}.pad,.acts{user-select:none;-webkit-user-select:none;touch-action:none}'
-    '.acts,body.has-e .acts{grid-area:acts;grid-template-columns:repeat(2,var(--u));grid-template-rows:auto repeat(2,var(--u))}body.has-e .acts{grid-template-rows:auto repeat(3,var(--u))}.acts button{height:var(--u)}'
-    '.acts [data-k=swap]{grid-area:2/1}.acts [data-k=crouch]{grid-area:2/2}.acts [data-k=jump]{grid-area:3/1}.acts [data-k=fire]{grid-area:3/2}'
-    'body.has-e .acts [data-k=era]{grid-area:3/2}body.has-e .acts [data-k=jump]{grid-area:4/1}body.has-e .acts [data-k=fire]{grid-area:4/2}}')
+    '@media (pointer:coarse) and (orientation:landscape) and (min-aspect-ratio:8/5){.wrap{padding:4px;gap:0;height:100%}'
+    '.screen{width:min(100%,calc((100vh - 8px)*1.7647));width:min(100%,calc((100dvh - 8px)*1.7647))}'
+    '.touch{display:block;position:fixed;inset:0;z-index:2;max-width:none;pointer-events:none;--u:clamp(44px,14vh,60px);--w:clamp(40px,calc((100vw - (100vh - 8px)*1.7647)/4 - 6px),var(--u));--b:max(8px,12vh);--sl:max(6px,env(safe-area-inset-left));--sr:max(6px,env(safe-area-inset-right))}'
+    '.touch button{pointer-events:auto;opacity:.78;font-size:12px}.touch button.on,.touch button:active{opacity:1}'
+    '.pad,.acts,body.has-e .acts{position:absolute;bottom:var(--b);gap:6px;grid-template-columns:repeat(2,var(--w))}'
+    '.pad{left:var(--sl);grid-template-rows:calc(var(--u)*.8) var(--u) calc(var(--u)*.8)}'
+    '.pad .u{grid-area:1/1/2/3}.pad .l{grid-area:2/1}.pad .r{grid-area:2/2}.pad .d{grid-area:3/1/4/3}'
+    '.pad .am,.pad .as{position:fixed;top:6px;width:calc(var(--w)*.9);height:calc(var(--u)*.6)}.pad .am,.pad .as{left:var(--sl)}.pad .as{top:calc(12px + var(--u)*.6)}'
+    '.acts,body.has-e .acts{right:var(--sr);grid-template-rows:repeat(2,var(--u))}body.has-e .acts{grid-template-rows:repeat(3,var(--u))}.acts button{height:auto;border-radius:14px}'
+    '.acts .esc{position:fixed;top:6px;right:var(--sr);width:calc(var(--w)*1.4);height:calc(var(--u)*.6);padding:0}.acts .eh{display:none}'
+    '.acts [data-k=crouch]{grid-area:1/1}.acts [data-k=swap]{grid-area:1/2}.acts [data-k=jump]{grid-area:2/1}.acts [data-k=fire]{grid-area:2/2}'
+    'body.has-e .acts [data-k=era]{grid-area:1/1/2/3}body.has-e .acts [data-k=crouch]{grid-area:2/1}body.has-e .acts [data-k=swap]{grid-area:2/2}body.has-e .acts [data-k=jump]{grid-area:3/1}body.has-e .acts [data-k=fire]{grid-area:3/2}}')
 rep('    <span><kbd>M</kbd>звук</span>\n','    <span><kbd>M</kbd>звук</span>\n    <span><kbd>N</kbd>музика</span>\n    <span><kbd>B</kbd>ефекти</span>\n')
 rep("  render();\n  requestAnimationFrame(frame);","  render(); audDraw();\n  requestAnimationFrame(frame);")
 rep("function drawEmitter(){\n  if(LVL.n!==1) return;","function drawEmitter(){\n  if(LVL.n!==1||SEQ) return;")
