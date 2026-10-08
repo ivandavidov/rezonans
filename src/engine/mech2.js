@@ -71,11 +71,11 @@ const memList=()=>store.get(KEY('mem'),'').split(',').filter(Boolean).map(Number
 const memHas=i=>memList().includes(i);
 const memCount=()=>memList().filter(i=>GLV[i]&&GLV[i].memory).length;
 const memTotal=()=>GLV.filter(l=>l.memory).length;
-R2_TAKE.memory=k=>{ if(!LVL.memory) return false;
+defItem('memory',{take:k=>{ if(!LVL.memory) return false;
   if(!SURV&&LI>=0&&!memHas(LI)) store.set(KEY('mem'),memList().concat(LI).join(','));
   SFX.pickup(); if(AC){ osc({type:'sine',f:784,t:0.6,v:0.07}); osc({type:'sine',f:1046,t:0.8,v:0.05,when:0.2}); }
   for(let i=0;i<18;i++) part(k.x+6,k.y+5,rnd(-50,50),rnd(-80,-10),0.9,'#ffe6a0',1.5,-20);
-  showMsg(LVL.memory,7,(GAME.memLabel||'СПОМЕН')+' '+memCount()+' / '+memTotal()); };
-R2_PDRAW.memory=(k,x,y)=>{ const had=!SURV&&memHas(LI), a=titleT*2+k.bob;
+  showMsg(LVL.memory,7,(GAME.memLabel||'СПОМЕН')+' '+memCount()+' / '+memTotal()); }});
+defItem('memory',{draw:(k,x,y)=>{ const had=!SURV&&memHas(LI), a=titleT*2+k.bob;
   ctx.save(); ctx.globalCompositeOperation='lighter'; const g=ctx.createRadialGradient(x+6,y+4,1,x+6,y+4,16); g.addColorStop(0,`rgba(255,220,140,${had?0.25:0.6})`); g.addColorStop(1,'rgba(255,220,140,0)'); ctx.fillStyle=g; ctx.fillRect(x-10,y-12,32,32); ctx.restore();
-  ctx.globalAlpha=had?0.45:1; ctx.fillStyle='#f4ead2'; ctx.fillRect(x+1,y-2,10,12); ctx.fillStyle='#8a7a5a'; ctx.fillRect(x+2,y-1,8,7); ctx.fillStyle='#c8b48a'; ctx.fillRect(x+4,y+1,3,3); ctx.fillStyle='#ffe6a0'; ctx.fillRect(x+5+Math.round(Math.sin(a)*4),y-5,1,1); ctx.globalAlpha=1; };
+  ctx.globalAlpha=had?0.45:1; ctx.fillStyle='#f4ead2'; ctx.fillRect(x+1,y-2,10,12); ctx.fillStyle='#8a7a5a'; ctx.fillRect(x+2,y-1,8,7); ctx.fillStyle='#c8b48a'; ctx.fillRect(x+4,y+1,3,3); ctx.fillStyle='#ffe6a0'; ctx.fillRect(x+5+Math.round(Math.sin(a)*4),y-5,1,1); ctx.globalAlpha=1; }});

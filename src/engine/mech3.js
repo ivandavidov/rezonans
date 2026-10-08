@@ -116,17 +116,17 @@ function mech3Chips(chip){
   if(LVL.flares) chip(flareCd>0?'✸ РАКЕТА · '+flareCd.toFixed(1)+' s':'✸ РАКЕТА · E — хвърли','#ff9a7a');
 }
 // плочката 'h' се рисува като фон — истинската „стена“ се рисува отгоре, докато не я разкриеш
-TILE_HOOKS.push(function(tx,ty,ch){ if(ch==='h'){ drawBack(tx,ty); return true; } return false; });
+defTile(function(tx,ty,ch){ if(ch==='h'){ drawBack(tx,ty); return true; } return false; });
 
 /* ---------- прилеп ---------- */
-Object.assign(DIMS,{bat:[10,8,18]});
-R2UPD.bat=(e,dt)=>{ const ex=e.x+e.w/2, ey=e.y+e.h/2, p=player;
+defFoes('dims',{bat:[10,8,18]});
+defFoe('bat',{upd:(e,dt)=>{ const ex=e.x+e.w/2, ey=e.y+e.h/2, p=player;
   if(e.scared>0||isLit(ex,ey)){ if(!(e.scared>0)) e.scared=0.9; e.scared-=dt; e.anim+=dt*2; let fx=0,fy=-1; for(const f of FLARES){ const d=Math.hypot(ex-f.x,ey-f.y)||1; if(d<160){ fx+=(ex-f.x)/d; fy+=(ey-f.y)/d; } }
     const n=Math.hypot(fx,fy)||1; e.vx+=(fx/n*150-e.vx)*Math.min(1,dt*5); e.vy+=(fy/n*150-e.vy)*Math.min(1,dt*5); moveX(e,e.vx*dt); moveY(e,e.vy*dt); e.alert=true; return; }
   updFlyer(e,dt); e.anim+=dt*2;
-  if(p&&!p.dead&&isLit(p.x+p.w/2,p.y+p.h/2)&&e.state==='dive'){ e.state='retreat'; e.t=0.5; } };
-R2DRAW.bat=e=>{ if(e.dead&&e.deadT>0.6) return; const x=Math.round(e.x+e.w/2-cam), y=Math.round(e.y+e.h/2), f=Math.sin(e.anim*18);
+  if(p&&!p.dead&&isLit(p.x+p.w/2,p.y+p.h/2)&&e.state==='dive'){ e.state='retreat'; e.t=0.5; } }});
+defFoe('bat',{draw:e=>{ if(e.dead&&e.deadT>0.6) return; const x=Math.round(e.x+e.w/2-cam), y=Math.round(e.y+e.h/2), f=Math.sin(e.anim*18);
   ctx.fillStyle=e.hitT>0?'#fff':e.dead?'#5a4a4a':'#2a2024'; ctx.fillRect(x-2,y-2,4,4);
   ctx.beginPath(); ctx.moveTo(x-1,y-1); ctx.lineTo(x-8,y-3-f*4); ctx.lineTo(x-5,y+1); ctx.lineTo(x-1,y+1); ctx.closePath(); ctx.fill();
   ctx.beginPath(); ctx.moveTo(x+1,y-1); ctx.lineTo(x+8,y-3-f*4); ctx.lineTo(x+5,y+1); ctx.lineTo(x+1,y+1); ctx.closePath(); ctx.fill();
-  if(!e.dead){ ctx.fillStyle='#ff5a4a'; ctx.fillRect(x-1,y-1,1,1); ctx.fillRect(x+1,y-1,1,1); } };
+  if(!e.dead){ ctx.fillStyle='#ff5a4a'; ctx.fillRect(x-1,y-1,1,1); ctx.fillRect(x+1,y-1,1,1); } }});

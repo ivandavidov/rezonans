@@ -20,7 +20,7 @@ const SKY3={
 // tiles for the new themes
 addUnique(SKIES,{sofia3:SKY3.sofia,vitosha3:SKY3.vitosha,rift3:SKY3.rift},'SKIES');
 // плочки и фон за новите теми
-TILE_HOOKS.push(function(tx,ty,ch,x,y,P,z){
+defTile(function(tx,ty,ch,x,y,P,z){
   if(ch==='#'&&P.rift){ R(x,y,T,T,P.s); if(hash(tx,ty)>0.7) R(x+2,y+3,T-5,T-6,P.sd);
     const glow=P.core?'#ffffff':'#ff3b4f';
     if(!isS(tx,ty-1)){ R(x,y,T,2,glow); R(x,y+2,T,1,P.core?'#8a8a96':'#7a1a26'); }
@@ -32,7 +32,7 @@ TILE_HOOKS.push(function(tx,ty,ch,x,y,P,z){
   if(ch==='#'&&P.base){ R(x,y,T,T,P.s); R(x,y,T,1,P.sh); R(x,y,1,T,P.sh); R(x,y+15,T,1,P.sd); R(x+15,y,1,T,P.sd); if(hash(tx,ty)>0.92){ R(x+4,y+5,8,1,'#c9a21c'); R(x+4,y+7,8,1,'#1a1a1a'); } if(!isS(tx,ty-1)){ R(x,y,T,3,'#8a949c'); for(let i=0;i<T;i+=4) R(x+i,y+3,2,1,'#3a4248'); } return true; }
   return false;
 });
-BACK_HOOKS.push(function(tx,ty,x,y,z,P){
+defBack(function(tx,ty,x,y,z,P){
   if(P.metro){ if(ty>=3&&ty<=12&&ty%3===0) R(x,y+4,T,1,'#2a2a30'); if(tx%9===0&&ty===8) R(x,y,T*3,3,'#7a1a26'); if(tx%23===5&&ty===5){ R(x,y,26,12,'#0a0a0e'); R(x+2,y+2,22,8,'#2a1a1c'); } return true; }
   if(P.serd){ if(tx%7===3&&ty>4){ R(x+4,y,8,T,'#2e2418'); R(x+5,y,1,T,'#3e3222'); } if(ty===13&&tx%5===0) R(x,y+10,T,2,'#3a2e1e'); return true; }
   if(P.base){ if(ty===4&&tx%12===2){ R(x,y,40,6,'#c9a21c'); for(let i=0;i<40;i+=8) R(x+i,y,4,6,'#1a1a1a'); } if(tx%6===0) R(x+7,y,2,T,'#1a2024'); return true; }

@@ -54,8 +54,8 @@ shell=fill(shell,'/*@@GAME_CSS@@*/','\n'.join(l for _,g in games for l in g.get(
 loads=''.join(",document.fonts.load('"+f+"')" for _,g in games for f in g.get('fontLoad',[]))
 
 # ---------- код: двигател + игрите от поредицата ----------
-# разделите на бившата база (engine/legacy/) и споделеното съдържание (engine/lib/) — в реда на бившата база
-LEGACY=['legacy/core.js','legacy/difficulty.js','legacy/synth.js','lib/themes.js','legacy/map.js','legacy/prerender.js','legacy/sky.js',
+# разделите на бившата база (engine/legacy/), регистрите (engine/defs.js) и споделеното съдържание (engine/lib/)
+LEGACY=['legacy/core.js','defs.js','legacy/difficulty.js','legacy/synth.js','lib/themes.js','legacy/map.js','legacy/prerender.js','legacy/sky.js',
         'legacy/input.js','legacy/state.js','legacy/fx.js','legacy/combat.js','legacy/player.js','legacy/enemies.js','legacy/lifts.js',
         'legacy/crushers.js','legacy/trains.js','legacy/bosses.js','legacy/missiles.js','legacy/survgen.js','legacy/flow.js','legacy/update.js',
         'legacy/render.js','legacy/training.js']
@@ -68,7 +68,8 @@ s=(shell+"<script>\n(()=>{\n'use strict';\n"+''.join(rd('engine',f) for f in LEG
    +fill(rd('engine','legacy','loop.js'),'/*@@FONT_LOADS@@*/',loads)+'})();\n</script>\n')
 
 allcode=''.join(rd('engine',f) for f in LEGACY)+'\n'.join(code)   # loop.js не влиза: там са старите псевдоними в window.__rz
-left=[w for w in ['R3','R2','r2title',"state='mode'","'r2intro'",'LEVELS2','unlocked2','MO','SEQ'] if re.search(r'(?<![\w])'+re.escape(w)+r'(?![\w])',allcode)]
+left=[w for w in ['R3','R2','r2title',"state='mode'","'r2intro'",'LEVELS2','unlocked2','MO','SEQ','R2B','R2UPD','R2DRAW','R2_TAKE','R2_PDRAW','R2B_TONE','R2B_CMD','R2BAR',
+                    'TILE_HOOKS','BACK_HOOKS','BOSS_NORM','drawHUD2','renderEps2','r2EpsInput','r2Tile','r2BackDeco','r2SkyLayer'] if re.search(r'(?<![\w])'+re.escape(w)+r'(?![\w])',allcode)]
 if left: raise SystemExit('остатъци от старата архитектура: '+', '.join(left))
 # всяко глобално име трябва да е уникално — иначе една игра тихо подменя функция на друга
 tops=collections.Counter(a or b for a,b in re.findall(r'^(?:function\s+(\w+)|(?:const|let)\s+(\w+)\s*=)',s,re.M))

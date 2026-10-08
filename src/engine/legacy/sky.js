@@ -15,7 +15,7 @@ function buildSky(){
     else if(L.kind==='wrecks') for(let k=0;k<L.n;k++){ const cx=hash(k,L.seed)*1024, cy=L.y+hash(L.seed,k)*L.dy, w=40+hash(k,k+L.seed)*L.w, ang=(hash(k+3,L.seed)-0.5)*0.8;
       for(const dx of [-1024,0,1024]){ x.save(); x.translate(cx+dx,cy); x.rotate(ang); x.fillStyle=L.col; x.beginPath(); x.moveTo(-w/2,0); x.lineTo(-w/2+8,-w*0.18); x.lineTo(w/2-6,-w*0.14); x.lineTo(w/2,0); x.lineTo(w/2-10,w*0.12); x.lineTo(-w/2+12,w*0.1); x.closePath(); x.fill();
         x.fillRect(-w*0.15,-w*0.3,w*0.08,w*0.2); x.fillStyle='rgba(255,200,120,0.6)'; for(let i=0;i<5;i++) if(hash(k*7+i,L.seed)>0.4) x.fillRect(-w/2+10+i*w/6,-2,2,2); x.restore(); } }
-    else if(r2SkyLayer(L,x)){}
+    else if(skyLayerExt(L,x)){}
     else for(let k=0;k<L.n;k++){ const cx=hash(k,L.seed)*1024, cy=L.y+hash(L.seed,k)*L.dy, w=18+hash(k,k+L.seed)*L.w;
       for(const dx of [-1024,0,1024]){ x.beginPath(); x.ellipse(cx+dx,cy,w,w*0.2,0,0,7); x.fill(); x.beginPath(); x.moveTo(cx+dx-w*0.85,cy); x.lineTo(cx+dx+w*0.85,cy); x.lineTo(cx+dx+w*0.15,cy+w*0.75); x.closePath(); x.fill(); } }
     layers.push({c,sp:L.sp}); }

@@ -12,7 +12,6 @@ function showMsg(t,d=3.6,who){ msg={t,d:Math.max(d,1.2+t.length*0.055),age:0,who
 function radio(t){ showMsg(t,0,GAME.radioWho||'Д-Р ИЛИЕВА'); SFX.radio&&AC&&SFX.radio(0.8,sfxBus); }
 function bark(e,t,d=2){ barks.push({e,t,d}); }
 function setCp(tx){ cp=tx; r2SetCp(); }
-const DIMS={crab:[12,8,20],shocker:[14,28,60],soldier:[12,26,60],turret:[12,10,50],flyer:[14,10,24],zombie:[12,26,55],nest:[20,16,90],guard:[16,30,110],pylon:[10,20,100],egg:[10,12,25],target:[14,23,1]};
 function makeEnemy(type,cx,feet){
   const d=DIMS[type];
   return {type,x:cx-d[0]/2,y:feet-d[1],w:d[0],h:d[1],hp:d[2]*D.ehp*ehpMul,vx:0,vy:0,face:-1,state:'idle',t:rnd(0.6,1.4),cd:rnd(0.6,1.4),gcd:rnd(2.5,4),burst:0,bt:0,alert:false,onGround:false,hitT:0,anim:rnd(10),dead:false,home:cx,bite:0,lastSeen:9,summoned:false,side:Math.random()<0.5?1:-1,elecT:0};

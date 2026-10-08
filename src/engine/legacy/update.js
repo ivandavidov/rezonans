@@ -18,14 +18,14 @@ function update(dt){
     if(Math.abs(e.x-ccx)>440) continue;
     e.hitT-=dt; e.flashT=(e.flashT||0)-dt;
     if(e.stunT>0){ e.stunT-=dt; continue; }
-    ({crab:updCrab,shocker:updShocker,soldier:updSoldier,turret:updTurret,flyer:updFlyer,zombie:updZombie,nest:updNest,guard:updGuard,target:updTarget,...R2UPD})[e.type](e,edt);
+    FOES[e.type].upd(e,edt);
     if(!e.dead&&ACID_DIE[e.type]&&rectHas(e.x,e.y+e.h-6,e.w,6,'~')){ hurtEnemy(e,e.hp+1,0,true); for(let i=0;i<10;i++) part(e.x+rnd(e.w),e.y+e.h-4,rnd(-30,30),rnd(-90,-30),rnd(0.3,0.6),'#9dff6a',2,200); }
     if(e.type!=='flyer'&&e.type!=='turret'&&e.type!=='nest'&&e.type!=='pylon'&&e.onGround&&elecOn()&&onTile(e,'Z')){ e.elecT-=dt; if(e.elecT<=0){ e.elecT=0.25; hurtEnemy(e,10,0,true); sparks(e.x+e.w/2,e.y+e.h,3,'#bfe8ff'); } }
     if(e.y>ROWS*T+40){ e.dead=true; e.deadT=99; }
     if(e.alert&&Math.abs(e.x-p.x)<380) threat=true;
   }
   for(const s of scientists) updScientist(s,dt);
-  if(boss) R2B.upd[boss.type](edt);
+  if(boss) BOSSES[boss.type].upd(edt);
   if(bmiss.length) updMissiles(dt);
   combatHold=threat?4:combatHold-dt;
   mInt=bossActive&&boss&&!boss.dead?2:combatHold>0?1:0;

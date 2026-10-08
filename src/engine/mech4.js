@@ -1,9 +1,8 @@
 /* ================= ДВИГАТЕЛ · МЕХАНИКИ IV =================
    Тонът (LVL.tone): E изпява тон — вълна, която зашеметява враговете наоколо (e.stunT)
-     и отваря тоновите врати (плочка 't') за няколко секунди. Босовете могат да реагират чрез R2B_TONE[тип](разстояние).
+     и отваря тоновите врати (плочка 't') за няколко секунди. Босовете могат да реагират чрез onTone(разстояние).
    Зашеметен враг замръзва на място (виж куката в build.py). */
 let TONEP=[], toneCd=0, TDOORS=[], tdoorT=0;
-const R2B_TONE={};
 SOLID.add('t');
 function mech4Load(){ TONEP=[]; toneCd=0; tdoorT=0; TDOORS=[]; SOLID.add('t'); if(!LVL) return;
   for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++) if(map[y][x]==='t') TDOORS.push([x,y]); }
@@ -13,7 +12,7 @@ function tonePulse(){
   if(AC){ osc({type:'sine',f:440,t:0.9,v:0.08}); osc({type:'sine',f:554,t:0.9,v:0.05,when:0.08}); osc({type:'sine',f:659,t:0.9,v:0.05,when:0.16}); }
   noise(x,y,'tone');
   for(const e of enemies){ if(e.dead||e.mech||e.tag) continue; const d=Math.hypot(e.x+e.w/2-x,e.y+e.h/2-y); if(d<150){ e.stunT=Math.max(e.stunT||0,e.para?3.2:2); e.alert=true; } }
-  if(boss&&!boss.dead&&R2B_TONE[boss.type]) R2B_TONE[boss.type](Math.hypot(boss.x+boss.w/2-x,boss.y+boss.h/2-y));
+  if(boss&&!boss.dead&&(BOSSES[boss.type]||{}).onTone) BOSSES[boss.type].onTone(Math.hypot(boss.x+boss.w/2-x,boss.y+boss.h/2-y));
   if(TDOORS.some(([tx,ty])=>Math.hypot(tx*T+8-x,ty*T+8-y)<170)){ tdoorT=3.6; SOLID.delete('t'); if(AC) osc({type:'triangle',f:880,t:0.4,v:0.05,when:0.2}); }
 }
 function mech4Update(dt){
@@ -37,4 +36,4 @@ function mech4DrawWorld(){
 function mech4Lights(L){ for(const t of TONEP){ const r=t.t*190, al=Math.max(0,1-t.t/1.1); for(let i=0;i<20;i++){ const a=i/20*6.283; L.push([t.x+Math.cos(a)*r,t.y+Math.sin(a)*r,36,al*0.8]); } }
   if(TDOORS.length&&player){ let n=0; for(const [tx,ty] of TDOORS){ if(Math.abs(tx*T-player.x)>260||(tx+ty)%2) continue; L.push([tx*T+8,ty*T+8,20,0.3]); if(++n>30) break; } } }
 function mech4Chips(chip){ if(LVL.tone) chip(toneCd>0?'♫ ТОН · '+toneCd.toFixed(1)+' s':'♫ ТОН · E — изпей','#e8c25a'); }
-TILE_HOOKS.push(function(tx,ty,ch){ if(ch==='t'){ drawBack(tx,ty); return true; } return false; });
+defTile(function(tx,ty,ch){ if(ch==='t'){ drawBack(tx,ty); return true; } return false; });

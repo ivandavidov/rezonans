@@ -16,7 +16,7 @@ function frame(now){
     else if(pressed.jump||pressed.esc){ toMenu(modeSel===1?3:2); SFX.menu(); }
     clearPressed();
   }
-  else if(state==='eps'){ r2EpsInput(); clearPressed(); }
+  else if(state==='eps'){ epsInput(); clearPressed(); }
   else if(state==='story'&&pressed.esc){ clearPressed(); toTitle(); }
   else if(state==='story'){ storyT+=dt; if(ok()){ if(storyT*45<parasLen(LVL.story)) storyT=999; else { state='play'; SFX.menuOk(); } } clearPressed(); }
   else if(state==='play'){

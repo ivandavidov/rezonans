@@ -547,19 +547,20 @@ function drawTitan(){
   tint=null; ctx.globalAlpha=1; ctx.restore();
   if(b.phase===3&&!b.dead&&Math.random()<0.2) sparks(b.x+b.w/2+rnd(-20,20),b.y+rnd(10,40),2,'#ffd36b');
 }
-/* ---------- регистрация в общите регистри на двигателя (engine/sequel.js: R2B, R2UPD, R2DRAW) ---------- */
+/* ---------- регистрация (engine/defs.js) ---------- */
+defFoes('dims',{pylon:[10,20,100],egg:[10,12,25]});
 const updPylon=(e,dt)=>{e.anim+=dt;};
-Object.assign(R2B.make,{colossus:makeColossus,warden:makeWarden,heli:makeHeli,worm:makeWorm,guardian:makeGuardian,exo:makeExo,tank:makeTank,hunter:makeHunter,queen:makeQueen,titan:makeTitan});
-Object.assign(R2B.hurt,{colossus:hurtColossus,heli:hurtHeli,warden:hurtWarden,worm:hurtWorm,guardian:hurtGuardian,exo:hurtExo,tank:hurtTank,hunter:hurtHunter,queen:hurtQueen,titan:hurtTitan});
-Object.assign(R2B.upd,{colossus:updColossus,warden:updWarden,heli:updHeli,worm:updWorm,guardian:updGuardian,exo:updExo,tank:updTank,hunter:updHunter,queen:updQueen,titan:updTitan});
-Object.assign(R2B.draw,{colossus:drawColossus,warden:drawWarden,heli:drawHeli,worm:drawWorm,guardian:drawGuardian,exo:drawExo,tank:drawTank,hunter:drawHunter,queen:drawQueen,titan:drawTitan});
-Object.assign(R2B.intro,{worm:'Червеят! Стреляй по него, докато е над киселината. Варелите на брега ще помогнат.',guardian:'Пазителят! Щитът му се захранва от трите пилона. Унищожи ги, после стреляй по него.',colossus:'Колосът! Прескачай зелените вълни и взривявай варелите около него.',warden:'Надзирателят! Стреляй в окото и бягай от сферите.',heli:'Боен хеликоптер! Куршумите почти не му вредят — стреляй с ракетомета.',
+defBosses('make',{colossus:makeColossus,warden:makeWarden,heli:makeHeli,worm:makeWorm,guardian:makeGuardian,exo:makeExo,tank:makeTank,hunter:makeHunter,queen:makeQueen,titan:makeTitan});
+defBosses('hurt',{colossus:hurtColossus,heli:hurtHeli,warden:hurtWarden,worm:hurtWorm,guardian:hurtGuardian,exo:hurtExo,tank:hurtTank,hunter:hurtHunter,queen:hurtQueen,titan:hurtTitan});
+defBosses('upd',{colossus:updColossus,warden:updWarden,heli:updHeli,worm:updWorm,guardian:updGuardian,exo:updExo,tank:updTank,hunter:updHunter,queen:updQueen,titan:updTitan});
+defBosses('draw',{colossus:drawColossus,warden:drawWarden,heli:drawHeli,worm:drawWorm,guardian:drawGuardian,exo:drawExo,tank:drawTank,hunter:drawHunter,queen:drawQueen,titan:drawTitan});
+defBosses('intro',{worm:'Червеят! Стреляй по него, докато е над киселината. Варелите на брега ще помогнат.',guardian:'Пазителят! Щитът му се захранва от трите пилона. Унищожи ги, после стреляй по него.',colossus:'Колосът! Прескачай зелените вълни и взривявай варелите около него.',warden:'Надзирателят! Стреляй в окото и бягай от сферите.',heli:'Боен хеликоптер! Куршумите почти не му вредят — стреляй с ракетомета.',
   exo:'Командирът в бойна броня! Щитът спира куршумите отпред — стреляй в гърба му или докато бронята е прегряла.',
   tank:'Танк! Куршумите не го пробиват — използвай ракети и гранати. Прескачай го и клякай под картечницата.',
   hunter:'Ловецът! Пунктирът показва височината на атаката: ниско — скачай, високо — клекни.',
   queen:'Майката на гнездото! Унищожавай яйцата и стреляй, когато черупката ѝ се отвори.',
   titan:'Полковник Стратев в „Титан“! Стреляй по ракетите му, за да ги сваляш. Пунктирът показва лазера: ниско — скачай, високо — клекни.'});
-Object.assign(R2B.name,{warden:'НАДЗИРАТЕЛЯТ',colossus:'КОЛОС',heli:'БОЕН ХЕЛИКОПТЕР',worm:'ЧЕРВЕЯТ',guardian:'ПАЗИТЕЛЯТ',exo:'КОМАНДИРЪТ',tank:'ТАНКЪТ',hunter:'ЛОВЕЦЪТ',queen:'МАЙКАТА',titan:'„ТИТАН“'});
-Object.assign(R2B.col,{warden:'#c77dff',heli:'#ffb53a',colossus:'#9dff5a',worm:'#a6ff6a',guardian:'#8ad8ff',exo:'#c9c3b4',tank:'#ffb53a',hunter:'#7fd8ff',queen:'#ff6ad5',titan:'#ff5a45'});
-Object.assign(R2B.sfx,{warden:'warden',heli:'chop',tank:'engine',titan:'warden',exo:'stomp',hunter:'screech'});
-Object.assign(R2UPD,{egg:updEgg,pylon:updPylon}); Object.assign(R2DRAW,{egg:drawEgg,pylon:drawPylon});
+defBosses('name',{warden:'НАДЗИРАТЕЛЯТ',colossus:'КОЛОС',heli:'БОЕН ХЕЛИКОПТЕР',worm:'ЧЕРВЕЯТ',guardian:'ПАЗИТЕЛЯТ',exo:'КОМАНДИРЪТ',tank:'ТАНКЪТ',hunter:'ЛОВЕЦЪТ',queen:'МАЙКАТА',titan:'„ТИТАН“'});
+defBosses('col',{warden:'#c77dff',heli:'#ffb53a',colossus:'#9dff5a',worm:'#a6ff6a',guardian:'#8ad8ff',exo:'#c9c3b4',tank:'#ffb53a',hunter:'#7fd8ff',queen:'#ff6ad5',titan:'#ff5a45'});
+defBosses('sfx',{warden:'warden',heli:'chop',tank:'engine',titan:'warden',exo:'stomp',hunter:'screech'});
+defFoes('upd',{egg:updEgg,pylon:updPylon}); defFoes('draw',{egg:drawEgg,pylon:drawPylon});

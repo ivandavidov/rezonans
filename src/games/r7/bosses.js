@@ -1,13 +1,13 @@
 /* ================= РЕЗОНАНС 7 · БОСОВЕ ================= */
-Object.assign(R2B.intro,{
+defBosses('intro',{
   syntax:'?SYNTAX ERROR! Поправи трите реда — застани на курсорите и натисни E. Тогава грешката е уязвима.',
   snake:'Змията! Уязвима е само главата. Пази се от опашката.',
   dark:'Тъмния! Удряй го само когато сте в една палитра — сменяй с E.',
   copy:'Копието! Повтаря движенията ти със закъснение. Спри за миг, отдръпни се — и стреляй по замръзналото копие.',
   nula:'Нулата! BREAK сваля щита ѝ. Когато отслабне — RUN на средната платформа.'});
-Object.assign(R2B.name,{syntax:'?SYNTAX ERROR',snake:'ЗМИЯТА',dark:'ТЪМНИЯ',copy:'КОПИЕТО',nula:'НУЛАТА'});
-Object.assign(R2B.col,{syntax:'#8aff9a',snake:'#2ae84a',dark:'#e82ae8',copy:'#ffd84a',nula:'#ffffff'});
-addUnique(BOSS_NORM,{syntax:1,snake:1,dark:1,copy:1,nula:0.85},'BOSS_NORM');
+defBosses('name',{syntax:'?SYNTAX ERROR',snake:'ЗМИЯТА',dark:'ТЪМНИЯ',copy:'КОПИЕТО',nula:'НУЛАТА'});
+defBosses('col',{syntax:'#8aff9a',snake:'#2ae84a',dark:'#e82ae8',copy:'#ffd84a',nula:'#ffffff'});
+defBosses('norm',{syntax:1,snake:1,dark:1,copy:1,nula:0.85});
 const ax7=tx=>AX()/T+tx-26;
 const bHit7=(b,col)=>{ b.hitT=0.08; sparks(b.x+b.w/2+rnd(-8,8),b.y+b.h/2+rnd(-8,8),4,col); };
 const hint7=(b,t)=>{ b.hintT=(b.hintT||0)-1; if(b.hintT<=0){ b.hintT=28; showMsg(t,1.8); } };
@@ -17,14 +17,14 @@ const glow7=(x,y,col,r,a)=>{ ctx.save(); ctx.globalCompositeOperation='lighter';
 
 /* ---------- 1. ?SYNTAX ERROR ---------- */
 const SYN_FIX=[[29,14,'FIX 10'],[40,8,'FIX 20'],[52,14,'FIX 30']];
-R2B.make.syntax=()=>{ dropBossCursors(); for(const [tx,row,l] of SYN_FIX) addCursor('POKE',ax7(tx),row,{label:l,boss:true,syn:1});
-  return {type:'syntax',x:AX()+8*T,y:3*T,w:13*10,h:18,hp:700*D.bhp,max:700*D.bhp,state:'intro',t:2,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,fireT:1.5,rainT:3,open:0}; };
-R2B_CMD.syntax=c=>{ const b=boss; if(!c.o.syn||b.state==='open') return; const left=CURS.filter(k=>k.o.syn&&!k.done).length; if(left>0) showMsg('Поправен ред. Остават '+left+'.',1.2);
-  else { b.state='open'; b.t=b.phase>1?5:6.5; shake=6; showMsg('Синтаксисът е поправен — грешката е уязвима!',1.6); } };
-R2B.hurt.syntax=(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
+defBoss('syntax',{make:()=>{ dropBossCursors(); for(const [tx,row,l] of SYN_FIX) addCursor('POKE',ax7(tx),row,{label:l,boss:true,syn:1});
+  return {type:'syntax',x:AX()+8*T,y:3*T,w:13*10,h:18,hp:700*D.bhp,max:700*D.bhp,state:'intro',t:2,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,fireT:1.5,rainT:3,open:0}; }});
+defBoss('syntax',{onCmd:c=>{ const b=boss; if(!c.o.syn||b.state==='open') return; const left=CURS.filter(k=>k.o.syn&&!k.done).length; if(left>0) showMsg('Поправен ред. Остават '+left+'.',1.2);
+  else { b.state='open'; b.t=b.phase>1?5:6.5; shake=6; showMsg('Синтаксисът е поправен — грешката е уязвима!',1.6); } }});
+defBoss('syntax',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
   if(b.state!=='open'){ sparks(b.x+rnd(b.w),b.y+b.h/2,3,'#8aff9a'); hint7(b,'Грешката е недосегаема. Поправи трите реда на курсорите!'); return; }
-  b.hp-=d; bHit7(b,'#ffffff'); if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('„?SYNTAX ERROR IN EVERYTHING!“',2); shake=6; } if(b.hp<=0){ dropBossCursors(); bossDie(); } };
-R2B.upd.syntax=dt=>{
+  b.hp-=d; bHit7(b,'#ffffff'); if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('„?SYNTAX ERROR IN EVERYTHING!“',2); shake=6; } if(b.hp<=0){ dropBossCursors(); bossDie(); } }});
+defBoss('syntax',{upd:dt=>{
   const b=boss, p=player; b.anim+=dt; b.hitT-=dt;
   if(b.dead){ bossDeathFx(b,dt); return; }
   if(b.state==='intro'){ b.t-=dt; if(b.t<=0) b.state='fight'; return; }
@@ -34,18 +34,18 @@ R2B.upd.syntax=dt=>{
   b.open=Math.max(0,b.open-dt*2); b.y+=(3*T-b.y)*Math.min(1,dt*2); b.x=AX()+8*T+Math.sin(b.anim*0.6)*7*T;
   b.fireT-=dt; if(b.fireT<=0&&!p.dead){ b.fireT=(b.phase>1?1.1:1.6)*D.rate; const a=Math.atan2(p.y+p.h/2-(b.y+b.h),pcx-bcx); for(const o of (b.phase>1?[-0.2,0,0.2]:[-0.1,0.1])) ebullets.push({x:bcx,y:b.y+b.h,vx:Math.cos(a+o)*170*D.bspd,vy:Math.sin(a+o)*170*D.bspd,life:3,dmg:10,r:4,orb:true}); }
   b.rainT-=dt; if(b.rainT<=0){ b.rainT=b.phase>1?2.6:3.6; for(let i=0;i<(b.phase>1?5:3);i++) bossOrb(b.x+rnd(b.w),b.y+b.h,rnd(-30,30),20,{grav:true,dmg:10,r:4,life:4}); }
-};
-R2B.draw.syntax=()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; const x=Math.round(b.x-cam), y=Math.round(b.y), t='?SYNTAX ERROR'; ctx.save(); if(b.dead) ctx.globalAlpha=1-clamp((b.deathT-1.8)/0.8,0,1);
+}});
+defBoss('syntax',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; const x=Math.round(b.x-cam), y=Math.round(b.y), t='?SYNTAX ERROR'; ctx.save(); if(b.dead) ctx.globalAlpha=1-clamp((b.deathT-1.8)/0.8,0,1);
   glow7(x+b.w/2,y+9,'120,255,140',70,0.25); ctx.font='700 14px "IBM Plex Mono",monospace';
   for(let i=0;i<t.length;i++){ const o=b.open, dy=o*(Math.sin(i*1.7)*10+8)+Math.sin(b.anim*4+i)*2*(1-o), rot=o*Math.sin(i*2.3)*0.5;
     ctx.save(); ctx.translate(x+i*10+5,y+14+dy); ctx.rotate(rot); ctx.fillStyle=b.hitT>0?'#ffffff':(b.state==='open'?'#ffffff':(Math.floor(b.anim*3+i)%5?'#8aff9a':'#3aff5a')); ctx.fillText(t[i],-4,0); ctx.restore(); }
-  ctx.restore(); };
+  ctx.restore(); }});
 
 /* ---------- 2. ЗМИЯТА ---------- */
-R2B.make.snake=()=>({type:'snake',x:AX()+20*T,y:8*T,w:14,h:14,hp:800*D.bhp,max:800*D.bhp,state:'intro',t:2,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:-1,vy:0,phase:1,trail:[],len:10,turnT:1,growT:6,spitT:3});
-R2B.hurt.snake=(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return; b.hp-=d; bHit7(b,'#2ae84a');
-  if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Змията ускорява — и започва да плюе байтове!',2); shake=6; } if(b.hp<=0) bossDie(); };
-R2B.upd.snake=dt=>{
+defBoss('snake',{make:()=>({type:'snake',x:AX()+20*T,y:8*T,w:14,h:14,hp:800*D.bhp,max:800*D.bhp,state:'intro',t:2,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:-1,vy:0,phase:1,trail:[],len:10,turnT:1,growT:6,spitT:3})});
+defBoss('snake',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return; b.hp-=d; bHit7(b,'#2ae84a');
+  if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Змията ускорява — и започва да плюе байтове!',2); shake=6; } if(b.hp<=0) bossDie(); }});
+defBoss('snake',{upd:dt=>{
   const b=boss, p=player; b.anim+=dt; b.hitT-=dt;
   if(b.dead){ bossDeathFx(b,dt); if(b.trail.length>0&&Math.random()<0.5){ const s=b.trail.shift(); for(let i=0;i<4;i++) part(s[0],s[1],rnd(-60,60),rnd(-60,60),0.4,'#2ae84a',2,0); } return; }
   if(b.state==='intro'){ b.t-=dt; if(b.t<=0) b.state='fight'; return; }
@@ -61,22 +61,22 @@ R2B.upd.snake=dt=>{
   // тялото боли, но не може да се удари
   if(!p.dead){ for(let i=6;i<b.trail.length;i+=6){ const [sx,sy]=b.trail[i]; if(Math.abs(sx-pcx)<10&&Math.abs(sy-pcy)<16){ b.tb=(b.tb||0)-dt; if(b.tb<=0){ b.tb=0.8; hurtPlayer(7,sgn(pcx-sx||1)*160); } break; } } }
   bite7(b,dt,14,sgn(pcx-hx||1)*200);
-};
-R2B.draw.snake=()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; ctx.save(); if(b.dead) ctx.globalAlpha=1-clamp((b.deathT-1.8)/0.8,0,1);
+}});
+defBoss('snake',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; ctx.save(); if(b.dead) ctx.globalAlpha=1-clamp((b.deathT-1.8)/0.8,0,1);
   for(let i=b.trail.length-1;i>=6;i-=6){ const [sx,sy]=b.trail[i]; ctx.fillStyle=(i/6)%2?'#2ae84a':'#9a3ae8'; ctx.fillRect(Math.round(sx-5-cam),Math.round(sy-5),10,10); ctx.fillStyle='rgba(0,0,0,0.35)'; ctx.fillRect(Math.round(sx-5-cam),Math.round(sy+3),10,2); }
   const x=Math.round(b.x-cam), y=Math.round(b.y); glow7(x+7,y+7,'42,232,74',22,0.4); ctx.fillStyle=b.hitT>0?'#ffffff':'#2ae84a'; ctx.fillRect(x,y,14,14); ctx.fillStyle='#ffffff';
   const ex=b.vx>0?9:b.vx<0?2:5, ey=b.vy>0?9:b.vy<0?2:4; ctx.fillRect(x+ex,y+ey,3,3); ctx.fillRect(x+(b.vy!==0?ex+5:ex),y+(b.vy!==0?ey:ey+5),3,3);
   if(Math.floor(b.anim*6)%2){ ctx.fillStyle='#e82a2a'; ctx.fillRect(x+(b.vx>0?14:b.vx<0?-4:6),y+(b.vy>0?14:b.vy<0?-4:6),4,2); }
-  ctx.restore(); };
+  ctx.restore(); }});
 
 /* ---------- 3. ТЪМНИЯ ---------- */
 const DARK_POS=[[32.5,12],[40.5,9],[48.5,12],[40.5,15]];
-R2B.make.dark=()=>{ const a=LVL.arena; if(ERAD) setDoorAll([a.door,a.r0,a.r1],'D'); return {type:'dark',x:AX()+14.5*T-8,y:9*T-30,w:16,h:30,hp:950*D.bhp,max:950*D.bhp,state:'intro',t:2,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,pal:1,palT:7,pos:1,fireT:1.4,tpT:3,sumT:8}; };
+defBoss('dark',{make:()=>{ const a=LVL.arena; if(ERAD) setDoorAll([a.door,a.r0,a.r1],'D'); return {type:'dark',x:AX()+14.5*T-8,y:9*T-30,w:16,h:30,hp:950*D.bhp,max:950*D.bhp,state:'intro',t:2,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,pal:1,palT:7,pos:1,fireT:1.4,tpT:3,sumT:8}; }});
 const darkVuln=b=>ERAD?ERA===b.pal:b.pal===0;
-R2B.hurt.dark=(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
+defBoss('dark',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
   if(!darkVuln(b)){ for(let i=0;i<3;i++) part(b.x+rnd(b.w),b.y+rnd(b.h),rnd(-40,40),rnd(-40,40),0.4,'#555555',2,0); hint7(b,ERAD?'Не сте в една палитра! Смени с E.':'Изчакай да смени цвета си!'); return; }
-  b.hp-=d; bHit7(b,'#ffffff'); if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Тъмния сменя цветовете все по-бързо!',2); shake=6; } if(b.hp<=0) bossDie(); };
-R2B.upd.dark=dt=>{
+  b.hp-=d; bHit7(b,'#ffffff'); if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Тъмния сменя цветовете все по-бързо!',2); shake=6; } if(b.hp<=0) bossDie(); }});
+defBoss('dark',{upd:dt=>{
   const b=boss, p=player, a=LVL.arena; b.anim+=dt; b.hitT-=dt;
   if(b.dead){ bossDeathFx(b,dt); if(ERAD&&b.exitDone&&!b.allOpen){ b.allOpen=true; setDoorAll(a.exitDoor,'.'); } return; }
   if(b.state==='intro'){ b.t-=dt; if(b.t<=0) b.state='fight'; return; }
@@ -86,19 +86,19 @@ R2B.upd.dark=dt=>{
   b.fireT-=dt; if(b.fireT<=0&&!p.dead){ b.fireT=(b.phase>1?1.1:1.5)*D.rate; const an=Math.atan2(pcy-bcy,pcx-bcx); for(const o of (b.phase>1?[-0.25,0,0.25]:[-0.12,0.12])) ebullets.push({x:bcx,y:bcy,vx:Math.cos(an+o)*175*D.bspd,vy:Math.sin(an+o)*175*D.bspd,life:3,dmg:11,r:4,orb:true}); sfxAt('flyer',b); }
   if(b.phase>1){ b.sumT-=dt; if(b.sumT<=0){ b.sumT=8; if(enemies.filter(e=>!e.dead&&e.type==='packet').length<3) for(let i=0;i<2;i++){ const e=makeEnemy('packet',bcx+rnd(-20,20),bcy); e.summoned=true; e.alert=true; enemies.push(e); } } }
   bite7(b,dt,10,sgn(pcx-bcx||1)*200);
-};
-R2B.draw.dark=()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; const v=darkVuln(b), x=Math.round(b.x+b.w/2-cam), y=Math.round(b.y), cA=b.pal?'#2ab82a':'#2ae8e8', cB=b.pal?'#d83a2a':'#e82ae8'; ctx.save(); ctx.globalAlpha=(b.dead?1-clamp((b.deathT-1.8)/0.8,0,1):1)*(v?1:0.35);
+}});
+defBoss('dark',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; const v=darkVuln(b), x=Math.round(b.x+b.w/2-cam), y=Math.round(b.y), cA=b.pal?'#2ab82a':'#2ae8e8', cB=b.pal?'#d83a2a':'#e82ae8'; ctx.save(); ctx.globalAlpha=(b.dead?1-clamp((b.deathT-1.8)/0.8,0,1):1)*(v?1:0.35);
   glow7(x,y+15,b.pal?'42,184,42':'42,232,232',30,v?0.4:0.15);
   ctx.fillStyle=b.hitT>0?'#ffffff':'#0a0a0a'; ctx.beginPath(); ctx.moveTo(x-9,y+30); ctx.lineTo(x-7,y+6); ctx.lineTo(x,y); ctx.lineTo(x+7,y+6); ctx.lineTo(x+9,y+30); for(let i=0;i<4;i++) ctx.lineTo(x+9-i*6,y+26+(i%2)*4); ctx.closePath(); ctx.fill();
   ctx.strokeStyle=cA; ctx.lineWidth=1; ctx.stroke(); ctx.fillStyle=cB; ctx.fillRect(x-4,y+8,3,2); ctx.fillRect(x+1,y+8,3,2);
-  if(b.palT<1&&Math.floor(b.anim*10)%2){ ctx.fillStyle='#ffffff'; ctx.fillRect(x-1,y-6,2,3); } ctx.restore(); };
+  if(b.palT<1&&Math.floor(b.anim*10)%2){ ctx.fillStyle='#ffffff'; ctx.fillRect(x-1,y-6,2,3); } ctx.restore(); }});
 
 /* ---------- 4. КОПИЕТО ---------- */
-R2B.make.copy=()=>({type:'copy',x:AX()+24*T,y:15*T-26,w:10,h:26,hp:800*D.bhp,max:800*D.bhp,state:'intro',t:2,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,buf:[],still:0,frozen:0,face:-1,fireT:2,sumT:9,f:null});
-R2B.hurt.copy=(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
+defBoss('copy',{make:()=>({type:'copy',x:AX()+24*T,y:15*T-26,w:10,h:26,hp:800*D.bhp,max:800*D.bhp,state:'intro',t:2,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,buf:[],still:0,frozen:0,face:-1,fireT:2,sumT:9,f:null})});
+defBoss('copy',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
   if(b.still<0.3){ sparks(b.x+5,b.y+13,2,'#ffd84a'); hint7(b,'Копието се изплъзва, докато се движи. Спри за миг — и то ще замръзне.'); return; }
-  b.hp-=d*1.1; bHit7(b,'#ffd84a'); if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Копието наваксва! Закъснението е по-малко.',2); shake=6; } if(b.hp<=0) bossDie(); };
-R2B.upd.copy=dt=>{
+  b.hp-=d*1.1; bHit7(b,'#ffd84a'); if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Копието наваксва! Закъснението е по-малко.',2); shake=6; } if(b.hp<=0) bossDie(); }});
+defBoss('copy',{upd:dt=>{
   const b=boss, p=player; b.anim+=dt; b.hitT-=dt;
   if(b.dead){ bossDeathFx(b,dt); return; }
   b.buf.push({x:p.x,y:p.y,h:p.h,face:p.face,crouch:p.crouch,aimUp:p.aimUp,anim:p.anim,onGround:p.onGround,climb:p.climb,vx:p.vx,vy:p.vy,cur:p.cur});
@@ -112,24 +112,24 @@ R2B.upd.copy=dt=>{
   b.fireT-=dt; if(b.fireT<=0&&!p.dead&&b.still<0.3){ b.fireT=(b.phase>1?1.2:1.7)*D.rate; const a=Math.atan2(pcy-(b.y+12),pcx-(b.x+5)); ebullets.push({x:b.x+5,y:b.y+12,vx:Math.cos(a)*180*D.bspd,vy:Math.sin(a)*180*D.bspd,life:3,dmg:10,r:4,orb:true}); }
   if(b.phase>1){ b.sumT-=dt; if(b.sumT<=0){ b.sumT=9; if(enemies.filter(e=>!e.dead&&e.type==='bug').length<3) mechSpawn('bug',AX()+(pcx>AX()+15*T?4:25)*T); } }
   if(b.still<0.3) bite7(b,dt,8,sgn(pcx-(b.x+5)||1)*200);
-};
-R2B.draw.copy=()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; const f=b.f; const fr=b.still>=0.3;
+}});
+defBoss('copy',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; const f=b.f; const fr=b.still>=0.3;
   const x=Math.round(b.x+5-cam), y=Math.round(b.y+13); glow7(x,y,fr?'255,255,255':'255,216,74',fr?26:20,fr?0.5:0.3);
   if(f){ const save=player; player=Object.assign({},save,f,{inv:0,hurtT:0,dead:false,flashT:0,swingT:0,reload:0}); ctx.save(); ctx.globalAlpha=b.dead?Math.max(0,1-b.deathT/2):(fr?0.95:0.6); drawPlayer(); ctx.restore(); player=save; }
-  if(fr&&!b.dead&&Math.floor(b.anim*4)%2){ ctx.font='600 6px "IBM Plex Mono",monospace'; ctx.fillStyle='#ffffff'; ctx.textAlign='center'; ctx.fillText('BUFFER EMPTY',x,Math.round(b.y)-6); ctx.textAlign='left'; } };
+  if(fr&&!b.dead&&Math.floor(b.anim*4)%2){ ctx.font='600 6px "IBM Plex Mono",monospace'; ctx.fillStyle='#ffffff'; ctx.textAlign='center'; ctx.fillText('BUFFER EMPTY',x,Math.round(b.y)-6); ctx.textAlign='left'; } }});
 
 /* ---------- 5. НУЛАТА ---------- */
-R2B.make.nula=()=>{ dropBossCursors(); for(const tx of [29,52]) addCursor('BREAK',ax7(tx),14,{label:'BREAK',boss:true,r:10,t:4,cd:8});
-  return {type:'nula',x:AX()+13*T,y:2*T,w:4*T,h:4*T,hp:1500*D.bhp,max:1500*D.bhp,state:'intro',t:2.5,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,shield:1,openT:0,fireT:2,aimT:4,sumT:8,mech:true}; };
-R2B_CMD.nula=c=>{ const b=boss; if(c.cmd==='BREAK'&&b.phase<3){ b.openT=b.phase>1?3.6:4.5; showMsg('BREAK! Щитът падна!',1.2); for(let i=0;i<30;i++) part(b.x+b.w/2,b.y+b.h/2,rnd(-120,120),rnd(-120,120),0.6,'#ffffff',2,0); }
-  if(c.cmd==='RUN'&&b.phase===3){ b.hp-=b.max*0.105; b.hitT=0.3; shake=10; flash=0.6; flashCol='#8aff9a'; showMsg(b.hp>0?'Програмата на Мира работи… още!':'RUN!',1.4); if(b.hp<=0){ dropBossCursors(); bossDie(); } } };
-R2B.hurt.nula=(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
+defBoss('nula',{make:()=>{ dropBossCursors(); for(const tx of [29,52]) addCursor('BREAK',ax7(tx),14,{label:'BREAK',boss:true,r:10,t:4,cd:8});
+  return {type:'nula',x:AX()+13*T,y:2*T,w:4*T,h:4*T,hp:1500*D.bhp,max:1500*D.bhp,state:'intro',t:2.5,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,shield:1,openT:0,fireT:2,aimT:4,sumT:8,mech:true}; }});
+defBoss('nula',{onCmd:c=>{ const b=boss; if(c.cmd==='BREAK'&&b.phase<3){ b.openT=b.phase>1?3.6:4.5; showMsg('BREAK! Щитът падна!',1.2); for(let i=0;i<30;i++) part(b.x+b.w/2,b.y+b.h/2,rnd(-120,120),rnd(-120,120),0.6,'#ffffff',2,0); }
+  if(c.cmd==='RUN'&&b.phase===3){ b.hp-=b.max*0.105; b.hitT=0.3; shake=10; flash=0.6; flashCol='#8aff9a'; showMsg(b.hp>0?'Програмата на Мира работи… още!':'RUN!',1.4); if(b.hp<=0){ dropBossCursors(); bossDie(); } } }});
+defBoss('nula',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
   if(b.phase===3){ sparks(b.x+b.w/2+rnd(-20,20),b.y+b.h/2,3,'#ffffff'); hint7(b,'Куршумите вече не стигат. RUN — на средната платформа!'); return; }
   if(b.shield>0.4){ sparks(b.x+b.w/2+rnd(-24,24),b.y+b.h/2+rnd(-24,24),3,'#c0c0c0'); hint7(b,'Щитът е цял. Използвай курсора BREAK!'); return; }
   b.hp-=d; bHit7(b,'#ffffff');
   if(b.phase===1&&b.hp<b.max*0.6){ b.phase=2; showMsg('„Аз съм нищо. И нищото расте.“',2); shake=8; }
-  if(b.phase===2&&b.hp<b.max*0.3){ b.hp=b.max*0.3; b.phase=3; b.openT=0; shake=10; addCursor('RUN',ax7(40),8,{label:'RUN',boss:true,cd:3.5}); showMsg('МИРА: „Програмата ми е готова! RUN — на средната платформа!“',2.6); } };
-R2B.upd.nula=dt=>{
+  if(b.phase===2&&b.hp<b.max*0.3){ b.hp=b.max*0.3; b.phase=3; b.openT=0; shake=10; addCursor('RUN',ax7(40),8,{label:'RUN',boss:true,cd:3.5}); showMsg('МИРА: „Програмата ми е готова! RUN — на средната платформа!“',2.6); } }});
+defBoss('nula',{upd:dt=>{
   const b=boss, p=player; b.anim+=dt; b.hitT-=dt;
   if(b.dead){ bossDeathFx(b,dt); return; }
   if(b.state==='intro'){ b.t-=dt; if(b.t<=0) b.state='fight'; return; }
@@ -139,12 +139,12 @@ R2B.upd.nula=dt=>{
   b.fireT-=dt; if(b.fireT<=0){ b.fireT=(b.phase>2?1.5:b.phase>1?1.3:1.7)*D.rate; const n=b.phase>1?10:8, a0=b.anim*0.6; for(let i=0;i<n;i++){ const a=a0+i/n*6.283; ebullets.push({x:bcx,y:bcy,vx:Math.cos(a)*110*D.bspd,vy:Math.sin(a)*110*D.bspd,life:4,dmg:10,r:4,orb:true}); } if(AC) osc({type:'square',f:110,t:0.2,v:0.05}); }
   b.aimT-=dt; if(b.aimT<=0&&!p.dead){ b.aimT=b.phase>1?3:4.2; const a=Math.atan2(pcy-bcy,pcx-bcx); for(let i=0;i<5;i++) ebullets.push({x:bcx,y:bcy,vx:Math.cos(a)*(150+i*30)*D.bspd,vy:Math.sin(a)*(150+i*30)*D.bspd,life:3,dmg:11,r:5,orb:true}); }
   if(b.phase>1){ b.sumT-=dt; if(b.sumT<=0){ b.sumT=b.phase>2?7:10; if(enemies.filter(e=>!e.dead&&e.type==='popup').length<2) mechSpawn('popup',AX()+(pcx>AX()+15*T?5:24)*T); } }
-};
-R2B.draw.nula=()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; const cx=Math.round(b.x+b.w/2-cam), cy=Math.round(b.y+b.h/2), k=b.dead?Math.max(0.05,1-b.deathT/2):1; ctx.save(); if(b.dead) ctx.globalAlpha=1-clamp((b.deathT-1.8)/0.8,0,1);
+}});
+defBoss('nula',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; const cx=Math.round(b.x+b.w/2-cam), cy=Math.round(b.y+b.h/2), k=b.dead?Math.max(0.05,1-b.deathT/2):1; ctx.save(); if(b.dead) ctx.globalAlpha=1-clamp((b.deathT-1.8)/0.8,0,1);
   glow7(cx,cy,'255,255,255',50*k,0.25);
   ctx.strokeStyle=b.hitT>0?'#8aff9a':'#ffffff'; ctx.lineWidth=Math.max(1,9*k); ctx.beginPath(); ctx.ellipse(cx,cy,22*k,30*k,0,0,7); ctx.stroke(); ctx.lineWidth=1;
   ctx.fillStyle='#000000'; ctx.beginPath(); ctx.ellipse(cx,cy,15*k,23*k,0,0,7); ctx.fill();
   if(b.dead){ ctx.fillStyle='#8aff9a'; ctx.fillRect(cx-1,cy-8,3,16); ctx.fillRect(cx-3,cy-6,2,2); }
   else { ctx.fillStyle='#ffffff'; ctx.fillRect(cx-6,cy-4,3,3); ctx.fillRect(cx+3,cy-4,3,3); }
   if(b.shield>0.05&&!b.dead){ ctx.globalCompositeOperation='lighter'; ctx.strokeStyle=`rgba(192,192,192,${0.6*b.shield})`; ctx.setLineDash([4,3]); ctx.lineWidth=2; ctx.strokeRect(cx-36,cy-42,72,84); ctx.setLineDash([]); ctx.lineWidth=1; }
-  ctx.restore(); };
+  ctx.restore(); }});

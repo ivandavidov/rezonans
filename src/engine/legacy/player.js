@@ -65,7 +65,7 @@ function updPlayer(dt){
 function addAmmo(w,n){ const a=player.ammo[w]; if(w==='grenade'||w==='rocket') a.mag=Math.min(CAP[w],a.mag+n); else a.res=Math.min(RES_MAX[w],a.res+n); }
 function takePickup(k){
   const p=player, m=D.ammo;
-  if(R2_TAKE[k.type]){ if(R2_TAKE[k.type](k)===false) return; k.taken=true; if(k.respawn) k.rt=k.respawn; return; }
+  if((ITEMS[k.type]||{}).take){ if(ITEMS[k.type].take(k)===false) return; k.taken=true; if(k.respawn) k.rt=k.respawn; return; }
   if(k.type==='health'){ if(p.hp>=100) return; const n=D.heal; p.hp=Math.min(100,p.hp+n); SFX.pickup(); showMsg('Аптечка  +'+n,1.4); }
   else if(k.type==='battery'){ if(p.armor>=100) return; const n=D.bat; p.armor=Math.min(100,p.armor+n); SFX.armor(); showMsg('Броня  +'+n,1.4); }
   else if(k.type==='ammo'){ addAmmo('pistol',Math.ceil(17*m)); if(p.weapons.shotgun) addAmmo('shotgun',Math.ceil(6*m)); if(p.weapons.pulse) addAmmo('pulse',Math.ceil(30*m)); SFX.reload(); showMsg('Муниции',1.2); }

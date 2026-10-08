@@ -10,7 +10,7 @@ const SV_TG={
 const SV_EARLY=['lab','hall','office','depot','waste','vih','mil'], SV_MID=['tunnel','mine','bio','cool','core','out','snow','night'], SV_LATE=['xen','hive','factory','citadel','cave','ice'];
 addUnique(THEME_NAME,{lab:'Лаборатории',hall:'Коридори',office:'Администрация',depot:'Склад',waste:'Канали',tunnel:'Тунели',mine:'Шахти',bio:'Биолаборатория',cool:'Охладителна система',core:'Хранилище',night:'Повърхност',xen:'Острови',hive:'Кошер',factory:'Фабрика',citadel:'Цитадела',cave:'Пещери',vih:'Комплексът',mil:'Военна база',out:'Каньонът',snow:'Заснежен проход',ice:'Ледени пещери'},'THEME_NAME');
 const THEME_MUSIC={lab:{tr:0,bpm:108},hall:{tr:2,bpm:112},office:{tr:-3,bpm:96},depot:{tr:0,bpm:118},waste:{tr:-4,bpm:100},tunnel:{tr:1,bpm:120},mine:{tr:-6,bpm:104},bio:{tr:-1,bpm:98},cool:{tr:3,bpm:112},core:{tr:-2,bpm:100},night:{tr:-1,bpm:112},xen:{tr:4,bpm:96,alien:true},hive:{tr:3,bpm:92,alien:true},factory:{tr:-2,bpm:124,alien:true},citadel:{tr:-5,bpm:116,alien:true},cave:{tr:2,bpm:88,alien:true},vih:{tr:-1,bpm:110},mil:{tr:1,bpm:116},out:{tr:2,bpm:116},snow:{tr:2,bpm:118},ice:{tr:3,bpm:92,alien:true}};
-addUnique(BOSS_NORM,{worm:1.27,colossus:1,guardian:0.875,warden:0.5,exo:1.3,tank:1,hunter:1.08,queen:0.82,titan:0.44},'BOSS_NORM');
+defBosses('norm',{worm:1.27,colossus:1,guardian:0.875,warden:0.5,exo:1.3,tank:1,hunter:1.08,queen:0.82,titan:0.44});
 function svBossPool(tg){ const p=['colossus']; if(tg.acid) p.push('worm');
   if(tg.alien){ p.push('guardian','warden'); if(!tg.sky) p.push('queen'); } else { p.push('exo','titan'); if(tg.cave) p.push('queen'); }
   if(tg.sky) p.push('hunter'); if(tg.human) p.push('tank'); return p; }

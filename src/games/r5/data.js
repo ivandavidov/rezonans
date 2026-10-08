@@ -26,7 +26,7 @@ const SKY5={
 };
 addUnique(SKIES,{axnight:SKY5.night,axdawn:SKY5.dawn,axday:SKY5.day,axdusk:SKY5.dusk},'SKIES');
 // ---------- плочки ----------
-TILE_HOOKS.push(function(tx,ty,ch,x,y,P,z){
+defTile(function(tx,ty,ch,x,y,P,z){
   if(ch!=='#') return false;
   const top=!isS(tx,ty-1);
   if(P.axvil){ if(ty>=15){ R(x,y,T,T,ty>15?'#3a2e20':'#5a4a34'); if(ty===15){ R(x,y,T,3,P.top); for(let i=0;i<T;i+=3) if(hash(tx*T+i,7)>0.5) R(x+i,y-1,1,2,'#8ac04a'); R(x,y+3,T,1,'#3a2e20'); if(hash(tx,ty)>0.8) R(x+5,y+8,3,2,'#7a6a52'); } return true; }
@@ -55,7 +55,7 @@ TILE_HOOKS.push(function(tx,ty,ch,x,y,P,z){
   return false;
 });
 // ---------- фон (вътрешни теми) ----------
-BACK_HOOKS.push(function(tx,ty,x,y,z,P){
+defBack(function(tx,ty,x,y,z,P){
   if(P.axcave){ R(x,y,T,T,P.wall); for(let i=0;i<3;i++){ const a=hash(tx*5+i,ty*7), b=hash(ty*9+i,tx*3); R(x+Math.floor(a*13),y+Math.floor(b*13),3,2,i%2?P.panel:P.hi); }
     if(ty<6&&hash(tx,ty+40)>0.94) R(x+4,y+4,6,3,'#3a3024'); return true; }
   if(P.axdepot){ R(x,y,T,T,ty<4?'#22252a':'#2c3034'); if(ty===4) R(x,y+6,T,3,'#3a4046'); if(ty===5&&tx%2) R(x+7,y,2,T,'#3a4046');

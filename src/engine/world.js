@@ -1,7 +1,6 @@
 /* ================= ДВИГАТЕЛ · ПЛОЧКИ, НЕБЕ, ФОН =================
-   Игрите добавят свои стилове чрез TILE_HOOKS / BACK_HOOKS (функция, която връща true, ако е нарисувала). */
-const TILE_HOOKS=[], BACK_HOOKS=[];
-function r2SkyLayer(L,x){
+   Игрите добавят свои стилове чрез defTile / defBack (engine/defs.js). */
+function skyLayerExt(L,x){
   const H_=H;
   if(L.kind==='city'){ for(let i=0;i<1024;){ const w=18+Math.floor(hash(i,L.seed)*26), h=26+Math.floor(hash(L.seed,i)*40); x.fillStyle=L.col; x.fillRect(i,H_-h,w,h); x.beginPath(); x.moveTo(i-2,H_-h); x.lineTo(i+w/2,H_-h-10); x.lineTo(i+w+2,H_-h); x.fill(); for(let wy=H_-h+6;wy<H_-6;wy+=8) for(let wx=i+3;wx<i+w-3;wx+=6) if(hash(wx,wy)>0.6){ x.fillStyle=hash(wy,wx)>0.5?'rgba(255,210,120,0.75)':'rgba(255,180,90,0.45)'; x.fillRect(wx,wy,2,3); } i+=w+2+Math.floor(hash(i+1,L.seed)*6); } return true; }
   if(L.kind==='towers'){ x.fillStyle=L.col; for(let i=0;i<1024;){ const w=14+Math.floor(hash(i,L.seed)*24), h=70+Math.floor(hash(L.seed,i)*110); x.fillRect(i,H_-h,w,h); const cut=Math.floor(hash(i,7)*12); x.clearRect(i+w-cut,H_-h,cut,cut*1.2); for(let k=0;k<4;k++) if(hash(i+k,L.seed+3)>0.5) x.fillRect(i-3,H_-h+10+k*20,3,2); i+=w+8+Math.floor(hash(i+2,L.seed)*30); } return true; }
@@ -10,8 +9,8 @@ function r2SkyLayer(L,x){
   if(L.kind==='kelp'){ x.fillStyle=L.col; for(let i=0;i<1024;i+=8+Math.floor(hash(i,L.seed)*14)){ const h=40+hash(L.seed,i)*120; for(let y=0;y<h;y+=3) x.fillRect(i+Math.round(Math.sin(y*0.07+i)*4),H_-y,2,3); } return true; }
   return false;
 }
-function r2Tile(tx,ty,ch,x,y,P,z){
-  for(const h of TILE_HOOKS) if(h(tx,ty,ch,x,y,P,z)) return true;
+function tileExt(tx,ty,ch,x,y,P,z){
+  for(const h of TILE_FX) if(h(tx,ty,ch,x,y,P,z)) return true;
   if(ch!=='#') return false;
   if(P.town){ const top=!isS(tx,ty-1), bld=hash(Math.floor(tx/3),7);
     R(x,y,T,T,ty>=15?'#4a4440':(bld>0.5?'#8a7a68':'#9a8070')); if(ty>=15){ R(x,y,T,2,'#6a625a'); for(let i=0;i<T;i+=4) R(x+i,y+2,1,T-2,'#3a3430'); return true; }
@@ -24,8 +23,8 @@ function r2Tile(tx,ty,ch,x,y,P,z){
   if(P.b70){ R(x,y,T,T,P.s); R(x,y,T,1,P.sh); R(x,y+15,T,1,P.sd); if(ty%2===0) R(x,y+8,T,1,'#7a7872'); if(hash(tx,ty)>0.85) R(x+4,y+4,2,6,'#6a6862'); if(!isS(tx,ty-1)){ R(x,y,T,3,'#a8a49a'); R(x,y+3,T,1,P.sd); } return true; }
   return false;
 }
-function r2BackDeco(tx,ty,x,y,z,P){
-  for(const h of BACK_HOOKS) if(h(tx,ty,x,y,z,P)) return;
+function backExt(tx,ty,x,y,z,P){
+  for(const h of BACK_FX) if(h(tx,ty,x,y,z,P)) return;
   if(P.sea){ if(tx%11===5&&ty===5){ R(x-2,y-2,20,20,'#2a3e46'); lx.fillStyle='#061822'; lx.beginPath(); lx.arc(x+8,y+8,8,0,7); lx.fill(); lx.fillStyle='rgba(80,180,220,0.35)'; lx.beginPath(); lx.arc(x+8,y+8,6,0,7); lx.fill(); lx.fillStyle='rgba(200,240,255,0.5)'; lx.fillRect(x+4,y+4,2,2); }
     if(ty===3&&tx%6===0) R(x,y+6,T,3,'#1a2e36'); if(tx%17===8&&ty>3) R(x+6,y,3,T,'#0f1c22'); }
   if(P.gear){ if(hash(tx,ty)>0.9){ lx.strokeStyle='#3a2e1e'; lx.lineWidth=2; lx.beginPath(); lx.arc(x+8,y+8,7,0,7); lx.stroke(); } if(ty%5===2) R(x,y+6,T,2,'#2e2416'); }

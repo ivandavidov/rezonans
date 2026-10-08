@@ -1,15 +1,15 @@
 /* ================= BOSSES ================= */
-const makeBoss=()=>R2B.make[LVL.arena.type]();
-const bossSfx=t=>R2B.sfx[t]||'roar';
+const makeBoss=()=>BOSSES[LVL.arena.type].make();
+const bossSfx=t=>(BOSSES[t]||{}).sfx||'roar';
 function startBoss(){
   const a=LVL.arena; setCp(a.cp!=null?a.cp:a.door+2); bossActive=true;
   if(a.door!=null){ setDoor([a.door,a.r0,a.r1],'D'); SFX.door(); shake=6; }
   boss=makeBoss(); boss.hp*=bossMul; boss.max*=bossMul;
   if(['colossus','warden','guardian'].includes(a.type)) portals.push({x:boss.x+boss.w/2,y:boss.y+boss.h/2,t:0,spawned:true,type:'boss',big:true});
   SFX.alarm(3); sfxAt(bossSfx(boss.type),boss); bossMusic=true;
-  showMsg(R2B.intro[a.type],4.5);
+  showMsg(BOSSES[a.type].intro,4.5);
 }
-function hurtBoss(d,blast){ R2B.hurt[boss.type](d,blast); }
+function hurtBoss(d,blast){ BOSSES[boss.type].hurt(d,blast); }
 function bossDie(){ const b=boss; b.hp=0; b.dead=true; b.deathT=0; b.vx=0; b.vy=0; stats.kills++; sfxAt(b.type==='warden'?'warden':(b.type==='heli'||b.mech)?'boom':'roar',b); for(const e of enemies) if(e.summoned&&!e.dead) hurtEnemy(e,999,0); }
 function bossDeathFx(b,dt){
   b.deathT+=dt; b.boomT-=dt;

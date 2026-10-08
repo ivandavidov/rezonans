@@ -17,7 +17,7 @@ const SKY7={
 };
 addUnique(SKIES,{pxcloud:SKY7.cloud,pxgrid:SKY7.grid},'SKIES');
 // ---------- плочки ----------
-TILE_HOOKS.push(function(tx,ty,ch,x,y,P,z){
+defTile(function(tx,ty,ch,x,y,P,z){
   if(ch!=='#') return false;
   const top=!isS(tx,ty-1), lft=!isS(tx-1,ty), rgt=!isS(tx+1,ty), bot=!isS(tx,ty+1);
   if(P.pxgreen){ R(x,y,T,T,P.s); if(hash(tx,ty)>0.55) R(x+3+Math.floor(hash(ty,tx)*6),y+4,4,6,P.sd);
@@ -32,7 +32,7 @@ TILE_HOOKS.push(function(tx,ty,ch,x,y,P,z){
   if(P.pxcloud){ R(x,y,T,T,P.s); if(top){ lx.fillStyle=P.sh; lx.beginPath(); lx.arc(x+8,y+3,6+hash(tx,3)*3,0,7); lx.fill(); } if(bot) R(x,y+14,T,2,P.sd); return true; }
   return false;
 });
-BACK_HOOKS.push(function(tx,ty,x,y,z,P){
+defBack(function(tx,ty,x,y,z,P){
   if(P.pxgreen){ R(x,y,T,T,P.wall); if(ty%2===0&&hash(tx,ty)>0.86){ R(x+2,y+5,3,5,P.hi); R(x+7,y+5,3,5,P.hi); } if(ty%4===0) R(x,y+8,T,1,'#041204'); return true; }
   if(P.pxapple){ R(x,y,T,T,P.wall); if(hash(tx,ty)>0.94) R(x+Math.floor(hash(ty,tx)*14),y+6,2,1,hash(tx+1,ty)>0.5?P.s:P.sh); return true; }
   if(P.pxcga){ R(x,y,T,T,P.wall); if((tx+ty)%2===0&&hash(tx,ty)>0.7) R(x+7,y+7,2,2,P.hi); return true; }

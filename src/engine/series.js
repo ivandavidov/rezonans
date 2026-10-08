@@ -24,8 +24,6 @@ function registerGame(g){ GAMES.push(g); GAMES.sort((a,b)=>a.order-b.order); }
 const gameById=id=>GAMES.find(g=>g.id===id||g.order===id);
 const ACC=()=>GAME.accent, ACCA=a=>`rgba(${GAME.accentRgb},${a})`, DFONT=()=>GAME.font;
 const KEY=k=>GAME.key+'.'+k;
-/* добавя ключове в общ речник (TH, SKIES, SV_THEMES, THEME_NAME…) и спира сборката при дублиран ключ между игрите */
-function addUnique(target,obj,what){ for(const k in obj){ if(k in target) throw new Error(what+': ключът „'+k+'“ вече е зает от друга игра'); target[k]=obj[k]; } }
 function setGame(id){
   const g=gameById(id)||GAMES[0]; GAME=g;
   for(const o of GAMES) document.body.classList.toggle('g-'+o.id,o===g);

@@ -91,6 +91,23 @@ const angDiff=(a,b)=>{let d=a-b;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+
 const ov=(a,b)=>a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
 const store={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:v;}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,String(v));}catch(e){}},del(k){try{localStorage.removeItem(k);}catch(e){}}};
 
+/* ================= РЕГИСТРИ НА СЪДЪРЖАНИЕТО =================
+   Двигателят вика съдържанието по тип; частите (и двигателят — за общото) го описват с def*():
+     defFoe(id,{dims,upd,draw})   враг или подвижен обект: размери [w,h,hp], обновяване (e,dt), рисуване (e)
+     defBoss(id,{make,hurt,upd,draw,intro,name,col,sfx,norm,onTone,onCmd})   бос; norm — множител на здравето в оцеляването,
+                                  onTone(разстояние) — реакция на тона (mech4), onCmd(курсор) — на команда (mech5)
+     defItem(id,{take,draw})      предмет: take(k) → false, ако не е взет; draw(k,x,y)
+     defTile(fn), defBack(fn)     собствен вид на плочките / на фона (fn връща true, ако е нарисувала)
+   defFoes/defBosses(поле,{id:стойност,…}) задават едно поле на няколко наведнъж. Вече зададено поле спира играта с ясна грешка.
+   addUnique — за общите речници (TH, SKIES, SV_THEMES, THEME_NAME, MUT_NAME). */
+function addUnique(target,obj,what){ for(const k in obj){ if(k in target) throw new Error(what+': ключът „'+k+'“ вече е зает от друга игра'); target[k]=obj[k]; } }
+const FOES={}, BOSSES={}, ITEMS={}, DIMS={}, TILE_FX=[], BACK_FX=[];
+function defIn(R,what,id,d){ const o=R[id]||(R[id]={}); for(const k in d){ if(k in o) throw new Error(what+': „'+id+'.'+k+'“ вече е зададено'); o[k]=d[k]; } }
+function defFoe(id,d){ defIn(FOES,'defFoe',id,d); if(d.dims) DIMS[id]=d.dims; }
+const defBoss=(id,d)=>defIn(BOSSES,'defBoss',id,d), defItem=(id,d)=>defIn(ITEMS,'defItem',id,d);
+const defFoes=(f,m)=>{ for(const id in m) defFoe(id,{[f]:m[id]}); }, defBosses=(f,m)=>{ for(const id in m) defBoss(id,{[f]:m[id]}); };
+const defTile=fn=>{ TILE_FX.push(fn); }, defBack=fn=>{ BACK_FX.push(fn); };
+const bossNorm=t=>(BOSSES[t]&&BOSSES[t].norm)||1;
 /* ================= DIFFICULTY ================= */
 const DIFFS=[
   {name:'ЛЕСНО',desc:['Враговете са бавни и почти безобидни.','Здравето ти се възстановява само.'],
@@ -345,12 +362,12 @@ function drawBack(tx,ty){
   if(z==='mil'&&ty===8){ R(x,y+5,T,4,'#6b5a24'); for(let i=0;i<T;i+=8) R(x+i,y+5,4,4,'#2a2410'); }
   if(z==='waste'&&ty>=10&&ty<=12){ R(x,y,T,T,'rgba(60,110,40,0.08)'); }
   if(z==='core'&&tx%7===3&&ty>2){ R(x+6,y,4,T,'#0c1d20'); if(ty%3===0) R(x+7,y+6,2,2,'#2a8a7a'); }
-  r2BackDeco(tx,ty,x,y,z,P);
+  backExt(tx,ty,x,y,z,P);
   if(LVL.vent&&tx>=LVL.vent[0]&&tx<=LVL.vent[1]&&ty===14){ R(x,y,T,T,'#14181b'); R(x,y+2,T,1,'#22282c'); R(x,y+13,T,1,'#0c0f11'); if(tx%3===0) R(x+7,y,2,T,'#1b2024'); }
 }
 function drawTile(tx,ty){
   const ch=map[ty][tx],x=tx*T,y=ty*T,P=TP(tx),z=zoneAt(tx);
-  if(r2Tile(tx,ty,ch,x,y,P,z)) return;
+  if(tileExt(tx,ty,ch,x,y,P,z)) return;
   if(ch==='#'&&P.rock){
     R(x,y,T,T,P.s);
     for(let i=0;i<3;i++){ const a=hash(tx*5+i,ty*3), b=hash(ty*7+i,tx); R(x+Math.floor(a*13),y+Math.floor(b*13),2+(i&1),1,P.sd); }
@@ -478,7 +495,7 @@ function buildSky(){
     else if(L.kind==='wrecks') for(let k=0;k<L.n;k++){ const cx=hash(k,L.seed)*1024, cy=L.y+hash(L.seed,k)*L.dy, w=40+hash(k,k+L.seed)*L.w, ang=(hash(k+3,L.seed)-0.5)*0.8;
       for(const dx of [-1024,0,1024]){ x.save(); x.translate(cx+dx,cy); x.rotate(ang); x.fillStyle=L.col; x.beginPath(); x.moveTo(-w/2,0); x.lineTo(-w/2+8,-w*0.18); x.lineTo(w/2-6,-w*0.14); x.lineTo(w/2,0); x.lineTo(w/2-10,w*0.12); x.lineTo(-w/2+12,w*0.1); x.closePath(); x.fill();
         x.fillRect(-w*0.15,-w*0.3,w*0.08,w*0.2); x.fillStyle='rgba(255,200,120,0.6)'; for(let i=0;i<5;i++) if(hash(k*7+i,L.seed)>0.4) x.fillRect(-w/2+10+i*w/6,-2,2,2); x.restore(); } }
-    else if(r2SkyLayer(L,x)){}
+    else if(skyLayerExt(L,x)){}
     else for(let k=0;k<L.n;k++){ const cx=hash(k,L.seed)*1024, cy=L.y+hash(L.seed,k)*L.dy, w=18+hash(k,k+L.seed)*L.w;
       for(const dx of [-1024,0,1024]){ x.beginPath(); x.ellipse(cx+dx,cy,w,w*0.2,0,0,7); x.fill(); x.beginPath(); x.moveTo(cx+dx-w*0.85,cy); x.lineTo(cx+dx+w*0.85,cy); x.lineTo(cx+dx+w*0.15,cy+w*0.75); x.closePath(); x.fill(); } }
     layers.push({c,sp:L.sp}); }
@@ -513,7 +530,6 @@ function showMsg(t,d=3.6,who){ msg={t,d:Math.max(d,1.2+t.length*0.055),age:0,who
 function radio(t){ showMsg(t,0,GAME.radioWho||'Д-Р ИЛИЕВА'); SFX.radio&&AC&&SFX.radio(0.8,sfxBus); }
 function bark(e,t,d=2){ barks.push({e,t,d}); }
 function setCp(tx){ cp=tx; r2SetCp(); }
-const DIMS={crab:[12,8,20],shocker:[14,28,60],soldier:[12,26,60],turret:[12,10,50],flyer:[14,10,24],zombie:[12,26,55],nest:[20,16,90],guard:[16,30,110],pylon:[10,20,100],egg:[10,12,25],target:[14,23,1]};
 function makeEnemy(type,cx,feet){
   const d=DIMS[type];
   return {type,x:cx-d[0]/2,y:feet-d[1],w:d[0],h:d[1],hp:d[2]*D.ehp*ehpMul,vx:0,vy:0,face:-1,state:'idle',t:rnd(0.6,1.4),cd:rnd(0.6,1.4),gcd:rnd(2.5,4),burst:0,bt:0,alert:false,onGround:false,hitT:0,anim:rnd(10),dead:false,home:cx,bite:0,lastSeen:9,summoned:false,side:Math.random()<0.5?1:-1,elecT:0};
@@ -782,7 +798,7 @@ function updPlayer(dt){
 function addAmmo(w,n){ const a=player.ammo[w]; if(w==='grenade'||w==='rocket') a.mag=Math.min(CAP[w],a.mag+n); else a.res=Math.min(RES_MAX[w],a.res+n); }
 function takePickup(k){
   const p=player, m=D.ammo;
-  if(R2_TAKE[k.type]){ if(R2_TAKE[k.type](k)===false) return; k.taken=true; if(k.respawn) k.rt=k.respawn; return; }
+  if((ITEMS[k.type]||{}).take){ if(ITEMS[k.type].take(k)===false) return; k.taken=true; if(k.respawn) k.rt=k.respawn; return; }
   if(k.type==='health'){ if(p.hp>=100) return; const n=D.heal; p.hp=Math.min(100,p.hp+n); SFX.pickup(); showMsg('Аптечка  +'+n,1.4); }
   else if(k.type==='battery'){ if(p.armor>=100) return; const n=D.bat; p.armor=Math.min(100,p.armor+n); SFX.armor(); showMsg('Броня  +'+n,1.4); }
   else if(k.type==='ammo'){ addAmmo('pistol',Math.ceil(17*m)); if(p.weapons.shotgun) addAmmo('shotgun',Math.ceil(6*m)); if(p.weapons.pulse) addAmmo('pulse',Math.ceil(30*m)); SFX.reload(); showMsg('Муниции',1.2); }
@@ -955,6 +971,10 @@ function updScientist(s,dt){ if(s.esc) return updEscort(s,dt);
   else s.vx=0;
   physics(s,dt);
 }
+/* ---------- общите врагове (регистрите — engine/defs.js) ---------- */
+defFoes('dims',{crab:[12,8,20],shocker:[14,28,60],soldier:[12,26,60],turret:[12,10,50],flyer:[14,10,24],zombie:[12,26,55],nest:[20,16,90],guard:[16,30,110],target:[14,23,1]});
+defFoes('upd',{crab:updCrab,shocker:updShocker,soldier:updSoldier,turret:updTurret,flyer:updFlyer,zombie:updZombie,nest:updNest,guard:updGuard,target:updTarget});
+defFoes('draw',{crab:drawCrab,shocker:drawShocker,soldier:drawSoldier,turret:drawTurret,flyer:drawFlyer,zombie:drawZombie,nest:drawNest,guard:drawGuard,target:drawTarget});
 
 /* ================= LIFTS, LASERS, VENTS ================= */
 function liftPos(l){ const per=l.per||5, t=((lvT+(l.off||0)*per)%per+per)%per, half=per/2, dw=Math.min(1,half*0.35), mv=half-dw; const u=t<mv?t/mv:t<half?1:t<half+mv?1-(t-half)/mv:0, e=0.5-0.5*Math.cos(Math.PI*u); return [(l.x0+(l.x1-l.x0)*e)*T,(l.y0+(l.y1-l.y0)*e)*T]; }
@@ -1042,17 +1062,17 @@ function updRockets(dt){
 }
 
 /* ================= BOSSES ================= */
-const makeBoss=()=>R2B.make[LVL.arena.type]();
-const bossSfx=t=>R2B.sfx[t]||'roar';
+const makeBoss=()=>BOSSES[LVL.arena.type].make();
+const bossSfx=t=>(BOSSES[t]||{}).sfx||'roar';
 function startBoss(){
   const a=LVL.arena; setCp(a.cp!=null?a.cp:a.door+2); bossActive=true;
   if(a.door!=null){ setDoor([a.door,a.r0,a.r1],'D'); SFX.door(); shake=6; }
   boss=makeBoss(); boss.hp*=bossMul; boss.max*=bossMul;
   if(['colossus','warden','guardian'].includes(a.type)) portals.push({x:boss.x+boss.w/2,y:boss.y+boss.h/2,t:0,spawned:true,type:'boss',big:true});
   SFX.alarm(3); sfxAt(bossSfx(boss.type),boss); bossMusic=true;
-  showMsg(R2B.intro[a.type],4.5);
+  showMsg(BOSSES[a.type].intro,4.5);
 }
-function hurtBoss(d,blast){ R2B.hurt[boss.type](d,blast); }
+function hurtBoss(d,blast){ BOSSES[boss.type].hurt(d,blast); }
 function bossDie(){ const b=boss; b.hp=0; b.dead=true; b.deathT=0; b.vx=0; b.vy=0; stats.kills++; sfxAt(b.type==='warden'?'warden':(b.type==='heli'||b.mech)?'boom':'roar',b); for(const e of enemies) if(e.summoned&&!e.dead) hurtEnemy(e,999,0); }
 function bossDeathFx(b,dt){
   b.deathT+=dt; b.boomT-=dt;
@@ -1094,7 +1114,7 @@ const survBestK=(i=DI)=>parseInt(store.get(KEY('bestK')+i,'0'),10)||0;
 let survStartBest=0;
 function saveSurv(score,sector){ if(score>survBest()){ store.set(KEY('best')+DI,score); store.set(KEY('bestK')+DI,sector); } }
 const bestTxt=i=>{ const b=survBest(i), k=survBestK(i); return b+(k?' (сектор '+k+')':''); };
-const THEME_NAME={}, BOSS_NORM={};   // имената на темите и множителите на босовете — попълват ги частите
+const THEME_NAME={};   // имената на темите — попълват ги частите (множителите на босовете — defBoss norm)
 const MUT_NAME={dark:'Тъмнина',lowg:'Слаба гравитация',swarm:'Нашествие',scarce:'Оскъдни запаси',alarm:'Тревога'};
 function mkRng(seed){ let a=seed>>>0; return ()=>{ a=(a+0x6D2B79F5)>>>0; let t=a; t=Math.imul(t^(t>>>15),t|1); t^=t+Math.imul(t^(t>>>7),t|61); return ((t^(t>>>14))>>>0)/4294967296; }; }
 function svPlan(k){ return GAME.svPlan(k); }
@@ -1180,7 +1200,7 @@ function startSurv(k,carry){
   const sv=carry&&carry!==true?carry:null; if(sv) carry=false; const prev=carry?player:null;
   SURV=true; survK=k; bossMul=0.75+0.2*Math.floor(k/5); ehpMul=1+0.03*k;
   if(!carry){ survScore=0; survLives=[3,2,1][DI]; survSeed=(Date.now()%90000)+10000; survNewBest=false; survStartBest=survBest(); if(sv){ survSeed=sv.seed; survScore=sv.score|0; } }
-  loadLevel(-1,genLevel(k)); if(LVL.arena) bossMul*=BOSS_NORM[LVL.arena.type]||1; if(LVL.arena&&(GAME.bossMulOne||[]).includes(LVL.arena.type)) bossMul=1;
+  loadLevel(-1,genLevel(k)); if(LVL.arena) bossMul*=bossNorm(LVL.arena.type); if(LVL.arena&&(GAME.bossMulOne||[]).includes(LVL.arena.type)) bossMul=1;
   const p=player;
   if(prev){ for(const w of ORDER) if(prev.weapons[w]) p.weapons[w]=true;
     for(const kk in p.ammo){ p.ammo[kk].mag=Math.max(p.ammo[kk].mag,prev.ammo[kk].mag); p.ammo[kk].res=Math.max(p.ammo[kk].res,prev.ammo[kk].res); }
@@ -1247,14 +1267,14 @@ function update(dt){
     if(Math.abs(e.x-ccx)>440) continue;
     e.hitT-=dt; e.flashT=(e.flashT||0)-dt;
     if(e.stunT>0){ e.stunT-=dt; continue; }
-    ({crab:updCrab,shocker:updShocker,soldier:updSoldier,turret:updTurret,flyer:updFlyer,zombie:updZombie,nest:updNest,guard:updGuard,target:updTarget,...R2UPD})[e.type](e,edt);
+    FOES[e.type].upd(e,edt);
     if(!e.dead&&ACID_DIE[e.type]&&rectHas(e.x,e.y+e.h-6,e.w,6,'~')){ hurtEnemy(e,e.hp+1,0,true); for(let i=0;i<10;i++) part(e.x+rnd(e.w),e.y+e.h-4,rnd(-30,30),rnd(-90,-30),rnd(0.3,0.6),'#9dff6a',2,200); }
     if(e.type!=='flyer'&&e.type!=='turret'&&e.type!=='nest'&&e.type!=='pylon'&&e.onGround&&elecOn()&&onTile(e,'Z')){ e.elecT-=dt; if(e.elecT<=0){ e.elecT=0.25; hurtEnemy(e,10,0,true); sparks(e.x+e.w/2,e.y+e.h,3,'#bfe8ff'); } }
     if(e.y>ROWS*T+40){ e.dead=true; e.deadT=99; }
     if(e.alert&&Math.abs(e.x-p.x)<380) threat=true;
   }
   for(const s of scientists) updScientist(s,dt);
-  if(boss) R2B.upd[boss.type](edt);
+  if(boss) BOSSES[boss.type].upd(edt);
   if(bmiss.length) updMissiles(dt);
   combatHold=threat?4:combatHold-dt;
   mInt=bossActive&&boss&&!boss.dead?2:combatHold>0?1:0;
@@ -1458,7 +1478,7 @@ function drawScientist(s){ if(s.esc) return drawEscort(s);
 }
 function drawPickup(k){
   const x=Math.round(k.x-cam), y=Math.round(k.y+(k.vy===undefined?Math.sin(titleT*3+k.bob)*1.5:0));
-  if(R2_PDRAW[k.type]) return R2_PDRAW[k.type](k,x,y);
+  if((ITEMS[k.type]||{}).draw) return ITEMS[k.type].draw(k,x,y);
   if(k.type==='health'){ px(x,y,12,10,'#e9eef0'); px(x,y,12,1,'#ffffff'); px(x,y+9,12,1,'#a7b0b5'); px(x+5,y+2,2,6,'#d22a2a'); px(x+3,y+4,6,2,'#d22a2a'); }
   else if(k.type==='battery'){ px(x+2,y-2,8,12,'#1f3f6b'); px(x+4,y-3,4,1,'#9aa3aa'); px(x+3,y,6,8,'#3c8ce0'); px(x+3,y+5-Math.floor((titleT*4)%4),6,1,'#bfe4ff'); }
   else if(k.type==='ammo'){ px(x,y+2,12,8,'#4d5636'); px(x,y+2,12,1,'#6b7650'); px(x+2,y+4,8,3,'#c9a227'); px(x+3,y+5,6,1,'#7a6418'); }
@@ -1566,9 +1586,9 @@ function renderWorld(){
   for(const k of pickups) if(!k.taken&&k.x>cam-20&&k.x<cam+W+20) drawPickup(k);
   for(const b of barrels) if(b.x>cam-20&&b.x<cam+W+20) drawBarrel(b);
   for(const s of scientists) drawScientist(s);
-  for(const e of enemies){ if(e.x<cam-40||e.x>cam+W+40||e.deadT>50) continue; ({crab:drawCrab,shocker:drawShocker,soldier:drawSoldier,turret:drawTurret,flyer:drawFlyer,zombie:drawZombie,nest:drawNest,guard:drawGuard,target:drawTarget,...R2DRAW})[e.type](e); }
+  for(const e of enemies){ if(e.x<cam-40||e.x>cam+W+40||e.deadT>50) continue; FOES[e.type].draw(e); }
   drawTrains(); drawSwitch(); drawCrushers(); drawConveyors(); drawLifts(); drawLasers(); drawVents();
-  if(boss) R2B.draw[boss.type]();
+  if(boss) BOSSES[boss.type].draw();
   drawMissiles();
   for(const r of rockets){ ctx.save(); ctx.translate(Math.round(r.x-cam),Math.round(r.y)); ctx.rotate(Math.atan2(r.vy,r.vx)); px(-6,-1,8,3,'#5a6348'); px(2,-1,3,3,'#c9473a'); px(-9,-1,3,3,'#ffd36b'); ctx.restore(); }
   if(player) drawPlayer(); r2DrawWorld();
@@ -1598,7 +1618,7 @@ function renderSurvOver(){
   if(winT>1.5&&blink()) centerText('Z — главно меню',240,'600 10px "IBM Plex Mono",monospace','#f3e6cf');
 }
 function wrap(text,maxW){ const words=text.split(' '), lines=[]; let line=''; for(const w of words){ const t=line?line+' '+w:w; if(ctx.measureText(t).width>maxW&&line){ lines.push(line); line=w; } else line=t; } if(line) lines.push(line); return lines; }
-function drawHUD(){ if(!GAME.classic) return drawHUD2();
+function drawHUD(){ if(!GAME.classic) return drawHudStd();
   const p=player, A='#ffa62b';
   ctx.save(); ctx.shadowColor='rgba(255,140,0,0.55)'; ctx.shadowBlur=6; ctx.textBaseline='alphabetic';
   const hc=p.hp<=25?'#ff4d3a':A;
@@ -1614,7 +1634,7 @@ function drawHUD(){ if(!GAME.classic) return drawHUD2();
   else if(p.cur!=='wrench'){ const a=p.ammo[p.cur]; ctx.font='11px '+DFONT(); const rs=String(a.res); ctx.fillText(rs,470,263); const rw=ctx.measureText(rs).width; ctx.font='17px '+DFONT(); ctx.fillStyle=a.mag===0?'#ff4d3a':A; ctx.fillText(a.mag+' /',466-rw,263); }
   else { ctx.font='11px '+DFONT(); ctx.fillText('—',470,263); }
   ctx.textAlign='left'; ctx.shadowBlur=0;
-  if(bossActive&&boss&&!boss.dead&&boss.state!=='intro'){ const bw=180,bx=(W-bw)/2; ctx.fillStyle='rgba(0,0,0,0.6)'; ctx.fillRect(bx-1,15,bw+2,6); ctx.fillStyle=R2B.col[boss.type]; ctx.fillRect(bx,16,bw*Math.max(0,boss.hp)/boss.max,4); ctx.font='600 7px "IBM Plex Mono",monospace'; ctx.textAlign='center'; ctx.fillStyle='#e8ddff'; ctx.fillText(R2B.name[boss.type],W/2,12); ctx.textAlign='left'; }
+  if(bossActive&&boss&&!boss.dead&&boss.state!=='intro'){ const bw=180,bx=(W-bw)/2; ctx.fillStyle='rgba(0,0,0,0.6)'; ctx.fillRect(bx-1,15,bw+2,6); ctx.fillStyle=BOSSES[boss.type].col; ctx.fillRect(bx,16,bw*Math.max(0,boss.hp)/boss.max,4); ctx.font='600 7px "IBM Plex Mono",monospace'; ctx.textAlign='center'; ctx.fillStyle='#e8ddff'; ctx.fillText(BOSSES[boss.type].name,W/2,12); ctx.textAlign='left'; }
   if(msg){ const a=clamp(Math.min(msg.age*4,(msg.d-msg.age)*2),0,1); ctx.globalAlpha=a; ctx.font='600 9px "IBM Plex Mono",monospace';
     const lines=wrap(msg.t,360), lw=Math.max(...lines.map(l=>ctx.measureText(l).width)), who=msg.who, w=lw+20, h=lines.length*12+6+(who?10:0), y=bossActive?30:20, x=W/2-w/2;
     const wcol=who==='ИНСТРУКТОР'?'#7fd8ff':'#94ff57'; ctx.fillStyle='rgba(6,8,10,0.78)'; ctx.fillRect(x,y,w,h); ctx.fillStyle=who?wcol:A; ctx.fillRect(x,y,2,h);
@@ -1674,7 +1694,7 @@ function render(){
     centerText('↑ ↓ избор · Z потвърди · Esc / X назад',244,'600 7px "IBM Plex Mono",monospace','#7f8e97');
     return;
   }
-  if(state==='eps'&&!GAME.classic){ renderEps2(); return; }
+  if(state==='eps'&&!GAME.classic){ renderEpsStd(); return; }
   if(state==='eps'){   // класическото меню (r1): по една глава на страница
     overlay(0.8); centerText('ИЗБЕРИ ЕПИЗОД',58,'16px '+DFONT(),'#ffa62b');
     const ch=gChOf(menuSel), c=GCH[ch];
@@ -1774,8 +1794,6 @@ function registerGame(g){ GAMES.push(g); GAMES.sort((a,b)=>a.order-b.order); }
 const gameById=id=>GAMES.find(g=>g.id===id||g.order===id);
 const ACC=()=>GAME.accent, ACCA=a=>`rgba(${GAME.accentRgb},${a})`, DFONT=()=>GAME.font;
 const KEY=k=>GAME.key+'.'+k;
-/* добавя ключове в общ речник (TH, SKIES, SV_THEMES, THEME_NAME…) и спира сборката при дублиран ключ между игрите */
-function addUnique(target,obj,what){ for(const k in obj){ if(k in target) throw new Error(what+': ключът „'+k+'“ вече е зает от друга игра'); target[k]=obj[k]; } }
 function setGame(id){
   const g=gameById(id)||GAMES[0]; GAME=g;
   for(const o of GAMES) document.body.classList.toggle('g-'+o.id,o===g);
@@ -1830,10 +1848,9 @@ const gChOf=i=>Math.max(0,GCH.findIndex(c=>i>=c.a&&i<=c.b));
 const chName=c=>GCH[c].label||'ГЛАВА '+ROM[c], chShort=c=>GCH[c].short||'ГЛ. '+ROM[c];   // надписите на главата (бонус главата на r1 има свои)
 const epFinal=i=>i>=GLV.length-1||!!GCH[gChOf(i)].fin&&i===GCH[gChOf(i)].b;   // след епизода идва финалният екран
 let FLOOD=null, ESC=null, CHASE=null, LEVERS=[], DRAINS=[], GENS=[], ALLIES=[], FLIPS=[], FLIP=false, ERA=0, ERAD=null, SHIFT=[], GWIND=0, flipCd=0, cpFlip=false, cpEra=0, eraCd=0, r2T={}, sunWarned=false, airWarned=false, r2epsSel=0;
-const R2_TAKE={}, R2_PDRAW={}, R2UPD={}, R2DRAW={}, R2B={make:{},hurt:{},upd:{},draw:{},intro:{},name:{},col:{},sfx:{}};
 
 /* ---------- избор на епизод ---------- */
-function r2EpsInput(){
+function epsInput(){
   const ch=gChOf(menuSel), c=GCH[ch];
   if(pressed.up&&menuSel>c.a){ menuSel--; SFX.menu(); }
   if(pressed.down&&menuSel<Math.min(c.b,gUnl-1)){ menuSel++; SFX.menu(); }
@@ -2133,16 +2150,16 @@ function r2PostFx(){
 }
 
 /* ---------- HUD ---------- */
-const R2BAR=(x,y,w,v,max,col,bg='rgba(0,0,0,0.55)')=>{ ctx.fillStyle=bg; ctx.fillRect(x-1,y-1,w+2,6); const n=10, cw=(w-(n-1))/n, f=clamp(v/max,0,1)*n; for(let i=0;i<n;i++){ const k=clamp(f-i,0,1); ctx.fillStyle='rgba(255,255,255,0.08)'; ctx.fillRect(x+i*(cw+1),y,cw,4); if(k>0){ ctx.fillStyle=col; ctx.fillRect(x+i*(cw+1),y,cw*k,4); } } };
-function drawHUD2(){
+const hudBar=(x,y,w,v,max,col,bg='rgba(0,0,0,0.55)')=>{ ctx.fillStyle=bg; ctx.fillRect(x-1,y-1,w+2,6); const n=10, cw=(w-(n-1))/n, f=clamp(v/max,0,1)*n; for(let i=0;i<n;i++){ const k=clamp(f-i,0,1); ctx.fillStyle='rgba(255,255,255,0.08)'; ctx.fillRect(x+i*(cw+1),y,cw,4); if(k>0){ ctx.fillStyle=col; ctx.fillRect(x+i*(cw+1),y,cw*k,4); } } };
+function drawHudStd(){
   const p=player, A=ACC();
   ctx.save(); ctx.textBaseline='alphabetic';
   // health / armor / air
   ctx.fillStyle='rgba(4,14,18,0.55)'; ctx.fillRect(6,236,118,30); ctx.fillStyle=A; ctx.fillRect(6,236,2,30);
   ctx.font='600 6px "IBM Plex Mono",monospace'; ctx.fillStyle='rgba(200,240,240,0.7)'; ctx.fillText('ЗДРАВЕ',13,244); ctx.fillText('БРОНЯ',13,258);
   ctx.font='10px '+DFONT(); ctx.fillStyle=p.hp<=25?'#ff4d3a':'#e8fbff'; ctx.textAlign='right'; ctx.fillText(String(Math.ceil(p.hp)),118,247); ctx.fillStyle='#bfe8ff'; ctx.fillText(String(Math.ceil(p.armor)),118,261); ctx.textAlign='left';
-  R2BAR(46,240,52,p.hp,100,p.hp<=25?'#ff4d3a':A); R2BAR(46,254,52,p.armor,100,'#5aa8ff');
-  if((p.air!==undefined&&p.air<100)||p.headWet){ ctx.fillStyle='rgba(4,14,18,0.55)'; ctx.fillRect(6,222,118,12); ctx.font='600 6px "IBM Plex Mono",monospace'; ctx.fillStyle=p.air<30?'#ff6a5a':'#bfe8ff'; ctx.fillText('ВЪЗДУХ',13,230); R2BAR(46,226,72,p.air,100,p.air<30?'#ff6a5a':'#9fe8ff'); }
+  hudBar(46,240,52,p.hp,100,p.hp<=25?'#ff4d3a':A); hudBar(46,254,52,p.armor,100,'#5aa8ff');
+  if((p.air!==undefined&&p.air<100)||p.headWet){ ctx.fillStyle='rgba(4,14,18,0.55)'; ctx.fillRect(6,222,118,12); ctx.font='600 6px "IBM Plex Mono",monospace'; ctx.fillStyle=p.air<30?'#ff6a5a':'#bfe8ff'; ctx.fillText('ВЪЗДУХ',13,230); hudBar(46,226,72,p.air,100,p.air<30?'#ff6a5a':'#9fe8ff'); }
   // weapon
   ctx.fillStyle='rgba(4,14,18,0.55)'; ctx.fillRect(W-112,236,106,30); ctx.fillStyle=A; ctx.fillRect(W-8,236,2,30);
   ctx.textAlign='right'; ctx.font='600 6px "IBM Plex Mono",monospace'; ctx.fillStyle='rgba(200,240,240,0.7)'; ctx.fillText(p.reload>0?'ПРЕЗАРЕЖДАНЕ…':NAMES[p.cur],W-13,244);
@@ -2157,13 +2174,13 @@ function drawHUD2(){
   if(FLIPS.length) chip(FLIP?'⇅ ГРАВИТАЦИЯТА Е ОБЪРНАТА':'⇅ НОРМАЛНА ГРАВИТАЦИЯ','#d8c4ff');
   if(LVL.zeroG||inZG(p)) chip('◌ БЕЗТЕГЛОВНОСТ · X — тласък','#9fe8ff');
   if(LVL.sun) chip(r2T.flare?'☼ ИЗБЛИК — СТОЙ НА СЯНКА!':r2T.warn?'☼ ИДВА ИЗБЛИК…':'☼ слънцето е спокойно',r2T.flare||r2T.warn?'#ffb04a':'#c8b890');
-  if(ESC){ chip(LVL.escort.name.toUpperCase(),'#ffd08a'); R2BAR(8,cy-1,60,ESC.hp,ESC.max,'#ffd08a'); cy+=7; }
-  if(GENS.length){ GENS.forEach((g,i)=>{ ctx.font='600 6px "IBM Plex Mono",monospace'; ctx.fillStyle='rgba(200,240,240,0.7)'; ctx.fillText('ГЕН. '+(i+1),8,cy+5); R2BAR(36,cy+1,40,Math.max(0,g.hp),g.max,g.hp<35?'#ff4d3a':A); cy+=9; }); }
+  if(ESC){ chip(LVL.escort.name.toUpperCase(),'#ffd08a'); hudBar(8,cy-1,60,ESC.hp,ESC.max,'#ffd08a'); cy+=7; }
+  if(GENS.length){ GENS.forEach((g,i)=>{ ctx.font='600 6px "IBM Plex Mono",monospace'; ctx.fillStyle='rgba(200,240,240,0.7)'; ctx.fillText('ГЕН. '+(i+1),8,cy+5); hudBar(36,cy+1,40,Math.max(0,g.hp),g.max,g.hp<35?'#ff4d3a':A); cy+=9; }); }
   mechChips(chip);
   if(muted){ ctx.font='600 6px "IBM Plex Mono",monospace'; ctx.fillStyle='#7f8e97'; ctx.fillText('БЕЗ ЗВУК (M)',8,cy+6); }
   // boss bar
-  if(bossActive&&boss&&!boss.dead&&boss.state!=='intro'){ const bw=200,bx=(W-bw)/2; ctx.fillStyle='rgba(0,0,0,0.6)'; ctx.fillRect(bx-1,15,bw+2,6); ctx.fillStyle=R2B.col[boss.type]||A; ctx.fillRect(bx,16,bw*clamp(boss.hp/boss.max,0,1),4);
-    ctx.font='600 7px "IBM Plex Mono",monospace'; ctx.textAlign='center'; ctx.fillStyle='#e8fbff'; ctx.fillText(R2B.name[boss.type]||'',W/2,12); ctx.textAlign='left'; }
+  if(bossActive&&boss&&!boss.dead&&boss.state!=='intro'){ const bw=200,bx=(W-bw)/2; ctx.fillStyle='rgba(0,0,0,0.6)'; ctx.fillRect(bx-1,15,bw+2,6); ctx.fillStyle=(BOSSES[boss.type]||{}).col||A; ctx.fillRect(bx,16,bw*clamp(boss.hp/boss.max,0,1),4);
+    ctx.font='600 7px "IBM Plex Mono",monospace'; ctx.textAlign='center'; ctx.fillStyle='#e8fbff'; ctx.fillText((BOSSES[boss.type]||{}).name||'',W/2,12); ctx.textAlign='left'; }
   // message
   if(msg){ const a=clamp(Math.min(msg.age*4,(msg.d-msg.age)*2),0,1); ctx.globalAlpha=a; ctx.font='600 9px "IBM Plex Mono",monospace';
     const lines=wrap(msg.t,360), lw=Math.max(...lines.map(l=>ctx.measureText(l).width)), who=msg.who, w=lw+20, h=lines.length*12+6+(who?10:0), y=bossActive?30:20, x=W/2-w/2;
@@ -2175,7 +2192,7 @@ function drawHUD2(){
   ctx.restore();
 }
 
-function renderEps2(){
+function renderEpsStd(){
   overlay(0.82); centerText('ИЗБЕРИ ЕПИЗОД',50,'15px '+DFONT(),ACC());
   const ch=gChOf(menuSel), c=GCH[ch];
   centerText((ch>0?'◀  ':'    ')+chName(ch)+' · '+c.t+(ch<GCH.length-1&&GCH[ch+1].a<gUnl?'  ▶':'    '),74,'10px '+DFONT(),GAME.accent2);
@@ -2189,13 +2206,13 @@ function renderEps2(){
 }
 
 /* ---------- pickups ---------- */
-R2_TAKE.air=k=>{ const p=player; if(p.air>=99) return false; p.air=Math.min(100,p.air+45); SFX.pickup(); for(let i=0;i<10;i++) part(k.x+6,k.y+5,rnd(-30,30),rnd(-60,-10),0.6,'#cfefff',1.5,-20); };
-R2_PDRAW.air=(k,x,y)=>{ const a=titleT*3+k.bob; for(let i=0;i<3;i++){ const bx=x+6+Math.sin(a+i*2)*3, by=y+8-((titleT*14+i*6)%14); ctx.strokeStyle='rgba(220,250,255,0.85)'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(bx,by,2+i*0.6,0,7); ctx.stroke(); } ctx.fillStyle='rgba(160,230,255,0.25)'; ctx.beginPath(); ctx.arc(x+6,y+4,7,0,7); ctx.fill(); };
+defItem('air',{take:k=>{ const p=player; if(p.air>=99) return false; p.air=Math.min(100,p.air+45); SFX.pickup(); for(let i=0;i<10;i++) part(k.x+6,k.y+5,rnd(-30,30),rnd(-60,-10),0.6,'#cfefff',1.5,-20); }});
+defItem('air',{draw:(k,x,y)=>{ const a=titleT*3+k.bob; for(let i=0;i<3;i++){ const bx=x+6+Math.sin(a+i*2)*3, by=y+8-((titleT*14+i*6)%14); ctx.strokeStyle='rgba(220,250,255,0.85)'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(bx,by,2+i*0.6,0,7); ctx.stroke(); } ctx.fillStyle='rgba(160,230,255,0.25)'; ctx.beginPath(); ctx.arc(x+6,y+4,7,0,7); ctx.fill(); }});
 
 /* ---------- new enemies ---------- */
-Object.assign(DIMS,{fish:[16,8,24],jelly:[12,14,20],imp:[12,12,24],drone:[14,10,36],mite:[8,8,5],tent:[14,60,90]});
+defFoes('dims',{fish:[16,8,24],jelly:[12,14,20],imp:[12,12,24],drone:[14,10,36],mite:[8,8,5],tent:[14,60,90]});
 function inWaterE(e,x,y){ return isWater(x,y); }
-R2UPD.fish=(e,dt)=>{
+defFoe('fish',{upd:(e,dt)=>{
   if(!isWater(e.x+e.w/2,e.y+e.h/2)){ e.dry=(e.dry||0)+dt; physics(e,dt); if(e.dry>1.5) hurtEnemy(e,999,0,true); return; } e.dry=0;
   const p=player, ex=e.x+e.w/2, ey=e.y+e.h/2, pcx=p.x+p.w/2, pcy=p.y+p.h/2, dx=pcx-ex, dy=pcy-ey, d=Math.hypot(dx,dy)||1;
   e.anim+=dt*8; e.bite-=dt;
@@ -2209,11 +2226,11 @@ R2UPD.fish=(e,dt)=>{
   moveX(e,e.vx*dt); const ob=e.y; e.y+=e.vy*dt; if(rectSolid(e.x,e.y,e.w,e.h)){ e.y=ob; e.vy=0; }
   if(Math.abs(e.vx)>2) e.face=sgn(e.vx);
   if(!p.dead&&ov(e,p)&&e.bite<=0){ hurtPlayer(9,sgn(dx)*80); e.bite=0.9; }
-};
-R2DRAW.fish=e=>{ begin(e); tint=e.hitT>0?'#fff':null; if(e.dead) ctx.rotate(Math.PI); const t=Math.sin(e.anim)*2;
+}});
+defFoe('fish',{draw:e=>{ begin(e); tint=e.hitT>0?'#fff':null; if(e.dead) ctx.rotate(Math.PI); const t=Math.sin(e.anim)*2;
   px(-8,-7,12,6,'#b8643a'); px(-7,-7,10,1,'#e0905a'); px(-8,-2,12,1,'#7a3a22'); px(4,-6,4,4,'#c8784a'); px(-12,-7+t*0.5,4,6,'#8a4a2a'); px(5,-3,3,1,'#f0f0e0'); px(2,-6,2,2,'#ffef5a'); px(-3,-9,4,2,'#8a4a2a');
-  tint=null; if(e.dead) fade(e,0.3); ctx.restore(); };
-R2UPD.jelly=(e,dt)=>{
+  tint=null; if(e.dead) fade(e,0.3); ctx.restore(); }});
+defFoe('jelly',{upd:(e,dt)=>{
   if(!isWater(e.x+e.w/2,e.y+e.h/2)){ e.dry=(e.dry||0)+dt; physics(e,dt); if(e.dry>1.5) hurtEnemy(e,999,0,true); return; } e.dry=0;
   const p=player, ex=e.x+e.w/2, ey=e.y+e.h/2, dx=p.x+p.w/2-ex; e.anim+=dt; e.bite-=dt;
   const tvy=Math.sin(e.anim*1.3+e.home)*22, tvx=clamp(dx*0.15,-14,14);
@@ -2221,11 +2238,11 @@ R2UPD.jelly=(e,dt)=>{
   if(!isWater(ex+e.vx*0.5,ey+e.vy*0.5)){ e.vx=-e.vx; e.vy=-e.vy+ (isWater(ex,ey+10)?15:-15); }
   moveX(e,e.vx*dt); const ob=e.y; e.y+=e.vy*dt; if(rectSolid(e.x,e.y,e.w,e.h)){ e.y=ob; e.vy=0; }
   if(!p.dead&&ov(e,p)&&e.bite<=0){ hurtPlayer(11,sgn(-dx||1)*-90); e.bite=1; sparks(ex,ey,8,'#ff9af0'); sfxAt('zapS',e); }
-};
-R2DRAW.jelly=e=>{ begin(e,false); tint=e.hitT>0?'#fff':null; const t=e.anim; ctx.globalAlpha=e.dead?Math.max(0,1-e.deadT):0.85;
+}});
+defFoe('jelly',{draw:e=>{ begin(e,false); tint=e.hitT>0?'#fff':null; const t=e.anim; ctx.globalAlpha=e.dead?Math.max(0,1-e.deadT):0.85;
   ctx.fillStyle=tint||'#ff8ad8'; ctx.beginPath(); ctx.ellipse(0,-10,7,5+Math.sin(t*3)*0.8,0,Math.PI,0); ctx.fill(); px(-7,-10,14,2,'#d860b8');
-  for(let i=0;i<4;i++) px(-5+i*3,-8,1,5+Math.round(Math.sin(t*4+i)*2),'#ffb8ea'); px(-2,-13,2,2,'#fff0fa'); tint=null; ctx.globalAlpha=1; ctx.restore(); };
-R2UPD.imp=(e,dt)=>{
+  for(let i=0;i<4;i++) px(-5+i*3,-8,1,5+Math.round(Math.sin(t*4+i)*2),'#ffb8ea'); px(-2,-13,2,2,'#fff0fa'); tint=null; ctx.globalAlpha=1; ctx.restore(); }});
+defFoe('imp',{upd:(e,dt)=>{
   const p=player; e.anim+=dt*10; e.bite-=dt;
   let tg=null, td=1e9; for(const g of GENS){ if(g.hp<=0) continue; const d=Math.abs(g.x+14-(e.x+e.w/2)); if(d<td){ td=d; tg=g; } }
   const pd=Math.abs(p.x-e.x); let tx;
@@ -2235,28 +2252,28 @@ R2UPD.imp=(e,dt)=>{
   physics(e,dt);
   if(tg&&ov(e,tg)){ tg.hp-=dt*[5,8,11][DI]; tg.hitT=0.1; if(Math.random()<dt*6) sparks(tg.x+14,tg.y+8,2,'#bfe8ff'); if(tg.hp<=0){ tg.hp=0; sfxAt('boom',tg); explode(tg.x+14,tg.y+10,40,0,0,true); showMsg('Генератор е унищожен!',2); } }
   if(!p.dead&&ov(e,p)&&e.bite<=0){ hurtPlayer(8,e.face*90); e.bite=0.8; }
-};
-R2DRAW.imp=e=>{ begin(e); tint=e.hitT>0?'#fff':null; const s=Math.sin(e.anim)>0?1:0;
+}});
+defFoe('imp',{draw:e=>{ begin(e); tint=e.hitT>0?'#fff':null; const s=Math.sin(e.anim)>0?1:0;
   px(-5,-9,10,7,'#5a2a6a'); px(-4,-10,8,2,'#8a4aa0'); px(-6,-3,3,3-s,'#3a1a4a'); px(3,-3,3,2+s,'#3a1a4a'); px(1,-8,3,2,'#ff6ad5'); px(-6,-12,2,3,'#8a4aa0'); px(4,-12,2,3,'#8a4aa0');
-  tint=null; if(e.dead) fade(e,0.2); ctx.restore(); };
-R2UPD.drone=(e,dt)=>{
+  tint=null; if(e.dead) fade(e,0.2); ctx.restore(); }});
+defFoe('drone',{upd:(e,dt)=>{
   const p=player, ex=e.x+e.w/2, ey=e.y+e.h/2, pcx=p.x+p.w/2, pcy=p.y+p.h/2, dx=pcx-ex, dy=pcy-ey, d=Math.hypot(dx,dy)||1; e.mech=true; e.anim+=dt; e.cd-=dt;
   if(!e.alert&&d<240&&los(ex,ey,pcx,pcy)) e.alert=true;
   let hx=e.home, hy=e.y; if(e.alert&&!p.dead){ hx=pcx-sgn(dx||1)*110; hy=pcy-50+Math.sin(e.anim*1.7)*14; }
   e.vx+=(clamp((hx-ex)*1.2,-70,70)-e.vx)*Math.min(1,dt*2); e.vy+=(clamp((hy-ey)*1.2,-60,60)-e.vy)*Math.min(1,dt*2);
   moveX(e,e.vx*dt); moveY(e,e.vy*dt); e.face=sgn(dx)||1;
   if(e.alert&&e.cd<=0&&d<260&&los(ex,ey,pcx,pcy)&&!p.dead){ e.cd=rnd(1.8,2.6)*D.rate; const sp=150*D.bspd; ebullets.push({x:ex,y:ey,vx:dx/d*sp,vy:dy/d*sp,life:3,dmg:9,r:3,orb:true,red:true}); sfxAt('laser',e); }
-};
-R2DRAW.drone=e=>{ begin(e,false); tint=e.hitT>0?'#fff':null; if(e.dead){ fade(e,0.2); }
+}});
+defFoe('drone',{draw:e=>{ begin(e,false); tint=e.hitT>0?'#fff':null; if(e.dead){ fade(e,0.2); }
   px(-7,-8,14,6,'#3a4248'); px(-7,-8,14,1,'#6d767c'); px(-9,-9,4,1,'#9aa2a7'); px(5,-9,4,1,'#9aa2a7'); px(-2,-6,4,3,e.alert?'#ff3b2e':'#5a1a14'); px(-6,-2,2,2,'#2a2e33'); px(4,-2,2,2,'#2a2e33');
   if(Math.floor(e.anim*20)%2) { px(-9,-10,4,1,'#cfd5d8'); px(5,-10,4,1,'#cfd5d8'); }
-  tint=null; ctx.restore(); };
-R2UPD.mite=(e,dt)=>{ e.mech=true; e.anim+=dt; if(e.ctl) return; const p=player, dx=p.x+p.w/2-(e.x+4), dy=p.y+p.h/2-(e.y+4), d=Math.hypot(dx,dy)||1; e.vx+=(dx/d*90-e.vx)*dt*2; e.vy+=(dy/d*90-e.vy)*dt*2; e.x+=e.vx*dt; e.y+=e.vy*dt; e.bite-=dt; if(!p.dead&&ov(e,p)&&e.bite<=0){ hurtPlayer(6,sgn(dx)*60); e.bite=0.8; } };
-R2DRAW.mite=e=>{ if(e.dead&&e.deadT>0.4) return; const x=Math.round(e.x-cam), y=Math.round(e.y); ctx.fillStyle=e.hitT>0?'#fff':'#c8a24a'; ctx.fillRect(x+1,y+1,6,6); ctx.fillStyle='#ffef8a'; ctx.fillRect(x+3,y+3,2,2); ctx.fillStyle='#6a5222'; ctx.fillRect(x,y+3,1,2); ctx.fillRect(x+7,y+3,1,2); };
-R2UPD.tent=(e,dt)=>{ e.anim+=dt; };
-R2DRAW.tent=e=>{ if(e.dead&&e.deadT>0.8) return; const b=boss; const base=e.baseY, top=e.y, x=e.x+e.w/2-cam; ctx.save(); if(e.dead) ctx.globalAlpha=1-e.deadT/0.8;
+  tint=null; ctx.restore(); }});
+defFoe('mite',{upd:(e,dt)=>{ e.mech=true; e.anim+=dt; if(e.ctl) return; const p=player, dx=p.x+p.w/2-(e.x+4), dy=p.y+p.h/2-(e.y+4), d=Math.hypot(dx,dy)||1; e.vx+=(dx/d*90-e.vx)*dt*2; e.vy+=(dy/d*90-e.vy)*dt*2; e.x+=e.vx*dt; e.y+=e.vy*dt; e.bite-=dt; if(!p.dead&&ov(e,p)&&e.bite<=0){ hurtPlayer(6,sgn(dx)*60); e.bite=0.8; } }});
+defFoe('mite',{draw:e=>{ if(e.dead&&e.deadT>0.4) return; const x=Math.round(e.x-cam), y=Math.round(e.y); ctx.fillStyle=e.hitT>0?'#fff':'#c8a24a'; ctx.fillRect(x+1,y+1,6,6); ctx.fillStyle='#ffef8a'; ctx.fillRect(x+3,y+3,2,2); ctx.fillStyle='#6a5222'; ctx.fillRect(x,y+3,1,2); ctx.fillRect(x+7,y+3,1,2); }});
+defFoe('tent',{upd:(e,dt)=>{ e.anim+=dt; }});
+defFoe('tent',{draw:e=>{ if(e.dead&&e.deadT>0.8) return; const b=boss; const base=e.baseY, top=e.y, x=e.x+e.w/2-cam; ctx.save(); if(e.dead) ctx.globalAlpha=1-e.deadT/0.8;
   for(let y=base,i=0;y>top;y-=6,i++){ const k=(base-y)/Math.max(1,base-top), sw=Math.sin(e.anim*3+i*0.5)*5*k*(e.slam?0.2:1); ctx.fillStyle=e.hitT>0?'#fff':(i%2?'#3a6a6a':'#4a7a76'); ctx.beginPath(); ctx.ellipse(x+sw,y,7-k*3,4,0,0,7); ctx.fill(); if(i%3===1){ ctx.fillStyle='#c8f0e0'; ctx.fillRect(x+sw-5+k*2,y-1,2,2); } }
-  ctx.restore(); };
+  ctx.restore(); }});
 
 
 /* ---------- общи помощници за босове и сцени ---------- */
@@ -2270,9 +2287,8 @@ function setDoorAll(d,ch){ if(!ERAD){ setDoor(d,ch); return; } const [tx,r0,r1]=
   map=saveMap; LV=saveLV; lx=LV.getContext('2d'); }
 
 /* ================= ДВИГАТЕЛ · ПЛОЧКИ, НЕБЕ, ФОН =================
-   Игрите добавят свои стилове чрез TILE_HOOKS / BACK_HOOKS (функция, която връща true, ако е нарисувала). */
-const TILE_HOOKS=[], BACK_HOOKS=[];
-function r2SkyLayer(L,x){
+   Игрите добавят свои стилове чрез defTile / defBack (engine/defs.js). */
+function skyLayerExt(L,x){
   const H_=H;
   if(L.kind==='city'){ for(let i=0;i<1024;){ const w=18+Math.floor(hash(i,L.seed)*26), h=26+Math.floor(hash(L.seed,i)*40); x.fillStyle=L.col; x.fillRect(i,H_-h,w,h); x.beginPath(); x.moveTo(i-2,H_-h); x.lineTo(i+w/2,H_-h-10); x.lineTo(i+w+2,H_-h); x.fill(); for(let wy=H_-h+6;wy<H_-6;wy+=8) for(let wx=i+3;wx<i+w-3;wx+=6) if(hash(wx,wy)>0.6){ x.fillStyle=hash(wy,wx)>0.5?'rgba(255,210,120,0.75)':'rgba(255,180,90,0.45)'; x.fillRect(wx,wy,2,3); } i+=w+2+Math.floor(hash(i+1,L.seed)*6); } return true; }
   if(L.kind==='towers'){ x.fillStyle=L.col; for(let i=0;i<1024;){ const w=14+Math.floor(hash(i,L.seed)*24), h=70+Math.floor(hash(L.seed,i)*110); x.fillRect(i,H_-h,w,h); const cut=Math.floor(hash(i,7)*12); x.clearRect(i+w-cut,H_-h,cut,cut*1.2); for(let k=0;k<4;k++) if(hash(i+k,L.seed+3)>0.5) x.fillRect(i-3,H_-h+10+k*20,3,2); i+=w+8+Math.floor(hash(i+2,L.seed)*30); } return true; }
@@ -2281,8 +2297,8 @@ function r2SkyLayer(L,x){
   if(L.kind==='kelp'){ x.fillStyle=L.col; for(let i=0;i<1024;i+=8+Math.floor(hash(i,L.seed)*14)){ const h=40+hash(L.seed,i)*120; for(let y=0;y<h;y+=3) x.fillRect(i+Math.round(Math.sin(y*0.07+i)*4),H_-y,2,3); } return true; }
   return false;
 }
-function r2Tile(tx,ty,ch,x,y,P,z){
-  for(const h of TILE_HOOKS) if(h(tx,ty,ch,x,y,P,z)) return true;
+function tileExt(tx,ty,ch,x,y,P,z){
+  for(const h of TILE_FX) if(h(tx,ty,ch,x,y,P,z)) return true;
   if(ch!=='#') return false;
   if(P.town){ const top=!isS(tx,ty-1), bld=hash(Math.floor(tx/3),7);
     R(x,y,T,T,ty>=15?'#4a4440':(bld>0.5?'#8a7a68':'#9a8070')); if(ty>=15){ R(x,y,T,2,'#6a625a'); for(let i=0;i<T;i+=4) R(x+i,y+2,1,T-2,'#3a3430'); return true; }
@@ -2295,8 +2311,8 @@ function r2Tile(tx,ty,ch,x,y,P,z){
   if(P.b70){ R(x,y,T,T,P.s); R(x,y,T,1,P.sh); R(x,y+15,T,1,P.sd); if(ty%2===0) R(x,y+8,T,1,'#7a7872'); if(hash(tx,ty)>0.85) R(x+4,y+4,2,6,'#6a6862'); if(!isS(tx,ty-1)){ R(x,y,T,3,'#a8a49a'); R(x,y+3,T,1,P.sd); } return true; }
   return false;
 }
-function r2BackDeco(tx,ty,x,y,z,P){
-  for(const h of BACK_HOOKS) if(h(tx,ty,x,y,z,P)) return;
+function backExt(tx,ty,x,y,z,P){
+  for(const h of BACK_FX) if(h(tx,ty,x,y,z,P)) return;
   if(P.sea){ if(tx%11===5&&ty===5){ R(x-2,y-2,20,20,'#2a3e46'); lx.fillStyle='#061822'; lx.beginPath(); lx.arc(x+8,y+8,8,0,7); lx.fill(); lx.fillStyle='rgba(80,180,220,0.35)'; lx.beginPath(); lx.arc(x+8,y+8,6,0,7); lx.fill(); lx.fillStyle='rgba(200,240,255,0.5)'; lx.fillRect(x+4,y+4,2,2); }
     if(ty===3&&tx%6===0) R(x,y+6,T,3,'#1a2e36'); if(tx%17===8&&ty>3) R(x+6,y,3,T,'#0f1c22'); }
   if(P.gear){ if(hash(tx,ty)>0.9){ lx.strokeStyle='#3a2e1e'; lx.lineWidth=2; lx.beginPath(); lx.arc(x+8,y+8,7,0,7); lx.stroke(); } if(ty%5===2) R(x,y+6,T,2,'#2e2416'); }
@@ -2494,14 +2510,14 @@ const memList=()=>store.get(KEY('mem'),'').split(',').filter(Boolean).map(Number
 const memHas=i=>memList().includes(i);
 const memCount=()=>memList().filter(i=>GLV[i]&&GLV[i].memory).length;
 const memTotal=()=>GLV.filter(l=>l.memory).length;
-R2_TAKE.memory=k=>{ if(!LVL.memory) return false;
+defItem('memory',{take:k=>{ if(!LVL.memory) return false;
   if(!SURV&&LI>=0&&!memHas(LI)) store.set(KEY('mem'),memList().concat(LI).join(','));
   SFX.pickup(); if(AC){ osc({type:'sine',f:784,t:0.6,v:0.07}); osc({type:'sine',f:1046,t:0.8,v:0.05,when:0.2}); }
   for(let i=0;i<18;i++) part(k.x+6,k.y+5,rnd(-50,50),rnd(-80,-10),0.9,'#ffe6a0',1.5,-20);
-  showMsg(LVL.memory,7,(GAME.memLabel||'СПОМЕН')+' '+memCount()+' / '+memTotal()); };
-R2_PDRAW.memory=(k,x,y)=>{ const had=!SURV&&memHas(LI), a=titleT*2+k.bob;
+  showMsg(LVL.memory,7,(GAME.memLabel||'СПОМЕН')+' '+memCount()+' / '+memTotal()); }});
+defItem('memory',{draw:(k,x,y)=>{ const had=!SURV&&memHas(LI), a=titleT*2+k.bob;
   ctx.save(); ctx.globalCompositeOperation='lighter'; const g=ctx.createRadialGradient(x+6,y+4,1,x+6,y+4,16); g.addColorStop(0,`rgba(255,220,140,${had?0.25:0.6})`); g.addColorStop(1,'rgba(255,220,140,0)'); ctx.fillStyle=g; ctx.fillRect(x-10,y-12,32,32); ctx.restore();
-  ctx.globalAlpha=had?0.45:1; ctx.fillStyle='#f4ead2'; ctx.fillRect(x+1,y-2,10,12); ctx.fillStyle='#8a7a5a'; ctx.fillRect(x+2,y-1,8,7); ctx.fillStyle='#c8b48a'; ctx.fillRect(x+4,y+1,3,3); ctx.fillStyle='#ffe6a0'; ctx.fillRect(x+5+Math.round(Math.sin(a)*4),y-5,1,1); ctx.globalAlpha=1; };
+  ctx.globalAlpha=had?0.45:1; ctx.fillStyle='#f4ead2'; ctx.fillRect(x+1,y-2,10,12); ctx.fillStyle='#8a7a5a'; ctx.fillRect(x+2,y-1,8,7); ctx.fillStyle='#c8b48a'; ctx.fillRect(x+4,y+1,3,3); ctx.fillStyle='#ffe6a0'; ctx.fillRect(x+5+Math.round(Math.sin(a)*4),y-5,1,1); ctx.globalAlpha=1; }});
 
 /* ================= ДВИГАТЕЛ · МЕХАНИКИ III =================
    Хора в транс (LVL.sleepers:[[tx,tx1,опции]]): вървят насън към tx1; задръж ↑ до тях, за да ги събудиш.
@@ -2621,27 +2637,26 @@ function mech3Chips(chip){
   if(LVL.flares) chip(flareCd>0?'✸ РАКЕТА · '+flareCd.toFixed(1)+' s':'✸ РАКЕТА · E — хвърли','#ff9a7a');
 }
 // плочката 'h' се рисува като фон — истинската „стена“ се рисува отгоре, докато не я разкриеш
-TILE_HOOKS.push(function(tx,ty,ch){ if(ch==='h'){ drawBack(tx,ty); return true; } return false; });
+defTile(function(tx,ty,ch){ if(ch==='h'){ drawBack(tx,ty); return true; } return false; });
 
 /* ---------- прилеп ---------- */
-Object.assign(DIMS,{bat:[10,8,18]});
-R2UPD.bat=(e,dt)=>{ const ex=e.x+e.w/2, ey=e.y+e.h/2, p=player;
+defFoes('dims',{bat:[10,8,18]});
+defFoe('bat',{upd:(e,dt)=>{ const ex=e.x+e.w/2, ey=e.y+e.h/2, p=player;
   if(e.scared>0||isLit(ex,ey)){ if(!(e.scared>0)) e.scared=0.9; e.scared-=dt; e.anim+=dt*2; let fx=0,fy=-1; for(const f of FLARES){ const d=Math.hypot(ex-f.x,ey-f.y)||1; if(d<160){ fx+=(ex-f.x)/d; fy+=(ey-f.y)/d; } }
     const n=Math.hypot(fx,fy)||1; e.vx+=(fx/n*150-e.vx)*Math.min(1,dt*5); e.vy+=(fy/n*150-e.vy)*Math.min(1,dt*5); moveX(e,e.vx*dt); moveY(e,e.vy*dt); e.alert=true; return; }
   updFlyer(e,dt); e.anim+=dt*2;
-  if(p&&!p.dead&&isLit(p.x+p.w/2,p.y+p.h/2)&&e.state==='dive'){ e.state='retreat'; e.t=0.5; } };
-R2DRAW.bat=e=>{ if(e.dead&&e.deadT>0.6) return; const x=Math.round(e.x+e.w/2-cam), y=Math.round(e.y+e.h/2), f=Math.sin(e.anim*18);
+  if(p&&!p.dead&&isLit(p.x+p.w/2,p.y+p.h/2)&&e.state==='dive'){ e.state='retreat'; e.t=0.5; } }});
+defFoe('bat',{draw:e=>{ if(e.dead&&e.deadT>0.6) return; const x=Math.round(e.x+e.w/2-cam), y=Math.round(e.y+e.h/2), f=Math.sin(e.anim*18);
   ctx.fillStyle=e.hitT>0?'#fff':e.dead?'#5a4a4a':'#2a2024'; ctx.fillRect(x-2,y-2,4,4);
   ctx.beginPath(); ctx.moveTo(x-1,y-1); ctx.lineTo(x-8,y-3-f*4); ctx.lineTo(x-5,y+1); ctx.lineTo(x-1,y+1); ctx.closePath(); ctx.fill();
   ctx.beginPath(); ctx.moveTo(x+1,y-1); ctx.lineTo(x+8,y-3-f*4); ctx.lineTo(x+5,y+1); ctx.lineTo(x+1,y+1); ctx.closePath(); ctx.fill();
-  if(!e.dead){ ctx.fillStyle='#ff5a4a'; ctx.fillRect(x-1,y-1,1,1); ctx.fillRect(x+1,y-1,1,1); } };
+  if(!e.dead){ ctx.fillStyle='#ff5a4a'; ctx.fillRect(x-1,y-1,1,1); ctx.fillRect(x+1,y-1,1,1); } }});
 
 /* ================= ДВИГАТЕЛ · МЕХАНИКИ IV =================
    Тонът (LVL.tone): E изпява тон — вълна, която зашеметява враговете наоколо (e.stunT)
-     и отваря тоновите врати (плочка 't') за няколко секунди. Босовете могат да реагират чрез R2B_TONE[тип](разстояние).
+     и отваря тоновите врати (плочка 't') за няколко секунди. Босовете могат да реагират чрез onTone(разстояние).
    Зашеметен враг замръзва на място (виж куката в build.py). */
 let TONEP=[], toneCd=0, TDOORS=[], tdoorT=0;
-const R2B_TONE={};
 SOLID.add('t');
 function mech4Load(){ TONEP=[]; toneCd=0; tdoorT=0; TDOORS=[]; SOLID.add('t'); if(!LVL) return;
   for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++) if(map[y][x]==='t') TDOORS.push([x,y]); }
@@ -2651,7 +2666,7 @@ function tonePulse(){
   if(AC){ osc({type:'sine',f:440,t:0.9,v:0.08}); osc({type:'sine',f:554,t:0.9,v:0.05,when:0.08}); osc({type:'sine',f:659,t:0.9,v:0.05,when:0.16}); }
   noise(x,y,'tone');
   for(const e of enemies){ if(e.dead||e.mech||e.tag) continue; const d=Math.hypot(e.x+e.w/2-x,e.y+e.h/2-y); if(d<150){ e.stunT=Math.max(e.stunT||0,e.para?3.2:2); e.alert=true; } }
-  if(boss&&!boss.dead&&R2B_TONE[boss.type]) R2B_TONE[boss.type](Math.hypot(boss.x+boss.w/2-x,boss.y+boss.h/2-y));
+  if(boss&&!boss.dead&&(BOSSES[boss.type]||{}).onTone) BOSSES[boss.type].onTone(Math.hypot(boss.x+boss.w/2-x,boss.y+boss.h/2-y));
   if(TDOORS.some(([tx,ty])=>Math.hypot(tx*T+8-x,ty*T+8-y)<170)){ tdoorT=3.6; SOLID.delete('t'); if(AC) osc({type:'triangle',f:880,t:0.4,v:0.05,when:0.2}); }
 }
 function mech4Update(dt){
@@ -2675,7 +2690,7 @@ function mech4DrawWorld(){
 function mech4Lights(L){ for(const t of TONEP){ const r=t.t*190, al=Math.max(0,1-t.t/1.1); for(let i=0;i<20;i++){ const a=i/20*6.283; L.push([t.x+Math.cos(a)*r,t.y+Math.sin(a)*r,36,al*0.8]); } }
   if(TDOORS.length&&player){ let n=0; for(const [tx,ty] of TDOORS){ if(Math.abs(tx*T-player.x)>260||(tx+ty)%2) continue; L.push([tx*T+8,ty*T+8,20,0.3]); if(++n>30) break; } } }
 function mech4Chips(chip){ if(LVL.tone) chip(toneCd>0?'♫ ТОН · '+toneCd.toFixed(1)+' s':'♫ ТОН · E — изпей','#e8c25a'); }
-TILE_HOOKS.push(function(tx,ty,ch){ if(ch==='t'){ drawBack(tx,ty); return true; } return false; });
+defTile(function(tx,ty,ch){ if(ch==='t'){ drawBack(tx,ty); return true; } return false; });
 
 /* ================= ДВИГАТЕЛ · МЕХАНИКИ V =================
    Курсори (LVL.cursors): мигащи станции в нивото; E до тях изпълнява команда.
@@ -2684,11 +2699,10 @@ TILE_HOOKS.push(function(tx,ty,ch){ if(ch==='t'){ drawBack(tx,ty); return true; 
      ['GOTO', tx,row,{to:[tx,row], label}]                     — телепорт (многократно)
      ['BREAK',tx,row,{r:14, t:4, cd:6}]                        — замразява враговете наоколо (e.stunT)
      ['RUN',  tx,row,{fn, cd}]                                 — действие на конкретното ниво
-   row е редът, на който стои играчът (като при spawns). Босовете могат да реагират с R2B_CMD[тип](курсор)
+   row е редът, на който стои играчът (като при spawns). Босовете могат да реагират с onCmd(курсор)
    и да добавят свои курсори с addCursor(...).
    Касета (LVL.tape={x0, speed, delay, label, doneMsg}): нивото се „зарежда“ отляво надясно — колоните зад границата са празни. */
 let CURS=[], TAPE=null;
-const R2B_CMD={};
 function addCursor(cmd,tx,row,o={}){ const c={cmd,tx,row,o,done:false,cd:0,flash:0}; CURS.push(c); return c; }
 function mech5Load(){ CURS=[]; TAPE=null; if(!LVL) return; for(const [cmd,tx,row,o] of (LVL.cursors||[])) addCursor(cmd,tx,row,Object.assign({},o||{}));
   if(LVL.tape) tapeInit(LVL.tape); }
@@ -2712,7 +2726,7 @@ function runCursor(c){
   else if(c.cmd==='RUN'){ c.cd=o.cd||1; if(o.once) c.done=true; }
   if(o.fn) o.fn(c);
   if(o.msg) showMsg(o.msg,2);
-  if(boss&&!boss.dead&&R2B_CMD[boss.type]) R2B_CMD[boss.type](c);
+  if(boss&&!boss.dead&&(BOSSES[boss.type]||{}).onCmd) BOSSES[boss.type].onCmd(c);
   cursorBeep(true);
 }
 function mech5Update(dt){
@@ -2749,7 +2763,7 @@ function mech5Lights(L){ for(const c of CURS) if(!c.done) L.push([c.tx*T+8,(c.ro
 function mech5Chips(chip){ if(TAPE&&!TAPE.done) chip('▶ '+TAPE.label+' · '+Math.min(99,Math.floor(TAPE.x/COLS*100))+'%','#ffd84a');
   const c=CURS.find(c=>!c.done&&curNear(c)); if(c) chip('▌ '+c.cmd+(c.cd>0?' · '+c.cd.toFixed(1)+' s':' · E — изпълни'),'#9aff8a'); }
 
-MUT_NAME.bats='Рояци прилепи';   // мутацията е в двигателя (mech3) — ползват я Р5 и Р6
+addUnique(MUT_NAME,{bats:'Рояци прилепи'},'MUT_NAME');   // мутацията е в двигателя (mech3) — ползват я Р5 и Р6
 /* ================= ДВИГАТЕЛ · ОЦЕЛЯВАНЕ (процедурни сектори) =================
    Темите се регистрират от игрите в SV_THEMES (ключовете трябва да са уникални за поредицата),
    небетата — в SKIES (engine/lib/themes.js). Планът на секторите (кои теми и босове) идва от GAME.svPlan(k),
@@ -4866,22 +4880,23 @@ function drawTitan(){
   tint=null; ctx.globalAlpha=1; ctx.restore();
   if(b.phase===3&&!b.dead&&Math.random()<0.2) sparks(b.x+b.w/2+rnd(-20,20),b.y+rnd(10,40),2,'#ffd36b');
 }
-/* ---------- регистрация в общите регистри на двигателя (engine/sequel.js: R2B, R2UPD, R2DRAW) ---------- */
+/* ---------- регистрация (engine/defs.js) ---------- */
+defFoes('dims',{pylon:[10,20,100],egg:[10,12,25]});
 const updPylon=(e,dt)=>{e.anim+=dt;};
-Object.assign(R2B.make,{colossus:makeColossus,warden:makeWarden,heli:makeHeli,worm:makeWorm,guardian:makeGuardian,exo:makeExo,tank:makeTank,hunter:makeHunter,queen:makeQueen,titan:makeTitan});
-Object.assign(R2B.hurt,{colossus:hurtColossus,heli:hurtHeli,warden:hurtWarden,worm:hurtWorm,guardian:hurtGuardian,exo:hurtExo,tank:hurtTank,hunter:hurtHunter,queen:hurtQueen,titan:hurtTitan});
-Object.assign(R2B.upd,{colossus:updColossus,warden:updWarden,heli:updHeli,worm:updWorm,guardian:updGuardian,exo:updExo,tank:updTank,hunter:updHunter,queen:updQueen,titan:updTitan});
-Object.assign(R2B.draw,{colossus:drawColossus,warden:drawWarden,heli:drawHeli,worm:drawWorm,guardian:drawGuardian,exo:drawExo,tank:drawTank,hunter:drawHunter,queen:drawQueen,titan:drawTitan});
-Object.assign(R2B.intro,{worm:'Червеят! Стреляй по него, докато е над киселината. Варелите на брега ще помогнат.',guardian:'Пазителят! Щитът му се захранва от трите пилона. Унищожи ги, после стреляй по него.',colossus:'Колосът! Прескачай зелените вълни и взривявай варелите около него.',warden:'Надзирателят! Стреляй в окото и бягай от сферите.',heli:'Боен хеликоптер! Куршумите почти не му вредят — стреляй с ракетомета.',
+defBosses('make',{colossus:makeColossus,warden:makeWarden,heli:makeHeli,worm:makeWorm,guardian:makeGuardian,exo:makeExo,tank:makeTank,hunter:makeHunter,queen:makeQueen,titan:makeTitan});
+defBosses('hurt',{colossus:hurtColossus,heli:hurtHeli,warden:hurtWarden,worm:hurtWorm,guardian:hurtGuardian,exo:hurtExo,tank:hurtTank,hunter:hurtHunter,queen:hurtQueen,titan:hurtTitan});
+defBosses('upd',{colossus:updColossus,warden:updWarden,heli:updHeli,worm:updWorm,guardian:updGuardian,exo:updExo,tank:updTank,hunter:updHunter,queen:updQueen,titan:updTitan});
+defBosses('draw',{colossus:drawColossus,warden:drawWarden,heli:drawHeli,worm:drawWorm,guardian:drawGuardian,exo:drawExo,tank:drawTank,hunter:drawHunter,queen:drawQueen,titan:drawTitan});
+defBosses('intro',{worm:'Червеят! Стреляй по него, докато е над киселината. Варелите на брега ще помогнат.',guardian:'Пазителят! Щитът му се захранва от трите пилона. Унищожи ги, после стреляй по него.',colossus:'Колосът! Прескачай зелените вълни и взривявай варелите около него.',warden:'Надзирателят! Стреляй в окото и бягай от сферите.',heli:'Боен хеликоптер! Куршумите почти не му вредят — стреляй с ракетомета.',
   exo:'Командирът в бойна броня! Щитът спира куршумите отпред — стреляй в гърба му или докато бронята е прегряла.',
   tank:'Танк! Куршумите не го пробиват — използвай ракети и гранати. Прескачай го и клякай под картечницата.',
   hunter:'Ловецът! Пунктирът показва височината на атаката: ниско — скачай, високо — клекни.',
   queen:'Майката на гнездото! Унищожавай яйцата и стреляй, когато черупката ѝ се отвори.',
   titan:'Полковник Стратев в „Титан“! Стреляй по ракетите му, за да ги сваляш. Пунктирът показва лазера: ниско — скачай, високо — клекни.'});
-Object.assign(R2B.name,{warden:'НАДЗИРАТЕЛЯТ',colossus:'КОЛОС',heli:'БОЕН ХЕЛИКОПТЕР',worm:'ЧЕРВЕЯТ',guardian:'ПАЗИТЕЛЯТ',exo:'КОМАНДИРЪТ',tank:'ТАНКЪТ',hunter:'ЛОВЕЦЪТ',queen:'МАЙКАТА',titan:'„ТИТАН“'});
-Object.assign(R2B.col,{warden:'#c77dff',heli:'#ffb53a',colossus:'#9dff5a',worm:'#a6ff6a',guardian:'#8ad8ff',exo:'#c9c3b4',tank:'#ffb53a',hunter:'#7fd8ff',queen:'#ff6ad5',titan:'#ff5a45'});
-Object.assign(R2B.sfx,{warden:'warden',heli:'chop',tank:'engine',titan:'warden',exo:'stomp',hunter:'screech'});
-Object.assign(R2UPD,{egg:updEgg,pylon:updPylon}); Object.assign(R2DRAW,{egg:drawEgg,pylon:drawPylon});
+defBosses('name',{warden:'НАДЗИРАТЕЛЯТ',colossus:'КОЛОС',heli:'БОЕН ХЕЛИКОПТЕР',worm:'ЧЕРВЕЯТ',guardian:'ПАЗИТЕЛЯТ',exo:'КОМАНДИРЪТ',tank:'ТАНКЪТ',hunter:'ЛОВЕЦЪТ',queen:'МАЙКАТА',titan:'„ТИТАН“'});
+defBosses('col',{warden:'#c77dff',heli:'#ffb53a',colossus:'#9dff5a',worm:'#a6ff6a',guardian:'#8ad8ff',exo:'#c9c3b4',tank:'#ffb53a',hunter:'#7fd8ff',queen:'#ff6ad5',titan:'#ff5a45'});
+defBosses('sfx',{warden:'warden',heli:'chop',tank:'engine',titan:'warden',exo:'stomp',hunter:'screech'});
+defFoes('upd',{egg:updEgg,pylon:updPylon}); defFoes('draw',{egg:drawEgg,pylon:drawPylon});
 
 /* ================= РЕЗОНАНС 1 · ТРЕНИРОВКА: КУРСЪТ ПО БЕЗОПАСНОСТ ================= */
 const instr=t=>{ showMsg(t,0,'ИНСТРУКТОР'); SFX.radio&&AC&&SFX.radio(0.5,sfxBus); };
@@ -5193,7 +5208,7 @@ const SV_TG={
 const SV_EARLY=['lab','hall','office','depot','waste','vih','mil'], SV_MID=['tunnel','mine','bio','cool','core','out','snow','night'], SV_LATE=['xen','hive','factory','citadel','cave','ice'];
 addUnique(THEME_NAME,{lab:'Лаборатории',hall:'Коридори',office:'Администрация',depot:'Склад',waste:'Канали',tunnel:'Тунели',mine:'Шахти',bio:'Биолаборатория',cool:'Охладителна система',core:'Хранилище',night:'Повърхност',xen:'Острови',hive:'Кошер',factory:'Фабрика',citadel:'Цитадела',cave:'Пещери',vih:'Комплексът',mil:'Военна база',out:'Каньонът',snow:'Заснежен проход',ice:'Ледени пещери'},'THEME_NAME');
 const THEME_MUSIC={lab:{tr:0,bpm:108},hall:{tr:2,bpm:112},office:{tr:-3,bpm:96},depot:{tr:0,bpm:118},waste:{tr:-4,bpm:100},tunnel:{tr:1,bpm:120},mine:{tr:-6,bpm:104},bio:{tr:-1,bpm:98},cool:{tr:3,bpm:112},core:{tr:-2,bpm:100},night:{tr:-1,bpm:112},xen:{tr:4,bpm:96,alien:true},hive:{tr:3,bpm:92,alien:true},factory:{tr:-2,bpm:124,alien:true},citadel:{tr:-5,bpm:116,alien:true},cave:{tr:2,bpm:88,alien:true},vih:{tr:-1,bpm:110},mil:{tr:1,bpm:116},out:{tr:2,bpm:116},snow:{tr:2,bpm:118},ice:{tr:3,bpm:92,alien:true}};
-addUnique(BOSS_NORM,{worm:1.27,colossus:1,guardian:0.875,warden:0.5,exo:1.3,tank:1,hunter:1.08,queen:0.82,titan:0.44},'BOSS_NORM');
+defBosses('norm',{worm:1.27,colossus:1,guardian:0.875,warden:0.5,exo:1.3,tank:1,hunter:1.08,queen:0.82,titan:0.44});
 function svBossPool(tg){ const p=['colossus']; if(tg.acid) p.push('worm');
   if(tg.alien){ p.push('guardian','warden'); if(!tg.sky) p.push('queen'); } else { p.push('exo','titan'); if(tg.cave) p.push('queen'); }
   if(tg.sky) p.push('hunter'); if(tg.human) p.push('tank'); return p; }
@@ -5450,7 +5465,7 @@ function frame(now){
     else if(pressed.jump||pressed.esc){ toMenu(modeSel===1?3:2); SFX.menu(); }
     clearPressed();
   }
-  else if(state==='eps'){ r2EpsInput(); clearPressed(); }
+  else if(state==='eps'){ epsInput(); clearPressed(); }
   else if(state==='story'&&pressed.esc){ clearPressed(); toTitle(); }
   else if(state==='story'){ storyT+=dt; if(ok()){ if(storyT*45<parasLen(LVL.story)) storyT=999; else { state='play'; SFX.menuOk(); } } clearPressed(); }
   else if(state==='play'){

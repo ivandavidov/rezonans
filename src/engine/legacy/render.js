@@ -156,7 +156,7 @@ function drawScientist(s){ if(s.esc) return drawEscort(s);
 }
 function drawPickup(k){
   const x=Math.round(k.x-cam), y=Math.round(k.y+(k.vy===undefined?Math.sin(titleT*3+k.bob)*1.5:0));
-  if(R2_PDRAW[k.type]) return R2_PDRAW[k.type](k,x,y);
+  if((ITEMS[k.type]||{}).draw) return ITEMS[k.type].draw(k,x,y);
   if(k.type==='health'){ px(x,y,12,10,'#e9eef0'); px(x,y,12,1,'#ffffff'); px(x,y+9,12,1,'#a7b0b5'); px(x+5,y+2,2,6,'#d22a2a'); px(x+3,y+4,6,2,'#d22a2a'); }
   else if(k.type==='battery'){ px(x+2,y-2,8,12,'#1f3f6b'); px(x+4,y-3,4,1,'#9aa3aa'); px(x+3,y,6,8,'#3c8ce0'); px(x+3,y+5-Math.floor((titleT*4)%4),6,1,'#bfe4ff'); }
   else if(k.type==='ammo'){ px(x,y+2,12,8,'#4d5636'); px(x,y+2,12,1,'#6b7650'); px(x+2,y+4,8,3,'#c9a227'); px(x+3,y+5,6,1,'#7a6418'); }
@@ -264,9 +264,9 @@ function renderWorld(){
   for(const k of pickups) if(!k.taken&&k.x>cam-20&&k.x<cam+W+20) drawPickup(k);
   for(const b of barrels) if(b.x>cam-20&&b.x<cam+W+20) drawBarrel(b);
   for(const s of scientists) drawScientist(s);
-  for(const e of enemies){ if(e.x<cam-40||e.x>cam+W+40||e.deadT>50) continue; ({crab:drawCrab,shocker:drawShocker,soldier:drawSoldier,turret:drawTurret,flyer:drawFlyer,zombie:drawZombie,nest:drawNest,guard:drawGuard,target:drawTarget,...R2DRAW})[e.type](e); }
+  for(const e of enemies){ if(e.x<cam-40||e.x>cam+W+40||e.deadT>50) continue; FOES[e.type].draw(e); }
   drawTrains(); drawSwitch(); drawCrushers(); drawConveyors(); drawLifts(); drawLasers(); drawVents();
-  if(boss) R2B.draw[boss.type]();
+  if(boss) BOSSES[boss.type].draw();
   drawMissiles();
   for(const r of rockets){ ctx.save(); ctx.translate(Math.round(r.x-cam),Math.round(r.y)); ctx.rotate(Math.atan2(r.vy,r.vx)); px(-6,-1,8,3,'#5a6348'); px(2,-1,3,3,'#c9473a'); px(-9,-1,3,3,'#ffd36b'); ctx.restore(); }
   if(player) drawPlayer(); r2DrawWorld();
@@ -296,7 +296,7 @@ function renderSurvOver(){
   if(winT>1.5&&blink()) centerText('Z — главно меню',240,'600 10px "IBM Plex Mono",monospace','#f3e6cf');
 }
 function wrap(text,maxW){ const words=text.split(' '), lines=[]; let line=''; for(const w of words){ const t=line?line+' '+w:w; if(ctx.measureText(t).width>maxW&&line){ lines.push(line); line=w; } else line=t; } if(line) lines.push(line); return lines; }
-function drawHUD(){ if(!GAME.classic) return drawHUD2();
+function drawHUD(){ if(!GAME.classic) return drawHudStd();
   const p=player, A='#ffa62b';
   ctx.save(); ctx.shadowColor='rgba(255,140,0,0.55)'; ctx.shadowBlur=6; ctx.textBaseline='alphabetic';
   const hc=p.hp<=25?'#ff4d3a':A;
@@ -312,7 +312,7 @@ function drawHUD(){ if(!GAME.classic) return drawHUD2();
   else if(p.cur!=='wrench'){ const a=p.ammo[p.cur]; ctx.font='11px '+DFONT(); const rs=String(a.res); ctx.fillText(rs,470,263); const rw=ctx.measureText(rs).width; ctx.font='17px '+DFONT(); ctx.fillStyle=a.mag===0?'#ff4d3a':A; ctx.fillText(a.mag+' /',466-rw,263); }
   else { ctx.font='11px '+DFONT(); ctx.fillText('—',470,263); }
   ctx.textAlign='left'; ctx.shadowBlur=0;
-  if(bossActive&&boss&&!boss.dead&&boss.state!=='intro'){ const bw=180,bx=(W-bw)/2; ctx.fillStyle='rgba(0,0,0,0.6)'; ctx.fillRect(bx-1,15,bw+2,6); ctx.fillStyle=R2B.col[boss.type]; ctx.fillRect(bx,16,bw*Math.max(0,boss.hp)/boss.max,4); ctx.font='600 7px "IBM Plex Mono",monospace'; ctx.textAlign='center'; ctx.fillStyle='#e8ddff'; ctx.fillText(R2B.name[boss.type],W/2,12); ctx.textAlign='left'; }
+  if(bossActive&&boss&&!boss.dead&&boss.state!=='intro'){ const bw=180,bx=(W-bw)/2; ctx.fillStyle='rgba(0,0,0,0.6)'; ctx.fillRect(bx-1,15,bw+2,6); ctx.fillStyle=BOSSES[boss.type].col; ctx.fillRect(bx,16,bw*Math.max(0,boss.hp)/boss.max,4); ctx.font='600 7px "IBM Plex Mono",monospace'; ctx.textAlign='center'; ctx.fillStyle='#e8ddff'; ctx.fillText(BOSSES[boss.type].name,W/2,12); ctx.textAlign='left'; }
   if(msg){ const a=clamp(Math.min(msg.age*4,(msg.d-msg.age)*2),0,1); ctx.globalAlpha=a; ctx.font='600 9px "IBM Plex Mono",monospace';
     const lines=wrap(msg.t,360), lw=Math.max(...lines.map(l=>ctx.measureText(l).width)), who=msg.who, w=lw+20, h=lines.length*12+6+(who?10:0), y=bossActive?30:20, x=W/2-w/2;
     const wcol=who==='ИНСТРУКТОР'?'#7fd8ff':'#94ff57'; ctx.fillStyle='rgba(6,8,10,0.78)'; ctx.fillRect(x,y,w,h); ctx.fillStyle=who?wcol:A; ctx.fillRect(x,y,2,h);
@@ -372,7 +372,7 @@ function render(){
     centerText('↑ ↓ избор · Z потвърди · Esc / X назад',244,'600 7px "IBM Plex Mono",monospace','#7f8e97');
     return;
   }
-  if(state==='eps'&&!GAME.classic){ renderEps2(); return; }
+  if(state==='eps'&&!GAME.classic){ renderEpsStd(); return; }
   if(state==='eps'){   // класическото меню (r1): по една глава на страница
     overlay(0.8); centerText('ИЗБЕРИ ЕПИЗОД',58,'16px '+DFONT(),'#ffa62b');
     const ch=gChOf(menuSel), c=GCH[ch];

@@ -56,8 +56,8 @@ python3 src/win/make_exe.py            # dist/Rezonans-windows/ (Rezonans-x64.ex
 - Целият код е обикновен изходен код; `build.py` само сглобява (без замени по кода). Разметката и CSS са в
   `src/shell/index.html`; маркерите `@@FONT_FAMILIES@@`, `/*@@GAME_CSS@@*/` и `/*@@FONT_LOADS@@*/` (в
   `engine/legacy/loop.js`) се попълват от `game.json` на частите — всеки трябва да се среща точно веднъж.
-- Всичко влиза **в едно и също IIFE** (`'use strict'`): `engine/legacy/*.js` (двигателят — бившата база по раздели) и
-  `engine/lib/` (общото съдържание: класическите теми и небета) в реда от `LEGACY` в `build.py` → `engine/*.js` по списъка
+- Всичко влиза **в едно и също IIFE** (`'use strict'`): `engine/legacy/*.js` (двигателят — бившата база по раздели),
+  `engine/defs.js` (регистрите) и `engine/lib/` (общото съдържание: класическите теми и небета) в реда от `LEGACY` в `build.py` → `engine/*.js` по списъка
   в `build.py` → игрите по `games/series.json` (във всяка — по `files` от `game.json`, `game.js` последен, вика
   `registerGame`; първата част е обикновена част в `games/r1/`) → `engine/legacy/loop.js` (цикълът и `window.__rz`).
   Няма модули и `import`: всеки файл вижда глобалните имена на двигателя (`W`, `state`, `centerText`, `store`, …)
@@ -71,7 +71,9 @@ python3 src/win/make_exe.py            # dist/Rezonans-windows/ (Rezonans-x64.ex
   Давай на функциите в една игра префикс с id-то ѝ (`r8Logo`, `r8Win`).
 - Забранени остатъци от старата архитектура: `R2`, `R3`, `LEVELS2`, `r2title`, `unlocked2`, `MO` и др.
   (списъкът е в `build.py`).
-- Общите речници (`TH`, `SKIES`, `SV_THEMES`, `THEME_NAME`…) се пълнят само с `addUnique(...)`.
+- Общите речници (`TH`, `SKIES`, `SV_THEMES`, `THEME_NAME`, `MUT_NAME`) се пълнят само с `addUnique(...)`; враговете,
+  босовете, предметите, плочките и фоновете — само с `defFoe`/`defBoss`/`defItem`/`defTile`/`defBack` (`engine/defs.js`):
+  вече зададено поле спира играта с ясна грешка.
 - Записите в `localStorage` минават през `store` и `KEY(...)` — всяка част е под свой `GAME.key`.
 - `engine/` не знае за конкретни игри; конкретното съдържание е само в `games/<id>/`.
 

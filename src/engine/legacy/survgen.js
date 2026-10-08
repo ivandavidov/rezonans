@@ -5,7 +5,7 @@ const survBestK=(i=DI)=>parseInt(store.get(KEY('bestK')+i,'0'),10)||0;
 let survStartBest=0;
 function saveSurv(score,sector){ if(score>survBest()){ store.set(KEY('best')+DI,score); store.set(KEY('bestK')+DI,sector); } }
 const bestTxt=i=>{ const b=survBest(i), k=survBestK(i); return b+(k?' (сектор '+k+')':''); };
-const THEME_NAME={}, BOSS_NORM={};   // имената на темите и множителите на босовете — попълват ги частите
+const THEME_NAME={};   // имената на темите — попълват ги частите (множителите на босовете — defBoss norm)
 const MUT_NAME={dark:'Тъмнина',lowg:'Слаба гравитация',swarm:'Нашествие',scarce:'Оскъдни запаси',alarm:'Тревога'};
 function mkRng(seed){ let a=seed>>>0; return ()=>{ a=(a+0x6D2B79F5)>>>0; let t=a; t=Math.imul(t^(t>>>15),t|1); t^=t+Math.imul(t^(t>>>7),t|61); return ((t^(t>>>14))>>>0)/4294967296; }; }
 function svPlan(k){ return GAME.svPlan(k); }
@@ -91,7 +91,7 @@ function startSurv(k,carry){
   const sv=carry&&carry!==true?carry:null; if(sv) carry=false; const prev=carry?player:null;
   SURV=true; survK=k; bossMul=0.75+0.2*Math.floor(k/5); ehpMul=1+0.03*k;
   if(!carry){ survScore=0; survLives=[3,2,1][DI]; survSeed=(Date.now()%90000)+10000; survNewBest=false; survStartBest=survBest(); if(sv){ survSeed=sv.seed; survScore=sv.score|0; } }
-  loadLevel(-1,genLevel(k)); if(LVL.arena) bossMul*=BOSS_NORM[LVL.arena.type]||1; if(LVL.arena&&(GAME.bossMulOne||[]).includes(LVL.arena.type)) bossMul=1;
+  loadLevel(-1,genLevel(k)); if(LVL.arena) bossMul*=bossNorm(LVL.arena.type); if(LVL.arena&&(GAME.bossMulOne||[]).includes(LVL.arena.type)) bossMul=1;
   const p=player;
   if(prev){ for(const w of ORDER) if(prev.weapons[w]) p.weapons[w]=true;
     for(const kk in p.ammo){ p.ammo[kk].mag=Math.max(p.ammo[kk].mag,prev.ammo[kk].mag); p.ammo[kk].res=Math.max(p.ammo[kk].res,prev.ammo[kk].res); }

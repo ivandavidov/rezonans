@@ -29,12 +29,12 @@ function drawBack(tx,ty){
   if(z==='mil'&&ty===8){ R(x,y+5,T,4,'#6b5a24'); for(let i=0;i<T;i+=8) R(x+i,y+5,4,4,'#2a2410'); }
   if(z==='waste'&&ty>=10&&ty<=12){ R(x,y,T,T,'rgba(60,110,40,0.08)'); }
   if(z==='core'&&tx%7===3&&ty>2){ R(x+6,y,4,T,'#0c1d20'); if(ty%3===0) R(x+7,y+6,2,2,'#2a8a7a'); }
-  r2BackDeco(tx,ty,x,y,z,P);
+  backExt(tx,ty,x,y,z,P);
   if(LVL.vent&&tx>=LVL.vent[0]&&tx<=LVL.vent[1]&&ty===14){ R(x,y,T,T,'#14181b'); R(x,y+2,T,1,'#22282c'); R(x,y+13,T,1,'#0c0f11'); if(tx%3===0) R(x+7,y,2,T,'#1b2024'); }
 }
 function drawTile(tx,ty){
   const ch=map[ty][tx],x=tx*T,y=ty*T,P=TP(tx),z=zoneAt(tx);
-  if(r2Tile(tx,ty,ch,x,y,P,z)) return;
+  if(tileExt(tx,ty,ch,x,y,P,z)) return;
   if(ch==='#'&&P.rock){
     R(x,y,T,T,P.s);
     for(let i=0;i<3;i++){ const a=hash(tx*5+i,ty*3), b=hash(ty*7+i,tx); R(x+Math.floor(a*13),y+Math.floor(b*13),2+(i&1),1,P.sd); }

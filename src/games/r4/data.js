@@ -26,7 +26,7 @@ const SKY4={
 };
 addUnique(SKIES,{plnight:SKY4.night,pldusk:SKY4.dusk,plpano:SKY4.pano,plkail:SKY4.kail,plbeyond:SKY4.beyond},'SKIES');
 // ---------- плочки ----------
-TILE_HOOKS.push(function(tx,ty,ch,x,y,P,z){
+defTile(function(tx,ty,ch,x,y,P,z){
   if(ch==='1'||ch==='2'||ch==='3'){ if(!P.sky) drawBack(tx,ty); return true; }   // тоновите плочки се рисуват всеки кадър (mech2)
   if(ch!=='#') return false;
   const top=!isS(tx,ty-1);
@@ -47,7 +47,7 @@ TILE_HOOKS.push(function(tx,ty,ch,x,y,P,z){
   return false;
 });
 // ---------- фон (вътрешни теми) ----------
-BACK_HOOKS.push(function(tx,ty,x,y,z,P){
+defBack(function(tx,ty,x,y,z,P){
   if(P.plteatr){ R(x,y,T,T,'#2a0a0e'); const f=(tx*T+ty*3)%12; if(f<3) R(x+f,y,2,T,'#3e1016'); if(f>8) R(x+f-8,y,1,T,'#1a0508');
     if(ty===2) R(x,y+4,T,6,'#6a1a20'); if(ty===2&&tx%3===0) R(x+2,y+9,12,4,'#8a2a2a'); if(ty===3&&tx%6===2) R(x+6,y,4,6,'#c8a050'); return true; }
   if(P.plcave){ R(x,y,T,T,P.wall); for(let i=0;i<3;i++){ const a=hash(tx*5+i,ty*7), b=hash(ty*9+i,tx*3); R(x+Math.floor(a*13),y+Math.floor(b*13),3,2,i%2?P.panel:P.hi); }

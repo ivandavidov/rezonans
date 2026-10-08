@@ -14,8 +14,8 @@ const SV2={
 const SV2_EARLY=['sea','town','dune'], SV2_MID=['shrine','b70','gear','gas'], SV2_LATE=['ruin','necro','source'];
 const SV2_BOSS={deep:[4,'sea'],breach:[8,'town'],stone:[12,'shrine'],swarm:[15,'gear'],storm:[17,'gas'],maker:[22,'source']};
 addUnique(SV_THEMES,SV2,'SV_THEMES'); for(const k in SV2) addUnique(THEME_NAME,{[k]:SV2[k].name},'THEME_NAME');
-Object.assign(MUT_NAME,{zerog:'Безтегловност'});
-Object.assign(BOSS_NORM,{deep:1,breach:1,stone:1,swarm:1,storm:1,maker:0.85});
+addUnique(MUT_NAME,{zerog:'Безтегловност'},'MUT_NAME');
+defBosses('norm',{deep:1,breach:1,stone:1,swarm:1,storm:1,maker:0.85});
 
 let SV2_PLAN=[], SV2_SEED=-1;
 function sv2Plan(k){

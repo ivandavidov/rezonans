@@ -31,7 +31,7 @@ const SKY6={
 };
 addUnique(SKIES,{accity:SKY6.city,acdream:SKY6.dream,acdreamB:SKY6.dreamB,acrhod:SKY6.rhod,acrdusk:SKY6.rdusk,acstars:SKY6.stars},'SKIES');
 // ---------- плочки ----------
-TILE_HOOKS.push(function(tx,ty,ch,x,y,P,z){
+defTile(function(tx,ty,ch,x,y,P,z){
   if(ch!=='#') return false;
   const top=!isS(tx,ty-1);
   if(P.acsof){ if(ty>=15){ R(x,y,T,T,'#2e3036'); if(ty===15){ R(x,y,T,2,'#5a5e66'); if(tx%4===0) R(x+2,y+6,10,1,'#e8e0a0'); } return true; }
@@ -48,7 +48,7 @@ TILE_HOOKS.push(function(tx,ty,ch,x,y,P,z){
   if(P.acship){ R(x,y,T,T,P.s); R(x,y,T,1,'#3a4270'); R(x+15,y,1,T,'#141830'); if((tx*7+ty*3)%11===0){ R(x+4,y+4,8,2,'#8ab4ff'); R(x+7,y+6,2,6,'#8ab4ff'); } if(top){ R(x,y,T,2,'#8ab4ff'); R(x,y+2,T,1,'#2a3460'); } return true; }
   return false;
 });
-BACK_HOOKS.push(function(tx,ty,x,y,z,P){
+defBack(function(tx,ty,x,y,z,P){
   if(P.achome){ R(x,y,T,T,ty>=10?'#5a4a5a':'#c8b89a'); if(ty===10) R(x,y,T,2,'#3a2e3a'); if(ty<10&&ty%3===0&&tx%2) R(x,y+8,T,1,'#b8a888');
     if(ty===5&&tx%12===3){ R(x,y,22,16,'#5a3a1e'); R(x+2,y+2,18,12,'#e8d8b8'); R(x+5,y+5,4,4,'#c86a4a'); R(x+12,y+4,5,6,'#4a8aca'); } if(ty===4&&tx%12===9){ R(x,y,14,18,'#2a2a3a'); R(x+2,y+2,10,14,'#0a1a3a'); } return true; }
   if(P.accave){ R(x,y,T,T,P.wall); for(let i=0;i<3;i++){ const a=hash(tx*5+i,ty*7), b=hash(ty*9+i,tx*3); R(x+Math.floor(a*13),y+Math.floor(b*13),3,2,i%2?P.panel:P.hi); } return true; }

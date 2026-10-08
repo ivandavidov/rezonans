@@ -5,11 +5,10 @@
      ['GOTO', tx,row,{to:[tx,row], label}]                     — телепорт (многократно)
      ['BREAK',tx,row,{r:14, t:4, cd:6}]                        — замразява враговете наоколо (e.stunT)
      ['RUN',  tx,row,{fn, cd}]                                 — действие на конкретното ниво
-   row е редът, на който стои играчът (като при spawns). Босовете могат да реагират с R2B_CMD[тип](курсор)
+   row е редът, на който стои играчът (като при spawns). Босовете могат да реагират с onCmd(курсор)
    и да добавят свои курсори с addCursor(...).
    Касета (LVL.tape={x0, speed, delay, label, doneMsg}): нивото се „зарежда“ отляво надясно — колоните зад границата са празни. */
 let CURS=[], TAPE=null;
-const R2B_CMD={};
 function addCursor(cmd,tx,row,o={}){ const c={cmd,tx,row,o,done:false,cd:0,flash:0}; CURS.push(c); return c; }
 function mech5Load(){ CURS=[]; TAPE=null; if(!LVL) return; for(const [cmd,tx,row,o] of (LVL.cursors||[])) addCursor(cmd,tx,row,Object.assign({},o||{}));
   if(LVL.tape) tapeInit(LVL.tape); }
@@ -33,7 +32,7 @@ function runCursor(c){
   else if(c.cmd==='RUN'){ c.cd=o.cd||1; if(o.once) c.done=true; }
   if(o.fn) o.fn(c);
   if(o.msg) showMsg(o.msg,2);
-  if(boss&&!boss.dead&&R2B_CMD[boss.type]) R2B_CMD[boss.type](c);
+  if(boss&&!boss.dead&&(BOSSES[boss.type]||{}).onCmd) BOSSES[boss.type].onCmd(c);
   cursorBeep(true);
 }
 function mech5Update(dt){
