@@ -32,13 +32,14 @@ kbd{display:inline-block;min-width:1.6em;padding:1px 6px;margin-right:4px;border
 .acts{grid-template-columns:repeat(4,56px)}
 .touch button{font:600 13px var(--mono);color:var(--amber);background:#16120a;border:1px solid #5a4520;border-radius:10px;touch-action:none;-webkit-tap-highlight-color:transparent}
 .touch button:active,.touch button.on{background:#3a2a0e}
-.acts button{height:56px;border-radius:50%}
+.acts button{height:56px;border-radius:50%;grid-row:2}.acts .esc{grid-row:1;grid-column:1/-1;justify-self:end;height:30px;padding:0 12px;border-radius:10px;border-style:dashed;font-size:11px}
 .pad .am,.pad .as{grid-row:1;width:72%;height:72%;align-self:start;font-size:11px;border-style:dashed}.pad .am{grid-column:1;justify-self:start}.pad .as{grid-column:3;justify-self:end}.touch button.off{opacity:.35}
 .pad .u{grid-column:2;grid-row:1}.pad .l{grid-column:1;grid-row:2}.pad .d{grid-column:2;grid-row:2}.pad .r{grid-column:3;grid-row:2}
 body.has-e .acts{grid-template-columns:repeat(5,56px)}
 
 @media (pointer:coarse){.touch{display:flex}.keys{display:none}}
-@media (max-width:540px){.touch{--u:min(56px,calc((100vw - 68px)/5))}body.has-e .touch{--u:min(56px,calc((100vw - 76px)/6))}.pad{grid-template-columns:repeat(3,var(--u));grid-template-rows:repeat(2,var(--u))}.acts,body.has-e .acts{grid-template-columns:repeat(2,var(--u));grid-template-rows:repeat(2,var(--u))}body.has-e .acts{grid-template-columns:repeat(3,var(--u))}.acts button{height:var(--u)}.acts [data-k=swap]{grid-area:1/1}.acts [data-k=crouch]{grid-area:1/2}.acts [data-k=jump]{grid-area:2/1}.acts [data-k=fire]{grid-area:2/2}body.has-e .acts [data-k=era]{grid-area:1/3}body.has-e .acts [data-k=jump]{grid-area:2/2}body.has-e .acts [data-k=fire]{grid-area:2/3}}
+@media (max-width:540px){.touch{--u:min(56px,calc((100vw - 68px)/5))}body.has-e .touch{--u:min(56px,calc((100vw - 76px)/6))}.pad{grid-template-columns:repeat(3,var(--u));grid-template-rows:repeat(2,var(--u))}.acts,body.has-e .acts{grid-template-columns:repeat(2,var(--u));grid-template-rows:auto repeat(2,var(--u))}body.has-e .acts{grid-template-columns:repeat(3,var(--u))}.acts button{height:var(--u)}.acts [data-k=swap]{grid-area:2/1}.acts [data-k=crouch]{grid-area:2/2}.acts [data-k=jump]{grid-area:3/1}.acts [data-k=fire]{grid-area:3/2}body.has-e .acts [data-k=era]{grid-area:2/3}body.has-e .acts [data-k=jump]{grid-area:3/2}body.has-e .acts [data-k=fire]{grid-area:3/3}}
+@media (pointer:coarse) and (orientation:landscape){.wrap{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"pad screen acts";align-items:center;gap:12px;padding:12px;height:100%}.touch{display:contents;--u:clamp(40px,calc((45vw - 72px)/5),56px)}.screen{grid-area:screen;justify-self:center;width:min(100%,calc((100vh - 24px)*1.7647))}.pad{grid-area:pad;grid-template-columns:repeat(3,var(--u));grid-template-rows:repeat(2,var(--u))}.pad,.acts{user-select:none;-webkit-user-select:none;touch-action:none}.acts,body.has-e .acts{grid-area:acts;grid-template-columns:repeat(2,var(--u));grid-template-rows:auto repeat(2,var(--u))}body.has-e .acts{grid-template-rows:auto repeat(3,var(--u))}.acts button{height:var(--u)}.acts [data-k=swap]{grid-area:2/1}.acts [data-k=crouch]{grid-area:2/2}.acts [data-k=jump]{grid-area:3/1}.acts [data-k=fire]{grid-area:3/2}body.has-e .acts [data-k=era]{grid-area:3/2}body.has-e .acts [data-k=jump]{grid-area:4/1}body.has-e .acts [data-k=fire]{grid-area:4/2}}
 </style>
 <style>html,body{margin:0}</style>
 </head>
@@ -64,7 +65,7 @@ body.has-e .acts{grid-template-columns:repeat(5,56px)}
       <button class="am" id="bmus" data-a="mus" aria-label="музика">♪</button><button class="u" data-k="up">▲</button><button class="as" id="bsfx" data-a="sfx" aria-label="ефекти">FX</button><button class="l" data-k="left">◀</button><button class="d" data-k="down">▼</button><button class="r" data-k="right">▶</button>
     </div>
     <div class="acts">
-      <button data-k="swap">Q<br>оръж.</button><button data-k="crouch">C<br>клек</button><button data-k="jump">X<br>скок</button><button data-k="fire">Z<br>огън</button><button data-k="era" id="ebtn" style="display:none">E</button>
+      <button class="esc" data-k="esc" aria-label="пауза / назад">Esc · пауза</button><button data-k="swap">Q<br>оръж.</button><button data-k="crouch">C<br>клек</button><button data-k="jump">X<br>скок</button><button data-k="fire">Z<br>огън</button><button data-k="era" id="ebtn" style="display:none">E</button>
     </div>
   </div>
 </div>
