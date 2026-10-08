@@ -1,0 +1,21 @@
+/* ================= РЕЗОНАНС 4 · ОТВЪД — описание на играта ================= */
+registerGame({
+  id:'r4', order:4, title:'РЕЗОНАНС 4', subtitle:'Отвъд', name:'РЕЗОНАНС 4', engine:2, key:'rz4',
+  blurb:'Четвъртата част — „Резонанс 4: Отвъд“. Плевен, петдесет години след първия опит на „Камертон“.',
+  desc:{intro:'Нощта, в която платното в Панорамата започна да диша — началото на историята.',
+        training:'Под Летния театър в Кайлъка: застинало време, сонар, тонове и спомени.',
+        campaign:'Плевен, юни 2027 г. Пет глави, 20 епизода, пет боса и три края.',
+        survival:'Безкрайни сектори, генерирани наново при всяко начало.'},
+  controls:'← → движение · Z стрелба · X скок · E тон / сонар · ↑ лост · P / Esc пауза',
+  levels:LEVELS4, chapters:CH4, radioWho:'Д-Р ГАНЧЕВА',
+  intro:startR4Intro, training:startR4Training, introUpd:updR4Intro, introRender:renderR4Intro,
+  drawLogo:r4Logo, renderWin:renderWin4, postFx:r4PostFx, epsExtra:r4EpsExtra,
+  svPlan:sv4Plan, svBoss:SV4_BOSS, svFallback:'plcity',
+  flashlight:true,
+  accent:'#b48cff', accentRgb:'180,140,255', accent2:'#ffe6a0', font:'"Exo 2","Russo One",sans-serif', textCol:'#e4d4ff', dimCol:'#8a7aa0',
+  suit:{suit:'#4a3a6a',suitD:'#2e2244',plate:'#2e2a36',plateH:'#4e4860',dark:'#121016',helm:'#f4f0fa'},
+  glitch:['rgba(255,208,74,0.5)','rgba(90,210,255,0.45)','#f4f0fa'], hintCols:['#ffe6a0','#b48cff'],
+  prog:PROG4, menuMusic:{tr:-9,bpm:76,alien:false}, menuCam:220,
+  eKey:'тон / сонар', eBtn:'E<br>тон',
+  debug:{enterR4:()=>enterGame("r4"),TRAIN4,LEVELS4,startR4Intro,startR4Training,updR4Intro,renderR4Intro,sv4Plan,r4Choose,get ENDING4(){return ENDING4},get RI4(){return RI4},get FREQ(){return FREQ},get STILL(){return STILL},get SONAR(){return SONAR},freqNext,sonarPing,memCount,memTotal},
+});

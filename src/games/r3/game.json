@@ -1,0 +1,10 @@
+{
+  "files": ["data.js","deco.js","levels.js","story.js","bosses.js","intro.js","survival.js","game.js"],
+  "fonts": ["Oswald:wght@500;700"],
+  "fontLoad": ["700 10px \"Oswald\""],
+  "css": [
+    "body.g-r3{--amber:#ff3b4f;--toxic:#ffffff;--frame:#140a0c;--line:#3a1a20}",
+    "body.g-r3 kbd{border-color:#5a1f28;background:#160a0c}",
+    "body.g-r3 .touch button{border-color:#5a1f28;background:#160a0c}"
+  ]
+}

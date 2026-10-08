@@ -1,0 +1,21 @@
+/* ================= РЕЗОНАНС 3 · ЕПИЦЕНТЪР — описание на играта ================= */
+registerGame({
+  id:'r3', order:3, title:'РЕЗОНАНС 3', subtitle:'Епицентър', name:'РЕЗОНАНС 3', engine:2, key:'rz3',
+  blurb:'Третата част — „Резонанс 3: Епицентър“. Три години по-късно, в изгасналата София.',
+  desc:{intro:'Нощта, в която София угасна — началото на историята.',
+        training:'Полигонът в Горубляне: стелт, терминали, ехо и ритъм.',
+        campaign:'Три години след „Отзвук“. Пет глави, 20 епизода, пет боса и два края.',
+        survival:'Безкрайни сектори, генерирани наново при всяко начало.'},
+  controls:'← → движение · Z стрелба · X скок · ↑ терминал · E ехо-двойник · P / Esc пауза',
+  levels:LEVELS3, chapters:CH3,
+  intro:startR3Intro, training:startR3Training, introUpd:updR3Intro, introRender:renderR3Intro,
+  drawLogo:r3Logo, renderWin:renderWin3, postFx:r3PostFx,
+  svPlan:sv3Plan, svBoss:SV3_BOSS, svFallback:'sofia',
+  echo:true, flashlight:true,
+  accent:'#ff3b4f', accentRgb:'255,59,79', accent2:'#ffb0bc', font:'"Oswald","Russo One",sans-serif', textCol:'#e8b8c0', dimCol:'#9a7a80',
+  suit:{suit:'#7a2430',suitD:'#4e141c',plate:'#2a2a2e',plateH:'#4a4a52',dark:'#101012',helm:'#eeeef0'},
+  glitch:['rgba(80,200,255,0.55)','rgba(255,80,200,0.45)','#e8fbff'], hintCols:['#c8fff8','#4fe3d6'],
+  prog:PROG3, menuMusic:{tr:-7,bpm:84,alien:false}, menuCam:220,
+  eKey:'ехо-двойник', eBtn:'E<br>ехо',
+  debug:{enterR3:()=>enterGame('r3'),LEVELS3,startR3Intro,startR3Training,updR3Intro,renderR3Intro,sv3Plan,r3Choose,get ENDING(){return ENDING},get RI3(){return RI3}},
+});

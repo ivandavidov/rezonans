@@ -1,0 +1,10 @@
+{
+  "files": ["data.js","deco.js","levels_c12.js","levels_c345.js","bosses.js","survival.js","intro.js","screens.js","game.js"],
+  "fonts": ["Unbounded:wght@500;700"],
+  "fontLoad": ["10px \"Unbounded\""],
+  "css": [
+    "body.g-r2{--amber:#4fe3d6;--toxic:#ff6ad5;--frame:#0c1a1e;--line:#1f3a40}",
+    "body.g-r2 kbd{border-color:#1f5a55;background:#0a1615}",
+    "body.g-r2 .touch button{border-color:#1f5a55;background:#0a1615}"
+  ]
+}

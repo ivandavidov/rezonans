@@ -1,0 +1,10 @@
+{
+  "files": ["data.js","deco.js","levels.js","story.js","bosses.js","intro.js","survival.js","game.js"],
+  "fonts": ["Pixelify Sans:wght@500;700"],
+  "fontLoad": ["700 10px \"Pixelify Sans\""],
+  "css": [
+    "body.g-r7{--amber:#3aff5a;--toxic:#ffd84a;--frame:#020a04;--line:#14401c}",
+    "body.g-r7 kbd{border-color:#2a6a34;background:#041006}",
+    "body.g-r7 .touch button{border-color:#2a6a34;background:#041006}"
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "files": ["data.js","deco.js","levels.js","story.js","bosses.js","intro.js","survival.js","game.js"],
+  "fonts": ["Comfortaa:wght@500;700"],
+  "fontLoad": ["700 10px \"Comfortaa\""],
+  "css": [
+    "body.g-r5{--amber:#3fd0a0;--toxic:#ffcf6a;--frame:#0e1612;--line:#24402e}",
+    "body.g-r5 kbd{border-color:#2a5a46;background:#0c1612}",
+    "body.g-r5 .touch button{border-color:#2a5a46;background:#0c1612}"
+  ]
+}

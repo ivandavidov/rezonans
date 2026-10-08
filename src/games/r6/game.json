@@ -1,0 +1,10 @@
+{
+  "files": ["data.js","deco.js","levels.js","story.js","bosses.js","intro.js","survival.js","game.js"],
+  "fonts": ["Philosopher:wght@400;700"],
+  "fontLoad": ["700 10px \"Philosopher\""],
+  "css": [
+    "body.g-r6{--amber:#e8c25a;--toxic:#b8a0ff;--frame:#120e1c;--line:#3a2e4a}",
+    "body.g-r6 kbd{border-color:#5a4a6a;background:#140e1c}",
+    "body.g-r6 .touch button{border-color:#5a4a6a;background:#140e1c}"
+  ]
+}
