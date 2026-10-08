@@ -6,7 +6,8 @@
   python3 src/build.py --out x.html …  → друго име на изхода
 
 Изходът е самостоятелен HTML документ (doctype, <head>, <body>) — готов за отваряне
-в браузър и за публикуване (напр. GitHub Pages от папка docs/).
+в браузър и за публикуване (напр. GitHub Pages от папка docs/). До него се записват
+иконите за начален екран (icon.py) и manifest.webmanifest (Android: инсталиране като приложение).
 
 Слоеве:
   base/rezonans_v21.html  оригиналният двигател и първата част (не се пипа на ръка)
@@ -271,6 +272,12 @@ doc=f'''<!doctype html>
 <meta name="description" content="Резонанс — поредица ретро екшън игри, които се играят направо в браузъра.">
 <meta name="theme-color" content="#080b0d">
 <link rel="icon" href="data:image/svg+xml,{quote(icon)}">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-title" content="Резонанс">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 {head}
 <style>html,body{{margin:0}}</style>
 </head>
@@ -281,4 +288,12 @@ doc=f'''<!doctype html>
 '''
 os.makedirs(os.path.dirname(os.path.abspath(out)),exist_ok=True)
 open(out,'w',encoding='utf-8').write(doc)
+# начален екран — до HTML файла: иконите (iPhone: apple-touch-icon; Android: icon-*.png) и manifest-ът за Android
+sys.dont_write_bytecode=True; import icon; odir=os.path.dirname(os.path.abspath(out)); icon.write_all(odir)
+man=json.dumps({'name':'Резонанс','short_name':'Резонанс','description':'Поредица ретро екшън игри, които се играят направо в браузъра.',
+  'lang':'bg','id':'./','start_url':'./','scope':'./','display':'fullscreen','background_color':'#080b0d','theme_color':'#080b0d','categories':['games'],
+  'icons':[{'src':f'icon-{n}.png','sizes':f'{n}x{n}','type':'image/png','purpose':'any'} for n in (192,512)]
+        +[{'src':f'icon-maskable-{n}.png','sizes':f'{n}x{n}','type':'image/png','purpose':'maskable'} for n in (192,512)]},ensure_ascii=False,indent=1)+'\n'
+mp=os.path.join(odir,'manifest.webmanifest')
+if not os.path.exists(mp) or open(mp,encoding='utf-8').read()!=man: open(mp,'w',encoding='utf-8').write(man)
 print('built', out, len(doc), 'games:', ', '.join(g for g,_ in games))

@@ -3,6 +3,7 @@
 ```
 src/
   build.py              сборка → docs/index.html (един самостоятелен HTML документ)
+  icon.py               иконите за начален екран → docs/ (iPhone 180, Android 192/512 + maskable), без зависимости
   base/rezonans_v21.html оригиналният двигател + първата част
   engine/               общ код за всички части
     series.js           регистър на игрите, еднаквото меню, навигация с Esc

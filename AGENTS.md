@@ -8,12 +8,14 @@
 python3 src/build.py
 ```
 Изходът е `docs/index.html` — един самостоятелен HTML документ, който GitHub Pages публикува от `docs/`.
+До него сборката записва иконите за начален екран (`apple-touch-icon.png` за iPhone, `icon-*.png` за Android —
+рисуват се от `src/icon.py`) и `manifest.webmanifest` (Android: инсталиране като приложение).
 За проба с част от игрите: `python3 src/build.py r1 r3 --out /tmp/proba.html`.
 По подразбиране (`games/series.json`) се публикува само `r1`; всички части: `python3 src/build.py r1 r2 r3 r4 r5 r6 r7`.
 
 ## Какво не се пипа на ръка
-- **`docs/index.html`** — генерира се. Всяка промяна се прави в `src/` и се пуска сборката.
-  Пресглобеният файл се commit-ва заедно с промените в `src/`.
+- **`docs/index.html`**, иконите и **`docs/manifest.webmanifest`** — генерират се. Всяка промяна се прави в `src/` и се пуска сборката.
+  Пресглобените файлове се commit-ват заедно с промените в `src/`.
 - **`src/base/rezonans_v21.html`** — оригиналният двигател. Промени в него се правят като
   точкови замени `rep(старо, ново)` в `build.py`, не в самия файл.
 - `docs/.nojekyll` трябва да остане (иначе GitHub Pages прекарва файла през Jekyll).
