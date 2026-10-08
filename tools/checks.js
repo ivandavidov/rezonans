@@ -1,25 +1,37 @@
-/* Проверки на „Резонанс“ в браузъра — масови сканирания на „Оцеляване“ (r1) и симулация на игра.
-   Предпазна мрежа при промени по двигателя/генератора: числата трябва да останат същите (или по-добри).
+/* Проверки на „Резонанс“ — предпазна мрежа при промени по двигателя, генератора и частите.
+   Вървят върху самата сборка (window.__rz); куката на валидатора (window.__svdbg) е винаги в генераторите.
 
-   1. python3 src/build.py r1 --probe --out docs/_proba.html      (--probe: валидаторът се вижда за `reach`)
-      cp tools/checks.js docs/_checks.js
-   2. локален сървър (python3 -m http.server 8765 -d docs, или „docs“ от .claude/launch.json) → /_proba.html
-   3. в конзолата:  await import('./_checks.js')
-                     rzChecks.run('placement', {seeds:20})      // връща веднага; резултатът — в rzChecks.result
-   4. накрая изтрий docs/_proba.html и docs/_checks.js (не се commit-ват)
+   В браузъра (еталонът за Chrome):
+     1. сървър от корена на проекта (python3 -m http.server 8766, или „repo“ от .claude/launch.json) → /docs/index.html
+        (за проба с всички части: python3 src/build.py r1 r2 r3 r4 r5 r6 r7 --out docs/_proba.html → /docs/_proba.html)
+     2. в конзолата:  await import('/tools/checks.js')
+                      rzChecks.run('baseline', {game:'r2'})     // връща веднага; резултатът — в rzChecks.result
+   Без браузър (Node, само за разработка):  node tools/run.js docs/index.html baseline '{"game":"r1"}'  · виж tools/run.js
+   Пробните файлове в docs/ не се commit-ват.
 
-   Проверки (по подразбиране: 20 семена × сектори 1–40, трудност лесно и трудно):
+   Проверки (оцеляването: 20 семена × сектори 1–40, трудност лесно и трудно):
+     baseline  — отпечатък на генерирането: семе → тема, ширина, брой врагове/предмети; отделно хеш на терена (картите)
+                 и на населението (spawns). Населението зависи от JS двигателя (sort със случаен компаратор) — A/B в една среда.
      placement — врагове/предмети в стена или врата; на дъното на яма до киселина (очаквано: 0 / 0)
-     reach     — недостижими платформи и предмети на недостижимо място по валидатора на генератора (иска --probe; 0 / 0)
-     acidSim   — героят минава през 40 сектора с киселина, враговете се движат; живи врагове в киселина (0)
-     baseline  — отпечатък на генерирането: семе → тема, ширина, брой врагове/предмети (за сравнение преди/след)
-   Инструментът ползва window.__rz (genLevel, loadLevel, update, map, enemies, pickups, solidAt, groundY …). */
+     reach     — недостижими платформи и предмети по валидатора на генератора (0 / 0). Арените, копирани от кампанията
+                 (продълженията), нямат данни от валидатора и се прескачат; предметите под вода — също (стигат се с плуване).
+     acidSim   — героят минава през 40 сектора с киселина (r1), враговете се движат; живи врагове в киселина (0)
+     smoke     — за всяка част: меню, интро, тренировка, всеки епизод (+ старт на боса), сектори 1 и 5 — с програмиран вход и
+                 семенен Math.random. Хваща грешки и дава отпечатък на сценарий („златен образец“): при чисто преструктуриране
+                 трябва да остане същият. Записите в localStorage се възстановяват след проверката. Пуска се на току-що
+                 заредена страница (в Node: tools/run.js го прави сам) — описанията на нивата още се мутират по време на игра. */
 const T = 16, z = () => window.__rz;
 const tile = (x, y) => { const r = z().map[y]; return r ? r[x] : '#'; };
 const pause = () => new Promise(r => setTimeout(r, 0));
+const hstr = t => { let h = 0; for (const c of t) h = (h * 31 + c.charCodeAt(0)) | 0; return (h >>> 0).toString(36); };
+const hnum = t => { let h = 0; for (const c of t) h = (h * 31 + c.charCodeAt(0)) | 0; return h >>> 0; };
+function mkRng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 let probe = null; window.__svdbg = (g, V, cols) => { probe = { g: g.map(r => r.slice()), V, cols }; };
 const inAcid = e => { for (let y = Math.floor(e.y / T); y <= Math.floor((e.y + e.h - 1) / T); y++) for (let x = Math.floor(e.x / T); x <= Math.floor((e.x + e.w - 1) / T); x++) if (tile(x, y) === '~') return true; return false; };
 const pitFloor = (x, feet) => [x - 1, x + 1].some(xx => tile(xx, feet - 1) === '~' || tile(xx, feet - 2) === '~');
+// записите на играча: проверките, които пипат localStorage, ги възстановяват
+const lsSnap = () => { const o = {}; try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); o[k] = localStorage.getItem(k); } } catch (e) {} return o; };
+const lsRestore = o => { try { const now = []; for (let i = 0; i < localStorage.length; i++) now.push(localStorage.key(i)); for (const k of now) if (!(k in o)) localStorage.removeItem(k); for (const k in o) localStorage.setItem(k, o[k]); } catch (e) {} };
 
 async function* sectors({ game = 'r1', seeds = 20, from = 1, ks = 40, dis = [0, 2] } = {}) {
   z().enterGame(game, 2); let n = 0;
@@ -32,6 +44,7 @@ async function* sectors({ game = 'r1', seeds = 20, from = 1, ks = 40, dis = [0, 
   z().toMenu(2);
 }
 
+const SM_KEYS = ['left', 'right', 'up', 'down', 'fire', 'jump', 'crouch', 'swap', 'era', 'enter', 'esc', 'pause'];
 const C = {
   async placement(o) {
     const r = { сектори: 0, 'резервен генератор': 0, врагове: 0, предмети: 0, 'в стена/врата': 0, 'на дъното на яма с киселина': 0, примери: [] };
@@ -46,14 +59,16 @@ const C = {
     return r;
   },
   async reach(o) {
-    const r = { сектори: 0, платформи: 0, 'недостижими платформи': 0, предмети: 0, 'предмети на недостижимо място': 0, примери: [] };
+    const r = { сектори: 0, платформи: 0, 'недостижими платформи': 0, предмети: 0, 'предмети на недостижимо място': 0, 'предмети под вода': 0, 'арени от кампанията': 0, примери: [] };
     for await (const { s, k, di, probe: P } of sectors(o)) {
-      if (!P) throw new Error('няма данни от валидатора — сглоби пробата с --probe');
+      if (!P) { r['арени от кампанията']++; continue; }
       const { g, V, cols } = P; r.сектори++;
       for (let y = 1; y < 17; y++) { let x = 0; while (x < cols) { if (g[y][x] !== '-') { x++; continue; } const a = x; while (x < cols && g[y][x] === '-') x++;
         r.платформи++; let ok = false, cand = false; for (let xx = a; xx < x; xx++) { const id = y * cols + xx; if (V.kind[id]) cand = true; if (V.R[id]) ok = true; }
         if (cand && !ok) { r['недостижими платформи']++; if (r.примери.length < 10) r.примери.push({ s, k, di, ред: y, от: a, до: x - 1 }); } } }
-      for (const p of z().pickups) { r.предмети++; const tx = Math.floor((p.x + 6) / T), f = Math.floor((p.y + 10) / T);
+      for (const p of z().pickups) { const tx = Math.floor((p.x + 6) / T), f = Math.floor((p.y + 10) / T);
+        if (tile(tx, f - 1) === 'w') { r['предмети под вода']++; continue; }
+        r.предмети++;
         if (!V.R[f * cols + tx]) { r['предмети на недостижимо място']++; if (r.примери.length < 10) r.примери.push({ s, k, di, предмет: p.type, tx, ред: f }); } } }
     return r;
   },
@@ -73,10 +88,50 @@ const C = {
     z().toMenu(2); return r;
   },
   async baseline(o) {
-    const out = [];
-    for await (const { s, k, di, L } of sectors(o)) out.push([s, k, di, L.themeName, L.cols, z().enemies.length, z().pickups.length].join(','));
+    const out = [], ter = [], pop = [];
+    for await (const { s, k, di, L } of sectors(o)) { out.push([s, k, di, L.themeName, L.cols, z().enemies.length, z().pickups.length].join(','));
+      ter.push(hstr(z().map.map(r => r.join('')).join('|'))); pop.push(hstr(L.spawns.map(q => q.join(':')).join(';'))); }
     let h = 0; for (const c of out.join('\n')) h = (h * 31 + c.charCodeAt(0)) | 0;
-    return { сектори: out.length, отпечатък: (h >>> 0).toString(16), първите: out.slice(0, 5) };
+    return { сектори: out.length, отпечатък: (h >>> 0).toString(16), терен: hstr(ter.join(',')), население: hstr(pop.join(',')), първите: out.slice(0, 5) };
+  },
+  async smoke({ games = null, frames = 900, boss = 300, intro = 480, training = 900, surv = 600, sectors = [0, 4], seed = 1 } = {}) {
+    const Z = z(), res = { части: {}, грешки: [] }, saved = lsSnap(), raf = window.requestAnimationFrame, rnd0 = Math.random, di0 = Z.DI;
+    let t = -1e6, ty = performance.now(), samples = [];   // синтетичен часовник: първият кадър е винаги с dt=0, после по 1/60 s
+    window.requestAnimationFrame = () => 0;           // истинският цикъл спира; кадрите се движат от проверката
+    await new Promise(r => setTimeout(r, 100));       // висящ кадър на истинския цикъл (в браузъра) минава преди сценариите
+    const snap = () => { const p = Z.player, b = Z.boss, E = Z.enemies || [];
+      return [Z.state, Z.LI, p ? Math.round(p.x) : -1, p ? Math.round(p.y) : -1, p ? Math.round(p.hp) : -1, p ? Math.round(p.armor || 0) : -1, p ? p.cur : '',
+        E.length, E.filter(e => !e.dead).length, (Z.pickups || []).filter(k => k.taken).length, b ? Math.round(b.hp) : -1, Math.round(Z.cam)].join(','); };
+    const feed = (mode, i) => { const on = new Set();
+      if (mode !== 'none') { on.add(i % 300 >= 200 && i % 300 < 230 ? 'left' : 'right'); if (i % 40 < 6) on.add('jump');
+        if (mode === 'play') { if (i % 24 < 12) on.add('fire'); if (i % 90 < 10) on.add('up'); if (i % 150 >= 75 && i % 150 < 78) on.add('era'); } }
+      for (const k of SM_KEYS) { const v = on.has(k); if (v && !Z.keys[k]) Z.pressed[k] = true; Z.keys[k] = v; } };
+    const run = async (n, mode) => { for (let i = 0; i < n; i++) { feed(mode, i); t += 1000 / 60; Z.frame(t); if (i % 30 === 29) samples.push(snap());
+      if (Z.state === 'paused') throw new Error('прекъсната: играта мина на пауза — панелът е загубил фокус или е скрит');   // входът не натиска P/Esc
+      if (performance.now() - ty > 150) { await pause(); ty = performance.now(); } } };
+    const scen = async (g, name, fn) => { Math.random = mkRng(hnum(g + ':' + name) ^ seed); samples = []; let err = null; Z.resetClock();   // всеки сценарий — от един и същ часовник
+      try { await fn(); } catch (e) { err = e && e.stack ? e.stack.split('\n').slice(0, 2).join(' | ') : String(e); res.грешки.push({ част: g, сценарий: name, грешка: err }); }
+      for (const k of SM_KEYS) { Z.keys[k] = false; Z.pressed[k] = false; }
+      try { Z.toMenu(2); } catch (e) {}
+      return name + '=' + (err ? 'ГРЕШКА' : hstr(samples.join(';'))); };
+    const boss_ = async () => { if (Z.LVL && Z.LVL.arena && !Z.boss && Z.state === 'play') { Z.startBoss(); await run(boss, 'play'); } };
+    try {
+      for (const g of games || Z.GAMES.map(q => q.id)) {
+        const out = []; Z.setDiff(1); Z.enterGame(g, 2);
+        out.push(await scen(g, 'меню', () => run(60, 'none')));
+        out.push(await scen(g, 'интро', async () => { Z.GAME.intro(true); await run(intro, 'walk'); }));
+        out.push(await scen(g, 'тренировка', async () => { Z.GAME.training(true); await run(training, 'play'); }));
+        for (let i = 0; i < Z.levels.length; i++) out.push(await scen(g, 'епизод ' + (i + 1), async () => { Z.startEpisode(i, false); await run(frames, 'play'); await boss_(); }));
+        for (const k of sectors) out.push(await scen(g, 'сектор ' + (k + 1), async () => {
+          Z.startSurv(k, { k, seed: 17919, score: 0, w: ['wrench', 'pistol'], a: { pistol: [17, 51] }, ar: 0, hp: 100, cur: 'pistol' }); await run(surv, 'play'); await boss_(); }));
+        res.части[g] = { сценарии: out.length, грешки: res.грешки.filter(q => q.част === g).length, отпечатък: hstr(out.join('\n')), подробно: out };
+      }
+    } finally {
+      Math.random = rnd0; lsRestore(saved); window.requestAnimationFrame = raf;
+      try { Z.setDiff(di0); Z.toMenu(2); } catch (e) {}
+      if (raf) raf(tt => Z.frame(tt));               // пуска отново истинския цикъл
+    }
+    return res;
   },
 };
 
@@ -86,7 +141,7 @@ window.rzChecks = {
     if (!C[name]) return 'няма такава проверка: ' + Object.keys(C).join(', ');
     this.result = { running: name }; const t0 = performance.now();
     C[name](opts).then(r => { this.result = { ...r, секунди: Math.round((performance.now() - t0) / 1000) }; })
-      .catch(e => { this.result = { error: String(e) }; });
+      .catch(e => { this.result = { error: String(e && e.stack || e) }; });
     return 'стартирано: ' + name + ' — резултатът ще е в rzChecks.result';
   },
 };

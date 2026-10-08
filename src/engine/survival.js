@@ -178,7 +178,7 @@ function svTry2(k,plan,att,simple){
   for(let y=0;y<ROWS;y++) g[y].length=cols;
   // validation grid: water/updrafts bridged, era walls ignored, era bridges solid
   const gv=g.map(row=>row.slice()); for(const [x0,y0,x1,y1,c] of gvOps) for(let y=Math.max(0,y0);y<=Math.min(16,y1);y++) for(let x=x0;x<=x1;x++) gv[y][x]=c;
-  const V=svValidate(gv,cols,sky,false,lifts,4,exit);
+  const V=svValidate(gv,cols,sky,false,lifts,4,exit); if(window.__svdbg) window.__svdbg(gv,V,cols);
   if(!V) return null;
   const {kind,Q,path,gyEq}=V, RR=V.R, safe=(x,y)=>{ const id=y*cols+x; return kind[id]===1&&!V.virt[id]&&RR[id]&&Q[id]&&!noSpawn.has(x)&&!noSpawn.has(x-1)&&!noSpawn.has(x+1); };
   // checkpoints
