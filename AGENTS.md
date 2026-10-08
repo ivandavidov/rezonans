@@ -16,15 +16,27 @@ python3 src/build.py
 ## Mac / Windows приложения и офлайн сборка
 ```
 python3 src/mac/make_app.py            # dist/Резонанс.app (частите като сайта); --zip → и архив
+python3 src/win/make_exe.py            # dist/Rezonans-windows/ (Rezonans-x64.exe + Rezonans-arm64.exe); --zip → и архив
 ```
+И двата скрипта приемат части като `build.py` (`r1 … r7`).
+
+**Mac**
 - Само Command Line Tools (`swiftc`, `iconutil`, `codesign`), без Xcode; универсално (arm64 + x86_64), macOS 13+, локален подпис.
-- Играта вътре е `python3 src/build.py --offline`: шрифтовете от `src/fonts/` са вградени, без икони/manifest и без връзки навън.
 - Кодът е в `src/mac/` (`main.swift` — прозорец с WKWebView, `make_app.py` — сглобяване). Проверка без ръце:
   `dist/Резонанс.app/Contents/MacOS/Rezonans --selftest [--snapshot снимка.png]` → JSON (шрифтове, записи, JS грешки).
+
+**Windows**
+- Само Go (`brew install go`), без cgo — сглобява се и от Mac; иконата, манифестът и версията се вграждат с go-winres.
+- Кодът е в `src/win/` (`main.go` — прозорец с WebView2, `go.mod`/`go.sum`, `make_exe.py`). Играта е вградена в .exe;
+  при старт се записва в `%LOCALAPPDATA%\Rezonans\game\`, записите са в `%LOCALAPPDATA%\Rezonans\WebView2`.
+- Проверено на Windows (2026-10-08): работи според очакванията. На Mac .exe не може да се пусне — промени в `main.go`
+  трябва да се пробват на Windows: `Rezonans-x64.exe --selftest` → прозорче с JSON и `%LOCALAPPDATA%\Rezonans\selftest.json`.
+- Без подпис: SmartScreen пита веднъж („More info“ → „Run anyway“).
+
+**Общо**
+- Играта и в двете приложения е `python3 src/build.py --offline`: шрифтовете от `src/fonts/` са вградени,
+  без икони/manifest и без връзки навън.
 - Нов шрифт в някой `game.json` → `python3 src/fonts/fetch.py` (тегли от Google Fonts, само кирилица и латиница).
-- Windows: `python3 src/win/make_exe.py` → `dist/Rezonans-windows/` (x64 + arm64 .exe; само Go, без cgo — сглобява се и от Mac).
-  Кодът е в `src/win/` (`main.go` — прозорец с WebView2, `go.mod`/`go.sum`, `make_exe.py`). Тук не може да се пусне —
-  проверка на Windows с `Rezonans-x64.exe --selftest`.
 
 ## Какво не се пипа на ръка
 - **`docs/index.html`**, иконите и **`docs/manifest.webmanifest`** — генерират се. Всяка промяна се прави в `src/` и се пуска сборката.
