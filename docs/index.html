@@ -2951,7 +2951,7 @@ function svTry(k,plan,att,simple){
   for(let y=0;y<ROWS;y++) g[y].length=cols;
   const V=svValidate(g,cols,sky,lowg,lifts,4,exit);
   if(!V) return null;
-  const {kind,R,Q,path,gyEq}=V, safe=(x,y)=>{ const id=y*cols+x; return kind[id]===1&&!V.virt[id]&&R[id]&&Q[id]; };
+  const {kind,R,Q,path,gyEq}=V, safe=(x,y)=>{ const id=y*cols+x; return kind[id]===1&&!V.virt[id]&&R[id]&&Q[id]&&!(y>0&&g[y-1][x]==='D'); };
   // checkpoints
   const cps=[];
   for(const s of segs){ for(let x=s.x;x<s.x+6&&x<cols-3;x++){ const y=gyEq(x); if(y<16&&safe(x,y)&&g[y][x]!=='Z'){ triggers.push({x:x,fn:()=>setCp(x)}); cps.push(x); break; } } }
@@ -3017,7 +3017,8 @@ function svArena(type,d,o){
     else if(type==='hunter'){ A.minX=d+2; A.maxX=d+28; }
     else if(type==='queen'){ A.bx=d+25; }
     else if(type==='titan'){ A.bx=d+23; fixed.push(['rocketsR',d+2,14],['rocketsR',d+27,14]); } }
-  fixed.push(['health',d+2,14,'E'],['battery',d+4,14]); if(k>=10&&!['tank','titan'].includes(type)) fixed.push(['rocketsR',d+2,14],['rocketsR',d+27,14]);
+  const top=x=>{ let y=14; while(y>0&&o.g[y][x]!=='.') y--; return y; };
+  fixed.push(['health',d+2,top(d+2),'E'],['battery',d+4,top(d+4)]); if(k>=10&&!['tank','titan'].includes(type)) fixed.push(['rocketsR',d+2,top(d+2)],['rocketsR',d+27,top(d+27)]);
   A.trigs=[d-2,d+3];
   return A;
 }
@@ -5323,8 +5324,8 @@ function svDiffNote(i){
 /* ================= ДВИГАТЕЛ · ЗВУК: музика и ефекти поотделно =================
    M — целият звук: ако свири каквото и да е, спира всичко; ако всичко е спряно, пуска всичко.
    N — само музиката, B — само ефектите. На тъч екран — бутоните в горните ъгли на кръстачката.
-   Изборът е общ за цялата поредица ('rz.audio'); по подразбиране — само ефекти. */
-let musOn=false, sfxOn=true, audT=-9;
+   Изборът е общ за цялата поредица ('rz.audio'); по подразбиране всичко е спряно (M пуска и двете). */
+let musOn=false, sfxOn=false, audT=-9;
 { const v=store.get('rz.audio',''); if(/^[01]{2}$/.test(v)){ musOn=v[0]==='1'; sfxOn=v[1]==='1'; } }
 function audApply(){
   muted=!musOn&&!sfxOn;
@@ -5425,7 +5426,7 @@ function frame(now){
 loadLevel(0); totals={time:0,shots:0,hits:0,kills:0,deaths:0};
 if(document.fonts&&document.fonts.load){ Promise.all([document.fonts.load('10px "Russo One"'),document.fonts.load('600 10px "IBM Plex Mono"')]).then(()=>{ prerender(); }).catch(()=>{}); }
 document.addEventListener('visibilitychange',()=>{ if(document.hidden&&state==='play'){ state='paused'; if(AC) AC.suspend(); } });
-window.__rz={get SEQ(){return SEQ},get R2(){return SEQ},get R3(){return GAME.id==='r3'},get GAME(){return GAME},GAMES,GHIST,setGame,enterGame,toMenu,menuItems,get gSel(){return gSel},get r2Sel(){return gSel},r2ToTitle:()=>toMenu(2),leaveR2:()=>enterGame(GAMES[0].id),get LEVELS2(){return GLV},hurtEnemy,get ECHO(){return ECHO},get PLATES(){return PLATES},get LIGHTS(){return LIGHTS},get TERMS(){return TERMS},get ALARM(){return ALARM},get NOISE(){return NOISE},get MST(){return MST},get FLOOD(){return FLOOD},get ESC(){return ESC},get CHASE(){return CHASE},get ERA(){return ERA},get FLIP(){return FLIP},get GENS(){return GENS},get LEVERS(){return LEVERS},get SHIFT(){return SHIFT},get ALLIES(){return ALLIES},switchEra,flipWorld,isWater,get pickups(){return pickups},get scientists(){return scientists},get barks(){return barks},startBoss,respawn,get cp(){return cp},hurtBoss,get musOn(){return musOn},get AC(){return AC},get musBus(){return musBus},get sfxBus(){return sfxBus},get sfxOn(){return sfxOn},toggleMute,toggleMus,toggleSfx,svLoad,svSave,svClear,svEnter,svItems,get svSel(){return svSel},get svConf(){return svConf},get DI(){return DI},get survLives(){return survLives},get survSeed(){return survSeed},svValidate,elecOn,startTraining,finishTraining,TRAIN_LVL,get TRN(){return TRN},get msg(){return msg},get grav(){return G},startTram,updTram,get TR(){return TR},completeLevel,get bmiss(){return bmiss},get LI(){return LI},get unlocked(){return unlocked},startSurv,genLevel,get survK(){return survK},get survScore(){return survScore},set survSeed(v){survSeed=v},get LVL(){return LVL},get lifts(){return lifts},get tracks(){return tracks},get trains(){return trains},get gateOpen(){return gateOpen},get rockets(){return rockets},clearPressed,loadLevel,get map(){return map},get LV(){return LV},get player(){return player},get state(){return state},set state(v){state=v},get boss(){return boss},get enemies(){return enemies},get exitPortal(){return exitPortal},get enc(){return enc},update,setDiff(i){DI=i;D=DIFFS[i];},startEpisode,get cam(){return cam},set cam(v){cam=v},render,groundY};
+window.__rz={get SEQ(){return SEQ},get R2(){return SEQ},get R3(){return GAME.id==='r3'},get GAME(){return GAME},GAMES,GHIST,setGame,enterGame,toMenu,menuItems,get gSel(){return gSel},get r2Sel(){return gSel},r2ToTitle:()=>toMenu(2),leaveR2:()=>enterGame(GAMES[0].id),get LEVELS2(){return GLV},hurtEnemy,get ECHO(){return ECHO},get PLATES(){return PLATES},get LIGHTS(){return LIGHTS},get TERMS(){return TERMS},get ALARM(){return ALARM},get NOISE(){return NOISE},get MST(){return MST},get FLOOD(){return FLOOD},get ESC(){return ESC},get CHASE(){return CHASE},get ERA(){return ERA},get FLIP(){return FLIP},get GENS(){return GENS},get LEVERS(){return LEVERS},get SHIFT(){return SHIFT},get ALLIES(){return ALLIES},switchEra,flipWorld,isWater,get pickups(){return pickups},get scientists(){return scientists},get barks(){return barks},solidAt,startBoss,respawn,get cp(){return cp},hurtBoss,get musOn(){return musOn},get AC(){return AC},get musBus(){return musBus},get sfxBus(){return sfxBus},get sfxOn(){return sfxOn},toggleMute,toggleMus,toggleSfx,svLoad,svSave,svClear,svEnter,svItems,get svSel(){return svSel},get svConf(){return svConf},get DI(){return DI},get survLives(){return survLives},get survSeed(){return survSeed},svValidate,elecOn,startTraining,finishTraining,TRAIN_LVL,get TRN(){return TRN},get msg(){return msg},get grav(){return G},startTram,updTram,get TR(){return TR},completeLevel,get bmiss(){return bmiss},get LI(){return LI},get unlocked(){return unlocked},startSurv,genLevel,get survK(){return survK},get survScore(){return survScore},set survSeed(v){survSeed=v},get LVL(){return LVL},get lifts(){return lifts},get tracks(){return tracks},get trains(){return trains},get gateOpen(){return gateOpen},get rockets(){return rockets},clearPressed,loadLevel,get map(){return map},get LV(){return LV},get player(){return player},get state(){return state},set state(v){state=v},get boss(){return boss},get enemies(){return enemies},get exitPortal(){return exitPortal},get enc(){return enc},update,setDiff(i){DI=i;D=DIFFS[i];},startEpisode,get cam(){return cam},set cam(v){cam=v},render,groundY};
 for(const g of GAMES) if(g.debug) Object.defineProperties(window.__rz,Object.getOwnPropertyDescriptors(g.debug));
 requestAnimationFrame(frame);
 })();
