@@ -96,7 +96,7 @@ const C = {
   },
   async smoke({ games = null, frames = 900, boss = 300, intro = 480, training = 900, surv = 600, sectors = [0, 4], seed = 1 } = {}) {
     const Z = z(), res = { части: {}, грешки: [] }, saved = lsSnap(), raf = window.requestAnimationFrame, rnd0 = Math.random, di0 = Z.DI;
-    let t = -1e6, ty = performance.now(), samples = [];   // синтетичен часовник: първият кадър е винаги с dt=0, после по 1/60 s
+    let t = -1048576, ty = performance.now(), samples = [];   // синтетичен часовник: точни стъпки по 1/64 s — dt не зависи от предишните сценарии
     window.requestAnimationFrame = () => 0;           // истинският цикъл спира; кадрите се движат от проверката
     await new Promise(r => setTimeout(r, 100));       // висящ кадър на истинския цикъл (в браузъра) минава преди сценариите
     const snap = () => { const p = Z.player, b = Z.boss, E = Z.enemies || [];
@@ -106,10 +106,10 @@ const C = {
       if (mode !== 'none') { on.add(i % 300 >= 200 && i % 300 < 230 ? 'left' : 'right'); if (i % 40 < 6) on.add('jump');
         if (mode === 'play') { if (i % 24 < 12) on.add('fire'); if (i % 90 < 10) on.add('up'); if (i % 150 >= 75 && i % 150 < 78) on.add('era'); } }
       for (const k of SM_KEYS) { const v = on.has(k); if (v && !Z.keys[k]) Z.pressed[k] = true; Z.keys[k] = v; } };
-    const run = async (n, mode) => { for (let i = 0; i < n; i++) { feed(mode, i); t += 1000 / 60; Z.frame(t); if (i % 30 === 29) samples.push(snap());
+    const run = async (n, mode) => { for (let i = 0; i < n; i++) { feed(mode, i); t += 1000 / 64; Z.frame(t); if (i % 30 === 29) samples.push(snap());
       if (Z.state === 'paused') throw new Error('прекъсната: играта мина на пауза — панелът е загубил фокус или е скрит');   // входът не натиска P/Esc
       if (performance.now() - ty > 150) { await pause(); ty = performance.now(); } } };
-    const scen = async (g, name, fn) => { Math.random = mkRng(hnum(g + ':' + name) ^ seed); samples = []; let err = null; Z.resetClock();   // всеки сценарий — от един и същ часовник
+    const scen = async (g, name, fn) => { Math.random = mkRng(hnum(g + ':' + name) ^ seed); samples = []; let err = null; Z.resetClock(); t -= 1e5;   // всеки сценарий: първият кадър с dt=0 — от един и същ часовник
       try { await fn(); } catch (e) { err = e && e.stack ? e.stack.split('\n').slice(0, 2).join(' | ') : String(e); res.грешки.push({ част: g, сценарий: name, грешка: err }); }
       for (const k of SM_KEYS) { Z.keys[k] = false; Z.pressed[k] = false; }
       try { Z.toMenu(2); } catch (e) {}
