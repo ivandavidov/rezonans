@@ -4,6 +4,7 @@
   python3 src/build.py                 → docs/index.html (игрите от games/series.json)
   python3 src/build.py r1 r3           → само изброените игри (за проба)
   python3 src/build.py --out x.html …  → друго име на изхода
+  python3 src/build.py --probe --out docs/_proba.html … → проба с кука за tools/checks.js (не се публикува)
   python3 src/build.py --offline …     → без връзки навън: шрифтовете (src/fonts/) са вградени, без икони/manifest
                                          (за Mac приложението — src/mac/make_app.py)
 
@@ -29,6 +30,8 @@ args=sys.argv[1:]; out=os.path.join(os.path.dirname(ROOT),'docs','index.html')
 if '--out' in args: i=args.index('--out'); out=args[i+1]; del args[i:i+2]
 offline='--offline' in args
 if offline: args.remove('--offline')
+probe='--probe' in args   # проба за tools/checks.js: валидаторът на оцеляването се вижда през window.__svdbg
+if probe: args.remove('--probe')
 series=args or json.load(open(P('games','series.json')))
 games=[(gid,json.load(open(P('games',gid,'game.json'),encoding='utf-8'))) for gid in series]
 s=open(P('base','rezonans_v21.html'),encoding='utf-8').read()
@@ -238,6 +241,7 @@ rep("  if(WEAP[k]) spawns.push([WEAP[k],8,sy-1]); if(k>=10&&k%5===0) spawns.push
     "  for(let i=spawns.length-1;i>=0;i--){ const [t,x,y]=spawns[i]; if(DIMS[t]||t==='barrel'||t.startsWith('nest')||V.R[(y+1)*cols+x]) continue;\n"
     "    let to=null; for(let d=0;d<=8&&!to;d++) for(const xx of d?[x-d,x+d]:[x]){ if(xx<2||xx>=cols-2) continue; for(let yy=1;yy<ROWS&&!to;yy++) if(safe(xx,yy)&&g[yy][xx]!=='Z'&&g[yy][xx]!=='^') to=[xx,yy]; if(to) break; }\n"
     "    if(to) spawns[i]=[t,to[0],to[1]-1].concat(spawns[i].slice(3)); else spawns.splice(i,1); }")
+if probe: rep("const V=svValidate(g,cols,sky,lowg,lifts,4,exit);","const V=svValidate(g,cols,sky,lowg,lifts,4,exit); if(window.__svdbg) window.__svdbg(g,V,cols);")
 rep("const survBest=(i=DI)=>parseInt(store.get('rz.best'+i,'0'),10)||0;","const survBest=(i=DI)=>parseInt(store.get(KEY('best')+i,'0'),10)||0;")
 rep("const survBestK=(i=DI)=>parseInt(store.get('rz.bestK'+i,'0'),10)||0;","const survBestK=(i=DI)=>parseInt(store.get(KEY('bestK')+i,'0'),10)||0;")
 rep("store.set('rz.best'+DI,score); store.set('rz.bestK'+DI,sector);","store.set(KEY('best')+DI,score); store.set(KEY('bestK')+DI,sector);")

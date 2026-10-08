@@ -79,6 +79,9 @@ python3 src/win/make_exe.py            # dist/Rezonans-windows/ (Rezonans-x64.ex
 2. Конзолата трябва да е без грешки; менюто трябва да показва всички части от `series.json`.
 3. За проверки от конзолата има `window.__rz` (`GAMES`, `GAME`, `state`, `enterGame(id)`, `toMenu()`,
    `startEpisode`, `setDiff`, …); всяка игра може да добави свои полета чрез `debug` в `registerGame`.
+4. Масови проверки на „Оцеляване“ (стени/врати, недостижими места, киселина, отпечатък на генерирането):
+   `tools/checks.js` — пуска се върху проба `python3 src/build.py r1 --probe --out docs/_proba.html`; как — в началото на файла.
+   Очакваните стойности са в `notes/handoff.md` (раздел 4). Пробните файлове в `docs/` не се commit-ват.
 
 ## Стил
 - Код, коментари и текстове в играта — на български, както в съществуващите файлове.
