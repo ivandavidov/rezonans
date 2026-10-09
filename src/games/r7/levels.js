@@ -1,7 +1,6 @@
 /* ================= РЕЗОНАНС 7 · НИВА ================= */
 const mira=t=>{ showMsg(t,0,'МИРА'); if(AC){ osc({type:'square',f:1046,t:0.04,v:0.03}); osc({type:'square',f:1318,t:0.04,v:0.03,when:0.05}); } }, pesho=t=>showMsg(t,0,'ПЕШО');
 const pit7=(F,a,b)=>F(a,15,b,16,'.');
-const segs7=(F,list)=>{ for(const [a,b,t] of list) F(a,t,b,16,'#'); };
 const ARENA7=(F,C,o={})=>{ LB.frame(F,C,{noCeil:!!o.sky}); F(31,12,34,12,'-'); F(47,12,50,12,'-'); if(!o.noMid) F(37,9,44,9,'-'); F(55,o.sky?0:2,55,14,'D'); if(o.sky) F(26,0,26,1,'#'); };
 const LEVELS7=[
 /* ---------- ГЛАВА I · ЗАРЕЖДАНЕ ---------- */

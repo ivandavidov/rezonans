@@ -1872,9 +1872,12 @@ function drawMsgBox(y){
      svFallback, bossMulOne     резервната тема на генератора; босовете с еднаква сила в оцеляването
      accent, accentRgb, accent2, font, suit, glitch, hintCols, prog, menuMusic, menuCam, controls
      eKey / eBtn   надпис за клавиш E (легенда / бутон на тъч екран), echo, flashlight
+     radioWho    кой говори по радиото (radio()); voices — {име: цвят} на говорещите в съобщенията (иначе — цветът на HUD-а)
+     heroName(h) надписът за героя в нивата с двама герои (LVL.hero); sonarName, memLabel — имената на сонара и на спомените
+     epsExtra()  допълнително рисуване в менюто на епизодите
      debug        допълнителни полета за window.__rz (тестове)
-   Менюто на всяка игра е еднакво: ИНТРО · ТРЕНИРОВКА · КАМПАНИЯ · ОЦЕЛЯВАНЕ, а отдолу — връзки към
-   останалите регистрирани игри. Коя игра е включена в сборката решава games/series.json. */
+   Менюто на всяка игра е еднакво: ИНТРО · ТРЕНИРОВКА · КАМПАНИЯ · ОЦЕЛЯВАНЕ (+ ЧИЙТОВЕ, щом се отключат), а отдолу —
+   връзки към останалите регистрирани игри. Коя игра е включена в сборката решава games/series.json. */
 const GAMES=[], GHIST=[];
 let GAME=null, gSel=2;
 function registerGame(g){ if(GAMES.some(o=>o.id===g.id||o.order===g.order)) throw new Error('registerGame: „'+g.id+'“ — id или order вече е зает');
@@ -3501,13 +3504,14 @@ document.querySelectorAll('#touch button[data-a]').forEach(b=>b.addEventListener
 audApply();
 
 /* ================= ДВИГАТЕЛ · ЧИЙТОВЕ =================
-   Отключват се за сесията (нищо не се помни след презареждане) с думата kokoloko — написана на началния екран или в менюто
+   Отключват се за сесията (нищо не се помни след презареждане) с думата CHT_WORD (kokoloko) — написана на началния екран или в менюто
    (чете се физическият клавиш, затова работи и на българска подредба) — или със 7 докосвания на екрана в менюто. Тогава в
    менюто има ред „ЧИЙТОВЕ“, а в паузата ↓ отваря същия екран. Режимите важат до изключване; действията — веднъж, от паузата.
    Записите: ако в нивото (в оцеляването — в цялата игра) е бил включен режим или е ползвано действие, CHT.used пречи на всеки
    запис освен настройките (store.lock): няма отключен епизод, рекорд, „продължи“, спомени и финали. CHT.used тръгва отначало
    при ниво от менюто или нова игра в оцеляването; продълженията го пазят.
    Частите могат да добавят свои с defCheat(id,{name,desc,kind:'mode'|'num'|'act',set(v),run(),ok(),min,max}). */
+const CHT_WORD='kokoloko', CHT_TAPS=7, CHT_TAP_SEC=3;   // думата; колко докосвания в менюто и за колко секунди
 const CHT={open:false,on:{},used:false,from:'gmenu',sel:1,top:0,keys:'',taps:[],rep:0}, CHT_LIST=[];
 const CHT_ITEM={t:'ЧИЙТОВЕ',k:'cheats',d:'Безсмъртие, летене, муниции, отключени нива… С тях в нивото нищо не се записва.'};
 function defCheat(id,o){ if(CHT_LIST.some(c=>c.id===id)) throw new Error('Чийтът „'+id+'“ вече е зададен'); CHT_LIST.push({id,kind:'mode',...o}); }
@@ -3522,9 +3526,9 @@ function chtSet(id,v){ const c=CHT_LIST.find(q=>q.id===id); if(!c||c.kind==='act
   CHT.on[id]=c.kind==='num'?clamp(Math.round(v)||c.min,c.min,c.max):!!v; if(c.set) c.set(CHT.on[id]); if(chtAny()) CHT.used=true; }
 function chtDo(id){ const c=CHT_LIST.find(q=>q.id===id&&q.kind==='act'); if(!c||c.ok&&!c.ok()) return false; CHT.used=true; c.run(); return true; }
 function chtUnlock(){ if(CHT.open) return; CHT.open=true; SFX.menuOk(); const i=menuItems().indexOf(CHT_ITEM); if(state==='title') toMenu(i); else gSel=i; }
-addEventListener('keydown',e=>{ if(e.repeat||!/^Key[A-Z]$/.test(e.code)) return; CHT.keys=(CHT.keys+e.code[3].toLowerCase()).slice(-8);
-  if(CHT.keys==='kokoloko'&&(state==='title'||state==='gmenu')) chtUnlock(); });
-cv.addEventListener('pointerdown',()=>{ if(state!=='gmenu') return; CHT.taps=CHT.taps.filter(t=>titleT-t<3).concat(titleT); if(CHT.taps.length>=7){ CHT.taps=[]; chtUnlock(); } });
+addEventListener('keydown',e=>{ if(e.repeat||!/^Key[A-Z]$/.test(e.code)) return; CHT.keys=(CHT.keys+e.code[3].toLowerCase()).slice(-CHT_WORD.length);
+  if(CHT.keys===CHT_WORD&&(state==='title'||state==='gmenu')) chtUnlock(); });
+cv.addEventListener('pointerdown',()=>{ if(state!=='gmenu') return; CHT.taps=CHT.taps.filter(t=>titleT-t<CHT_TAP_SEC).concat(titleT); if(CHT.taps.length>=CHT_TAPS){ CHT.taps=[]; chtUnlock(); } });
 
 /* ---------- помощници ---------- */
 // летене: без гравитация, стрелките — във всички посоки; през стени — и без сблъсъци (в рамките на нивото)

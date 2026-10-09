@@ -16,7 +16,6 @@ function statue(tx,fy,broken){ const x=tx*T; R(x+2,fy-12,12,12,'#a8946a'); if(!b
 function brazier(tx,fy){ const x=tx*T+4; R(x,fy-14,8,14,'#5a4a3a'); R(x-2,fy-16,12,3,'#8a6a3a'); lightDot(x+4,fy-18,'#ffb050',1); }
 function scaffold(t0,t1,top){ for(let tx=t0;tx<=t1;tx+=3) R(tx*T+7,top*T,2,15*T-top*T,'#8a6a3a'); for(let y=top;y<15;y+=3) R(t0*T,y*T+6,(t1-t0+1)*T,2,'#7a5a2a'); }
 function slogan(tx,ty,t){ drawSign(tx,ty,t,'#ffffff','#a82a2a'); }
-function crystalAt(tx,ty,col){ const x=tx*T+8, y=ty*T+16; lx.fillStyle=col; lx.beginPath(); lx.moveTo(x-4,y); lx.lineTo(x,y-14); lx.lineTo(x+4,y); lx.fill(); lx.fillStyle='rgba(255,255,255,0.4)'; lx.fillRect(x-1,y-11,1,8); lightDot(x,y-6,col,1); }
+function crystalAt(tx,fy,col){ const x=tx*T+8, y=fy; lx.fillStyle=col; lx.beginPath(); lx.moveTo(x-4,y); lx.lineTo(x,y-14); lx.lineTo(x+4,y); lx.fill(); lx.fillStyle='rgba(255,255,255,0.4)'; lx.fillRect(x-1,y-11,1,8); lightDot(x,y-6,col,1); }
 function srcPillar(tx){ const x=tx*T+4; R(x,2*T,8,13*T,'#101024'); R(x+3,2*T,2,13*T,'#3a3a7a'); }
 const SRC_SIGN=(tx,ty,t)=>{ if(!FLIP) drawSign(tx,ty,t,'#dcdcff','#1a1a3a'); };
-function sv2Lamp(tx,fy){ const x=tx*T+7; R(x,fy-46,2,46,'#2a2a30'); R(x-4,fy-48,10,3,'#2a2a30'); R(x-3,fy-45,8,2,'#ffe0a0'); lightDot(x+1,fy-43,'#ffe0a0'); }

@@ -2,6 +2,7 @@
 const gan=t=>{ showMsg(t,0,'Д-Р ГАНЧЕВА'); SFX.radio&&AC&&SFX.radio(0.6,sfxBus); };
 const voice=t=>showMsg(t,0,'ГЛАСЪТ');
 const pit=(F,a,b)=>F(a,15,b,16,'.');
+const R4_TRENCH=[[21,28],[42,50],[66,80],[100,108],[130,146]];   // окопите в „Окопите“ (теренът и декорът)
 const LEVELS4=[
 /* ---------- ГЛАВА I · ГРАДЪТ ---------- */
 {title:'ПЛОЩАДЪТ',cols:170,grav:900,music:MUS4.city,start:4,theme:()=>'plcity',sky:SKY4.dusk,loadout:LOAD4_1,exit:166,
@@ -74,10 +75,10 @@ const LEVELS4=[
  end:['Ехото се разсейва, щом го доближиш. Остава само мирис на барут — и на окосена трева.'],
  memory:'Скобелевият парк, 1976 г. Баща ти записва тишината в окопите. На лентата се чуват гласове. Той изтрива записа.',
  build(F,C){ LB.frame(F,C,{noCeil:true}); F(2,12,C-3,14,'#');
-  for(const [a,b] of [[21,28],[42,50],[66,80],[100,108],[130,146]]) F(a,12,b,14,'.');
+  for(const [a,b] of R4_TRENCH) F(a,12,b,14,'.');
   F(32,10,37,11,'#'); F(56,12,58,16,'.'); F(86,9,96,11,'#'); F(114,10,120,11,'#'); F(152,12,154,16,'.'); F(160,10,168,11,'#'); },
  deco(){ for(const x of [8,30,60,84,111,124,157,176]) plTree(x*T,12*T,0.9+hash(x,3)*0.4); for(const x of [33,88,94,161]) cannon(x,x>=86&&x<=96?9*T:10*T,x%2?1:-1);
-  for(const [a,b] of [[21,28],[42,50],[66,80],[100,108],[130,146]]){ stakes(a-3,a-1,12*T); gabion(a,15*T); gabion(b-1,15*T); }
+  for(const [a,b] of R4_TRENCH){ stakes(a-3,a-1,12*T); gabion(a,15*T); gabion(b-1,15*T); }
   plSign(2,7,'СКОБЕЛЕВ ПАРК-МУЗЕЙ'); drawSign(86,5,'РЕДУТ','#f0dca0','#4a3a20'); },
  spawns:[['shade',25,14],['crab',36,9],['shade',46,14],['flyer',62,7],['shade',72,14],['shade',78,14],['crab',90,8],['shade',104,14],['flyer',124,6],['shade',136,14],['shade',142,14],['crab',164,9],['shade',176,11],
   ['shade',94,8,'H'],['shade',118,9,'H'],

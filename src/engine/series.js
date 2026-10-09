@@ -16,9 +16,12 @@
      svFallback, bossMulOne     резервната тема на генератора; босовете с еднаква сила в оцеляването
      accent, accentRgb, accent2, font, suit, glitch, hintCols, prog, menuMusic, menuCam, controls
      eKey / eBtn   надпис за клавиш E (легенда / бутон на тъч екран), echo, flashlight
+     radioWho    кой говори по радиото (radio()); voices — {име: цвят} на говорещите в съобщенията (иначе — цветът на HUD-а)
+     heroName(h) надписът за героя в нивата с двама герои (LVL.hero); sonarName, memLabel — имената на сонара и на спомените
+     epsExtra()  допълнително рисуване в менюто на епизодите
      debug        допълнителни полета за window.__rz (тестове)
-   Менюто на всяка игра е еднакво: ИНТРО · ТРЕНИРОВКА · КАМПАНИЯ · ОЦЕЛЯВАНЕ, а отдолу — връзки към
-   останалите регистрирани игри. Коя игра е включена в сборката решава games/series.json. */
+   Менюто на всяка игра е еднакво: ИНТРО · ТРЕНИРОВКА · КАМПАНИЯ · ОЦЕЛЯВАНЕ (+ ЧИЙТОВЕ, щом се отключат), а отдолу —
+   връзки към останалите регистрирани игри. Коя игра е включена в сборката решава games/series.json. */
 const GAMES=[], GHIST=[];
 let GAME=null, gSel=2;
 function registerGame(g){ if(GAMES.some(o=>o.id===g.id||o.order===g.order)) throw new Error('registerGame: „'+g.id+'“ — id или order вече е зает');
