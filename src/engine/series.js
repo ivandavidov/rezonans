@@ -11,8 +11,9 @@
      desc:{intro,training,campaign,survival}    текстовете под менюто
      drawLogo()  фон и лого в горната част на менюто (до y≈135)
      renderWin(), postFx()        финалният екран и цветовата обработка
-     svPlan(k), svBoss, svFallback, bossMulOne     оцеляването (общият генератор)
-     svPlan(k), genSector(k)       оцеляването със собствен генератор (r1)
+     svSpec     планът на секторите (виж svPlanBy в engine/survival.js)
+     svBoss, svFallback, bossMulOne     арените (копия от кампанията) и резервната тема на общия генератор
+     genSector(k)  собствен генератор на секторите (r1)
      accent, accentRgb, accent2, font, suit, glitch, hintCols, prog, menuMusic, menuCam, controls
      eKey / eBtn   надпис за клавиш E (легенда / бутон на тъч екран), echo, flashlight
      debug        допълнителни полета за window.__rz (тестове)

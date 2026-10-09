@@ -12,11 +12,11 @@ registerGame({
   heroName:()=>'♦ ПЕШО',
   intro:startR7Intro, training:startR7Training, introUpd:updR7Intro, introRender:renderR7Intro,
   drawLogo:r7Logo, renderWin:renderWin7, postFx:r7PostFx, epsExtra:r7EpsExtra,
-  svPlan:sv7Plan, svBoss:SV7_BOSS, svFallback:'pxboot',
+  svSpec:SV7_SPEC, svBoss:SV7_BOSS, svFallback:'pxboot',
   accent:'#3aff5a', accentRgb:'58,255,90', accent2:'#ffd84a', font:'"Pixelify Sans","Russo One",sans-serif', textCol:'#d8f0d8', dimCol:'#7a9a7a',
   suit:SUIT7,
   glitch:['rgba(58,255,90,0.5)','rgba(255,216,74,0.45)','#e8ffe8'], hintCols:['#d8ffd8','#3aff5a'],
   prog:PROG7, menuMusic:{tr:-5,bpm:112,alien:false}, menuCam:200,
   eKey:'команда / палитра', eBtn:'E<br>команда',
-  debug:{enterR7:()=>enterGame('r7'),TRAIN7,LEVELS7,startR7Intro,startR7Training,updR7Intro,renderR7Intro,sv7Plan,r7Finale,get CURS(){return CURS},get TAPE(){return TAPE},runCursor,addCursor},
+  debug:{enterR7:()=>enterGame('r7'),TRAIN7,LEVELS7,startR7Intro,startR7Training,updR7Intro,renderR7Intro,sv7Plan:k=>svPlanBy(SV7_SPEC,k),r7Finale,get CURS(){return CURS},get TAPE(){return TAPE},runCursor,addCursor},
 });

@@ -1,44 +1,47 @@
 /* ================= РЕЗОНАНС 1 · ОЦЕЛЯВАНЕ: ТЕМИ, ПЛАН, ГЕНЕРАТОР, АРЕНИ ================= */
-/* собственият генератор на r1 (svTry) — двигателят го вика през GAME.svPlan / GAME.genSector */
-const SV_TG={
- lab:{acid:1,elec:1,laser:1,human:1}, hall:{acid:1,elec:1,vent:1,human:1}, office:{human:1,turret:1}, depot:{conv:1,crush:1,human:1}, waste:{acid:1,human:1},
- vih:{laser:1,elec:1,human:1,turret:1}, mil:{human:1,turret:1,vent:1}, tunnel:{track:1,human:1}, mine:{lift:1,human:1,cave:1}, bio:{laser:1,acid:1,human:1},
- cool:{vent:1,elec:1,human:1}, core:{elec:1,vent:1,laser:1,human:1}, out:{sky:1,human:1,lift:1,turret:1}, snow:{sky:1,human:1,lift:1,turret:1}, night:{sky:1,human:1,lift:1,turret:1},
- xen:{sky:1,alien:1,lowg:1,lift:1,pad:1}, hive:{alien:1,lowg:1,acid:1,pad:1,nest:1,cave:1}, factory:{alien:1,lowg:1,conv:1,crush:1,pad:1},
- citadel:{alien:1,lowg:1,crush:1,laser:1,elec:1,pad:1}, cave:{alien:1,lowg:1,dark:1,acid:1,nest:1,pad:1,cave:1}, ice:{alien:1,dark:1,acid:1,nest:1,pad:1,cave:1},
+/* собственият генератор на r1 (svTry) — двигателят го вика през GAME.genSector; планът — svPlanBy(SV1_SPEC) */
+/* темите на r1 (етикетите водят плана и генератора) */
+const SV1={
+ lab:{name:'Лаборатории',th:'lab',mus:{tr:0,bpm:108},acid:1,elec:1,laser:1,human:1},
+ hall:{name:'Коридори',th:'hall',mus:{tr:2,bpm:112},acid:1,elec:1,vent:1,human:1},
+ office:{name:'Администрация',th:'office',mus:{tr:-3,bpm:96},human:1,turret:1},
+ depot:{name:'Склад',th:'depot',mus:{tr:0,bpm:118},conv:1,crush:1,human:1},
+ waste:{name:'Канали',th:'waste',mus:{tr:-4,bpm:100},acid:1,human:1},
+ vih:{name:'Комплексът',th:'vih',mus:{tr:-1,bpm:110},laser:1,elec:1,human:1,turret:1},
+ mil:{name:'Военна база',th:'mil',mus:{tr:1,bpm:116},human:1,turret:1,vent:1},
+ tunnel:{name:'Тунели',th:'tunnel',mus:{tr:1,bpm:120},track:1,human:1},
+ mine:{name:'Шахти',th:'mine',mus:{tr:-6,bpm:104},lift:1,human:1,cave:1},
+ bio:{name:'Биолаборатория',th:'bio',mus:{tr:-1,bpm:98},laser:1,acid:1,human:1},
+ cool:{name:'Охладителна система',th:'cool',mus:{tr:3,bpm:112},vent:1,elec:1,human:1},
+ core:{name:'Хранилище',th:'core',mus:{tr:-2,bpm:100},elec:1,vent:1,laser:1,human:1},
+ out:{name:'Каньонът',th:'out',mus:{tr:2,bpm:116},sky:1,human:1,lift:1,turret:1},
+ snow:{name:'Заснежен проход',th:'snow',mus:{tr:2,bpm:118},sky:1,human:1,lift:1,turret:1},
+ night:{name:'Повърхност',th:'night',mus:{tr:-1,bpm:112},sky:1,human:1,lift:1,turret:1},
+ xen:{name:'Острови',th:'xen',mus:{tr:4,bpm:96,alien:true},sky:1,alien:1,lowg:1,lift:1,pad:1},
+ hive:{name:'Кошер',th:'hive',mus:{tr:3,bpm:92,alien:true},alien:1,lowg:1,acid:1,pad:1,nest:1,cave:1},
+ factory:{name:'Фабрика',th:'factory',mus:{tr:-2,bpm:124,alien:true},alien:1,lowg:1,conv:1,crush:1,pad:1},
+ citadel:{name:'Цитадела',th:'citadel',mus:{tr:-5,bpm:116,alien:true},alien:1,lowg:1,crush:1,laser:1,elec:1,pad:1},
+ cave:{name:'Пещери',th:'cave',mus:{tr:2,bpm:88,alien:true},alien:1,lowg:1,dark:1,acid:1,nest:1,pad:1,cave:1},
+ ice:{name:'Ледени пещери',th:'ice',mus:{tr:3,bpm:92,alien:true},alien:1,dark:1,acid:1,nest:1,pad:1,cave:1},
 };
-const SV_EARLY=['lab','hall','office','depot','waste','vih','mil'], SV_MID=['tunnel','mine','bio','cool','core','out','snow','night'], SV_LATE=['xen','hive','factory','citadel','cave','ice'];
-addUnique(THEME_NAME,{lab:'Лаборатории',hall:'Коридори',office:'Администрация',depot:'Склад',waste:'Канали',tunnel:'Тунели',mine:'Шахти',bio:'Биолаборатория',cool:'Охладителна система',core:'Хранилище',night:'Повърхност',xen:'Острови',hive:'Кошер',factory:'Фабрика',citadel:'Цитадела',cave:'Пещери',vih:'Комплексът',mil:'Военна база',out:'Каньонът',snow:'Заснежен проход',ice:'Ледени пещери'},'THEME_NAME');
-const THEME_MUSIC={lab:{tr:0,bpm:108},hall:{tr:2,bpm:112},office:{tr:-3,bpm:96},depot:{tr:0,bpm:118},waste:{tr:-4,bpm:100},tunnel:{tr:1,bpm:120},mine:{tr:-6,bpm:104},bio:{tr:-1,bpm:98},cool:{tr:3,bpm:112},core:{tr:-2,bpm:100},night:{tr:-1,bpm:112},xen:{tr:4,bpm:96,alien:true},hive:{tr:3,bpm:92,alien:true},factory:{tr:-2,bpm:124,alien:true},citadel:{tr:-5,bpm:116,alien:true},cave:{tr:2,bpm:88,alien:true},vih:{tr:-1,bpm:110},mil:{tr:1,bpm:116},out:{tr:2,bpm:116},snow:{tr:2,bpm:118},ice:{tr:3,bpm:92,alien:true}};
+const SV1_EARLY=['lab','hall','office','depot','waste','vih','mil'], SV1_MID=['tunnel','mine','bio','cool','core','out','snow','night'], SV1_LATE=['xen','hive','factory','citadel','cave','ice'];
+addUnique(SV_THEMES,SV1,'SV_THEMES'); for(const k in SV1) addUnique(THEME_NAME,{[k]:SV1[k].name},'THEME_NAME');
 defBosses('norm',{worm:1.27,colossus:1,guardian:0.875,warden:0.5,exo:1.3,tank:1,hunter:1.08,queen:0.82,titan:0.44});
-function svBossPool(tg){ const p=['colossus']; if(tg.acid) p.push('worm');
+function r1BossPool(tg){ const p=['colossus']; if(tg.acid) p.push('worm');
   if(tg.alien){ p.push('guardian','warden'); if(!tg.sky) p.push('queen'); } else { p.push('exo','titan'); if(tg.cave) p.push('queen'); }
   if(tg.sky) p.push('hunter'); if(tg.human) p.push('tank'); return p; }
-let SV_PLAN=[], SV_PLAN_SEED=-1;
-function r1SvPlan(k){
-  if(SV_PLAN_SEED!==survSeed){ SV_PLAN=[]; SV_PLAN_SEED=survSeed; }
-  while(SV_PLAN.length<=k){
-    const j=SV_PLAN.length, r=mkRng(survSeed*131+j*7717+5), pick=a=>a[Math.floor(r()*a.length)];
-    const pool=j<5?SV_EARLY:j<10?SV_EARLY.concat(SV_MID):SV_EARLY.concat(SV_MID,SV_LATE,SV_LATE);
-    const recent=SV_PLAN.slice(-4).map(q=>q.theme); let cand=pool.filter(t=>!recent.includes(t)); if(!cand.length) cand=pool;
-    const theme=pick(cand), tg=SV_TG[theme], isBoss=j%5===4, muts=[], mp=j<2?0:Math.min(0.7,0.2+j*0.03);
-    if(r()<mp){ const opts=['swarm','scarce']; if(!tg.sky&&!tg.dark) opts.push('dark'); if(tg.human) opts.push('alarm');
-      muts.push(pick(opts)); if(r()<mp*0.4){ const o2=opts.filter(o=>o!==muts[0]); muts.push(pick(o2)); } }
-    let boss=null; if(isBoss){ const bp=svBossPool(tg), rb=SV_PLAN.filter(q=>q.boss).slice(-3).map(q=>q.boss), c2=bp.filter(b=>!rb.includes(b)); boss=pick(c2.length?c2:bp); }
-    SV_PLAN.push({theme,muts,boss});
-  }
-  return SV_PLAN[k];
-}
+const SV1_SPEC={salt:[131,7717,5],early:SV1_EARLY,mid:SV1_MID,late:SV1_LATE,recent:4,boss:{pool:r1BossPool,recent:3},
+  mut:{base:0.2,max:0.7,second:0.4,opts:tg=>{ const o=['swarm','scarce']; if(!tg.sky&&!tg.dark) o.push('dark'); if(tg.human) o.push('alarm'); return o; }}};
 
 /* ---------- the generator ---------- */
 function r1GenSector(k){
-  const plan=r1SvPlan(k);
+  const plan=svPlan(k);
   for(let a=0;a<16;a++){ const L=svTry(k,plan,a,false); if(L){ genLevel.att=a; return L; } }
   genLevel.att=99; return svTry(k,plan,99,true)||svTry(k,{theme:'hall',muts:[],boss:null},98,true);
 }
 function svTry(k,plan,att,simple){
   const r=mkRng(survSeed*7919+k*104729+att*31337+13), ri=(a,b)=>a+Math.floor(r()*(b-a+1)), pick=a=>a[Math.floor(r()*a.length)], ch=p=>r()<p;
-  const theme=plan.theme, tg=SV_TG[theme], sky=!!tg.sky, lowg=!!tg.lowg||plan.muts.includes('lowg'), alien=!!tg.alien, isBoss=!!plan.boss;
+  const theme=plan.theme, tg=SV_THEMES[theme], sky=!!tg.sky, lowg=!!tg.lowg||plan.muts.includes('lowg'), alien=!!tg.alien, isBoss=!!plan.boss;
   const swarm=plan.muts.includes('swarm'), scarce=plan.muts.includes('scarce');
   const MAXC=460, g=[]; for(let y=0;y<ROWS;y++) g.push(new Array(MAXC).fill('.'));
   const set=(x,y,c)=>{ if(x>=0&&x<MAXC&&y>=0&&y<ROWS) g[y][x]=c; };
@@ -177,7 +180,7 @@ function svTry(k,plan,att,simple){
       else if(h>0.72) consoleAt(x*T,y*T,1+(h>0.86?1:0)); }
   });
   const skyOf=t=>{ const ttl={night:'АНТЕНАТА',xen:'ОТВЪД',out:'ПОД ОБСТРЕЛ',snow:r()<0.5?'ПРОХОДЪТ':'ЛИФТЪТ'}[t]; const L=LEVELS.find(l=>l.title===ttl); return L&&L.sky; };
-  const mus=Object.assign({},THEME_MUSIC[theme]);
+  const mus=Object.assign({},tg.mus);
   const muts=plan.muts.slice(); const darkM=muts.includes('dark');
   return {n:100+k,title:'СЕКТОР '+(k+1),surv:true,cols,grav:lowg?600:900,music:mus,start:4,dark:!!tg.dark||darkM,alarm:muts.includes('alarm'),
     theme:()=>theme, sky:sky?skyOf(theme):null, liftStyle:alien?'float':'cable',

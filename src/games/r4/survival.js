@@ -22,18 +22,5 @@ addUnique(SV_THEMES,SV4,'SV_THEMES'); for(const k in SV4) addUnique(THEME_NAME,{
 addUnique(MUT_NAME,{still:'Застинало време',sonar:'Сонарен мрак'},'MUT_NAME');
 const SV4_EARLY=['plcity','plteatr','plpark'], SV4_MID=['plpano','plrock','plstorg'], SV4_LATE=['plcave','plk2','plbeyond'];
 const SV4_BOSS={puppeteer:[3,'plteatr'],canvas:[7,'plpano'],legion:[11,'plstorg'],silent:[15,'plcave'],conductor:[18,'plbeyond']};
-let SV4_PLAN=[], SV4_SEED=-1;
-function sv4Plan(k){
-  if(SV4_SEED!==survSeed){ SV4_PLAN=[]; SV4_SEED=survSeed; }
-  while(SV4_PLAN.length<=k){
-    const j=SV4_PLAN.length, r=mkRng(survSeed*149+j*7907+41), pick=a=>a[Math.floor(r()*a.length)];
-    if(j%5===4){ const pool=j<10?['puppeteer','canvas','legion']:Object.keys(SV4_BOSS), rb=SV4_PLAN.filter(q=>q.boss).slice(-2).map(q=>q.boss), c=pool.filter(b=>!rb.includes(b)), boss=pick(c.length?c:pool);
-      SV4_PLAN.push({theme:SV4_BOSS[boss][1],muts:[],boss}); continue; }
-    const pool=j<5?SV4_EARLY:j<10?SV4_EARLY.concat(SV4_MID):SV4_EARLY.concat(SV4_MID,SV4_LATE,SV4_LATE);
-    const recent=SV4_PLAN.slice(-3).map(q=>q.theme); let cand=pool.filter(t=>!recent.includes(t)); if(!cand.length) cand=pool;
-    const theme=pick(cand), tg=SV4[theme], muts=[], mp=j<2?0:Math.min(0.6,0.15+j*0.03);
-    if(r()<mp){ const opts=['swarm','scarce']; if(!tg.still&&j>=3) opts.push('still'); if(!tg.sky&&!tg.era&&!tg.sonar&&!tg.freq&&!tg.stealth) opts.push('sonar'); if(!tg.sky&&!tg.era&&!tg.sonar) opts.push('dark'); muts.push(pick(opts)); }
-    SV4_PLAN.push({theme,muts,boss:null});
-  }
-  return SV4_PLAN[k];
-}
+const SV4_SPEC={salt:[149,7907,41],early:SV4_EARLY,mid:SV4_MID,late:SV4_LATE,recent:3,boss:{map:SV4_BOSS,early:['puppeteer','canvas','legion'],recent:2},
+  mut:{base:0.15,max:0.6,opts:(tg,j)=>{ const o=['swarm','scarce']; if(!tg.still&&j>=3) o.push('still'); if(!tg.sky&&!tg.era&&!tg.sonar&&!tg.freq&&!tg.stealth) o.push('sonar'); if(!tg.sky&&!tg.era&&!tg.sonar) o.push('dark'); return o; }}};

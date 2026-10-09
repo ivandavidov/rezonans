@@ -12,19 +12,5 @@ const SV3={
 addUnique(SV_THEMES,SV3,'SV_THEMES'); for(const k in SV3) addUnique(THEME_NAME,{[k]:SV3[k].name},'THEME_NAME');
 const SV3_EARLY=['sofia','metro','serdica'], SV3_MID=['vitosha','base','lab77'], SV3_LATE=['rift','epic'];
 const SV3_BOSS={wolf:[3,'metro'],beacon:[7,'base'],mirror:[11,'lab77'],stalker:[15,'rift'],fork:[18,'epic']};
-let SV3_PLAN=[], SV3_SEED=-1;
-function sv3Plan(k){
-  if(SV3_SEED!==survSeed){ SV3_PLAN=[]; SV3_SEED=survSeed; }
-  while(SV3_PLAN.length<=k){
-    const j=SV3_PLAN.length, r=mkRng(survSeed*137+j*7919+33), pick=a=>a[Math.floor(r()*a.length)];
-    if(j%5===4){ const pool=j<10?['wolf','beacon','mirror']:Object.keys(SV3_BOSS), rb=SV3_PLAN.filter(q=>q.boss).slice(-2).map(q=>q.boss), c=pool.filter(b=>!rb.includes(b)), boss=pick(c.length?c:pool);
-      SV3_PLAN.push({theme:SV3_BOSS[boss][1],muts:[],boss}); continue; }
-    const pool=j<5?SV3_EARLY:j<10?SV3_EARLY.concat(SV3_MID):SV3_EARLY.concat(SV3_MID,SV3_LATE,SV3_LATE);
-    const recent=SV3_PLAN.slice(-3).map(q=>q.theme); let cand=pool.filter(t=>!recent.includes(t)); if(!cand.length) cand=pool;
-    const theme=pick(cand), tg=SV3[theme], muts=[], mp=j<2?0:Math.min(0.6,0.15+j*0.03);
-    if(theme==='metro'&&r()<0.6) muts.push('dark');
-    else if(r()<mp){ const opts=['swarm','scarce']; if(!tg.sky) opts.push('dark'); muts.push(pick(opts)); }
-    SV3_PLAN.push({theme,muts,boss:null});
-  }
-  return SV3_PLAN[k];
-}
+const SV3_SPEC={salt:[137,7919,33],early:SV3_EARLY,mid:SV3_MID,late:SV3_LATE,recent:3,boss:{map:SV3_BOSS,early:['wolf','beacon','mirror'],recent:2},
+  mut:{base:0.15,max:0.6,special:(th,r)=>th==='metro'&&r()<0.6?'dark':null,opts:(tg,j)=>{ const o=['swarm','scarce']; if(!tg.sky) o.push('dark'); return o; }}};

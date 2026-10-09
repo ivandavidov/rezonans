@@ -17,19 +17,5 @@ addUnique(SV_THEMES,SV2,'SV_THEMES'); for(const k in SV2) addUnique(THEME_NAME,{
 addUnique(MUT_NAME,{zerog:'Безтегловност'},'MUT_NAME');
 defBosses('norm',{deep:1,breach:1,stone:1,swarm:1,storm:1,maker:0.85});
 
-let SV2_PLAN=[], SV2_SEED=-1;
-function sv2Plan(k){
-  if(SV2_SEED!==survSeed){ SV2_PLAN=[]; SV2_SEED=survSeed; }
-  while(SV2_PLAN.length<=k){
-    const j=SV2_PLAN.length, r=mkRng(survSeed*131+j*7717+77), pick=a=>a[Math.floor(r()*a.length)];
-    if(j%5===4){ const pool=j<10?['deep','breach','stone','swarm']:Object.keys(SV2_BOSS), rb=SV2_PLAN.filter(q=>q.boss).slice(-3).map(q=>q.boss), c=pool.filter(b=>!rb.includes(b)), boss=pick(c.length?c:pool);
-      SV2_PLAN.push({theme:SV2_BOSS[boss][1],muts:[],boss}); continue; }
-    const pool=j<5?SV2_EARLY:j<10?SV2_EARLY.concat(SV2_MID):SV2_EARLY.concat(SV2_MID,SV2_LATE,SV2_LATE);
-    const recent=SV2_PLAN.slice(-3).map(q=>q.theme); let cand=pool.filter(t=>!recent.includes(t)); if(!cand.length) cand=pool;
-    const theme=pick(cand), tg=SV2[theme], muts=[], mp=j<2?0:Math.min(0.6,0.15+j*0.03);
-    if(theme==='source'&&r()<0.45) muts.push('zerog');
-    else if(r()<mp){ const opts=['swarm','scarce']; if(!tg.sky&&!tg.era) opts.push('dark'); muts.push(pick(opts)); }
-    SV2_PLAN.push({theme,muts,boss:null});
-  }
-  return SV2_PLAN[k];
-}
+const SV2_SPEC={salt:[131,7717,77],early:SV2_EARLY,mid:SV2_MID,late:SV2_LATE,recent:3,boss:{map:SV2_BOSS,early:['deep','breach','stone','swarm'],recent:3},
+  mut:{base:0.15,max:0.6,special:(th,r)=>th==='source'&&r()<0.45?'zerog':null,opts:(tg,j)=>{ const o=['swarm','scarce']; if(!tg.sky&&!tg.era) o.push('dark'); return o; }}};

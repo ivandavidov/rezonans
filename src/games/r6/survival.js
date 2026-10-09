@@ -22,18 +22,5 @@ const SV6={
 addUnique(SV_THEMES,SV6,'SV_THEMES'); for(const k in SV6) addUnique(THEME_NAME,{[k]:SV6[k].name},'THEME_NAME');
 const SV6_EARLY=['acsof','acpark','acdream'], SV6_MID=['acperp','actatul','acyag','acgorge'], SV6_LATE=['acdevil','acunder','acbelin','acship'];
 const SV6_BOSS={shadow:[3,'acsof'],echoes:[7,'acdream'],priest:[11,'actatul'],cerber:[15,'acunder'],firsttone:[18,'acship']};
-let SV6_PLAN=[], SV6_SEED=-1;
-function sv6Plan(k){
-  if(SV6_SEED!==survSeed){ SV6_PLAN=[]; SV6_SEED=survSeed; }
-  while(SV6_PLAN.length<=k){
-    const j=SV6_PLAN.length, r=mkRng(survSeed*157+j*7919+61), pick=a=>a[Math.floor(r()*a.length)];
-    if(j%5===4){ const pool=j<10?['shadow','echoes','priest']:Object.keys(SV6_BOSS), rb=SV6_PLAN.filter(q=>q.boss).slice(-2).map(q=>q.boss), c=pool.filter(b=>!rb.includes(b)), boss=pick(c.length?c:pool);
-      SV6_PLAN.push({theme:SV6_BOSS[boss][1],muts:[],boss}); continue; }
-    const pool=j<5?SV6_EARLY:j<10?SV6_EARLY.concat(SV6_MID):SV6_EARLY.concat(SV6_MID,SV6_LATE,SV6_LATE);
-    const recent=SV6_PLAN.slice(-3).map(q=>q.theme); let cand=pool.filter(t=>!recent.includes(t)); if(!cand.length) cand=pool;
-    const theme=pick(cand), tg=SV6[theme], muts=[], mp=j<2?0:Math.min(0.6,0.15+j*0.03);
-    if(r()<mp){ const opts=['swarm','scarce']; if(!tg.sky&&!tg.sonar&&!tg.flares&&!tg.era&&!tg.term) opts.push('bats'); if(!tg.sky&&!tg.sonar&&!tg.flares) opts.push('dark'); muts.push(pick(opts)); }
-    SV6_PLAN.push({theme,muts,boss:null});
-  }
-  return SV6_PLAN[k];
-}
+const SV6_SPEC={salt:[157,7919,61],early:SV6_EARLY,mid:SV6_MID,late:SV6_LATE,recent:3,boss:{map:SV6_BOSS,early:['shadow','echoes','priest'],recent:2},
+  mut:{base:0.15,max:0.6,opts:(tg,j)=>{ const o=['swarm','scarce']; if(!tg.sky&&!tg.sonar&&!tg.flares&&!tg.era&&!tg.term) o.push('bats'); if(!tg.sky&&!tg.sonar&&!tg.flares) o.push('dark'); return o; }}};

@@ -10,11 +10,11 @@ registerGame({
   levels:LEVELS_R2, chapters:CH_R2,
   intro:startR2Intro, training:startR2Training, introUpd:updR2Intro, introRender:renderR2Intro,
   drawLogo:r2Logo, renderWin:renderWin2, postFx:r2Grade,
-  svPlan:sv2Plan, svBoss:SV2_BOSS, svFallback:'town', bossMulOne:['swarm','breach'],
+  svSpec:SV2_SPEC, svBoss:SV2_BOSS, svFallback:'town', bossMulOne:['swarm','breach'],
   accent:'#4fe3d6', accentRgb:'79,227,214', accent2:'#ff8ad8', font:'"Unbounded","Russo One",sans-serif', textCol:'#9fd8d2', dimCol:'#6f9a9c',
   suit:{suit:'#3a7f86',suitD:'#24555b',plate:'#2e3a44',plateH:'#4e6070',dark:'#14181c',helm:'#d8e4e8'},
   glitch:['rgba(80,200,255,0.55)','rgba(255,80,200,0.45)','#e8fbff'], hintCols:['#c8fff8','#4fe3d6'],
   prog:PROG2, menuMusic:{tr:-3,bpm:92,alien:true}, menuCam:220,
   eKey:'смяна на епохата', eBtn:'E<br>епоха',
-  debug:{enterR2:()=>enterGame('r2'),LEVELS_R2,sv2Plan,startR2Training,startR2Intro,updR2Intro,renderR2Intro,get RI(){return RI}},
+  debug:{enterR2:()=>enterGame('r2'),LEVELS_R2,sv2Plan:k=>svPlanBy(SV2_SPEC,k),startR2Training,startR2Intro,updR2Intro,renderR2Intro,get RI(){return RI}},
 });

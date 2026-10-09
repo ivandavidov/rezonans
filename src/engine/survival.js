@@ -1,13 +1,35 @@
 addUnique(MUT_NAME,{bats:'Рояци прилепи'},'MUT_NAME');   // мутацията е в двигателя (mech3) — ползват я Р5 и Р6
 /* ================= ДВИГАТЕЛ · ОЦЕЛЯВАНЕ (процедурни сектори) =================
    Темите се регистрират от игрите в SV_THEMES (ключовете трябва да са уникални за поредицата),
-   небетата — в SKIES (engine/lib/themes.js). Планът на секторите (кои теми и босове) идва от GAME.svPlan(k),
+   небетата — в SKIES (engine/lib/themes.js). Планът на секторите (кои теми и босове) — svPlanBy(GAME.svSpec,k),
    а сектор с бос копира арената на епизод GLV[GAME.svBoss[boss][0]]. */
 const SV_THEMES={};
 const SV_LOAD={w:['wrench','pistol'],ammo:{pistol:[17,51]},armor:0,cur:'pistol'};
 const svSky=key=>key&&SKIES[key]||null;
+/* ---------- план на секторите: една функция, данните са на частта (GAME.svSpec) ----------
+   salt — множители на семето; early/mid/late — темите по етапи; recent — без повторение в последните N теми;
+   boss: {map:{бос:[епизод,тема]}, early, recent} — първо бос, после неговата тема (продълженията)
+         или {pool:tg=>[босове], recent} — първо тема, после подходящ за нея бос (r1);
+   mut: {base, max, opts(tg,j), special(тема,r), second} — мутация с вероятност base+0.03·j (до max); special — правило на темата. */
+function svPlanBy(P,k){
+  if(P.seedNow!==survSeed){ P.list=[]; P.seedNow=survSeed; }
+  const L=P.list, B=P.boss, M=P.mut;
+  while(L.length<=k){
+    const j=L.length, r=mkRng(survSeed*P.salt[0]+j*P.salt[1]+P.salt[2]), pick=a=>a[Math.floor(r()*a.length)], isBoss=j%5===4;
+    if(isBoss&&B.map){ const pool=j<10?B.early:Object.keys(B.map), rb=L.filter(q=>q.boss).slice(-B.recent).map(q=>q.boss), c=pool.filter(b=>!rb.includes(b)), boss=pick(c.length?c:pool);
+      L.push({theme:B.map[boss][1],muts:[],boss}); continue; }
+    const pool=j<5?P.early:j<10?P.early.concat(P.mid):P.early.concat(P.mid,P.late,P.late);
+    const recent=L.slice(-P.recent).map(q=>q.theme); let cand=pool.filter(t=>!recent.includes(t)); if(!cand.length) cand=pool;
+    const theme=pick(cand), tg=SV_THEMES[theme], muts=[], mp=j<2?0:Math.min(M.max,M.base+j*0.03), sp=M.special&&M.special(theme,r);
+    if(sp) muts.push(sp);
+    else if(r()<mp){ const opts=M.opts(tg,j); muts.push(pick(opts)); if(M.second&&r()<mp*M.second){ const o2=opts.filter(o=>o!==muts[0]); muts.push(pick(o2)); } }
+    let boss=null; if(isBoss){ const bp=B.pool(tg), rb=L.filter(q=>q.boss).slice(-B.recent).map(q=>q.boss), c2=bp.filter(b=>!rb.includes(b)); boss=pick(c2.length?c2:bp); }
+    L.push({theme,muts,boss});
+  }
+  return L[k];
+}
 function svGen(k){
-  const plan=GAME.svPlan(k);
+  const plan=svPlan(k);
   if(plan.boss) return svBoss(k,plan);
   const zg=plan.muts.includes('zerog');
   for(let a=0;a<20;a++){ const L=zg?svZero(k,plan,a):svTry2(k,plan,a,false); if(L){ genLevel.att=a; return L; } }

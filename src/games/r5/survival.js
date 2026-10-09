@@ -21,18 +21,5 @@ const SV5={
 addUnique(SV_THEMES,SV5,'SV_THEMES'); for(const k in SV5) addUnique(THEME_NAME,{[k]:SV5[k].name},'THEME_NAME');
 const SV5_EARLY=['axvil','axfield','axkrush'], SV5_MID=['axmaara','axcave','axvar'], SV5_LATE=['axdepot','axhisar','axk3'];
 const SV5_BOSS={combine:[3,'axfield'],cascade:[7,'axkrush'],moth:[11,'axcave'],valchev:[15,'axhisar'],resonator:[18,'axk3']};
-let SV5_PLAN=[], SV5_SEED=-1;
-function sv5Plan(k){
-  if(SV5_SEED!==survSeed){ SV5_PLAN=[]; SV5_SEED=survSeed; }
-  while(SV5_PLAN.length<=k){
-    const j=SV5_PLAN.length, r=mkRng(survSeed*151+j*7919+59), pick=a=>a[Math.floor(r()*a.length)];
-    if(j%5===4){ const pool=j<10?['combine','cascade','moth']:Object.keys(SV5_BOSS), rb=SV5_PLAN.filter(q=>q.boss).slice(-2).map(q=>q.boss), c=pool.filter(b=>!rb.includes(b)), boss=pick(c.length?c:pool);
-      SV5_PLAN.push({theme:SV5_BOSS[boss][1],muts:[],boss}); continue; }
-    const pool=j<5?SV5_EARLY:j<10?SV5_EARLY.concat(SV5_MID):SV5_EARLY.concat(SV5_MID,SV5_LATE,SV5_LATE);
-    const recent=SV5_PLAN.slice(-3).map(q=>q.theme); let cand=pool.filter(t=>!recent.includes(t)); if(!cand.length) cand=pool;
-    const theme=pick(cand), tg=SV5[theme], muts=[], mp=j<2?0:Math.min(0.6,0.15+j*0.03);
-    if(r()<mp){ const opts=['swarm','scarce']; if(!tg.sky&&!tg.sonar&&!tg.flares&&!tg.stealth) opts.push('bats'); if(!tg.sky&&!tg.sonar&&!tg.flares) opts.push('dark'); muts.push(pick(opts)); }
-    SV5_PLAN.push({theme,muts,boss:null});
-  }
-  return SV5_PLAN[k];
-}
+const SV5_SPEC={salt:[151,7919,59],early:SV5_EARLY,mid:SV5_MID,late:SV5_LATE,recent:3,boss:{map:SV5_BOSS,early:['combine','cascade','moth'],recent:2},
+  mut:{base:0.15,max:0.6,opts:(tg,j)=>{ const o=['swarm','scarce']; if(!tg.sky&&!tg.sonar&&!tg.flares&&!tg.stealth) o.push('bats'); if(!tg.sky&&!tg.sonar&&!tg.flares) o.push('dark'); return o; }}};

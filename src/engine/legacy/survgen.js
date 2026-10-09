@@ -8,7 +8,7 @@ const bestTxt=i=>{ const b=survBest(i), k=survBestK(i); return b+(k?' (сект�
 const THEME_NAME={};   // имената на темите — попълват ги частите (множителите на босовете — defBoss norm)
 const MUT_NAME={dark:'Тъмнина',lowg:'Слаба гравитация',swarm:'Нашествие',scarce:'Оскъдни запаси',alarm:'Тревога'};
 function mkRng(seed){ let a=seed>>>0; return ()=>{ a=(a+0x6D2B79F5)>>>0; let t=a; t=Math.imul(t^(t>>>15),t|1); t^=t+Math.imul(t^(t>>>7),t|61); return ((t^(t>>>14))>>>0)/4294967296; }; }
-function svPlan(k){ return GAME.svPlan(k); }
+function svPlan(k){ return svPlanBy(GAME.svSpec,k); }
 /* ---------- reachability validator ---------- */
 // Jump reach measured in the engine (tiles) by headroom f (free rows above the higher ledge) and rise dy (index +5..-4).
 const SV_MT={g900:{2:[0,0,3,2,1,1,2,2,2,3],3:[0,0,4,3,3,2,3,3,3,4],4:[0,0,4,5,4,3,4,4,4,5],5:[0,0,4,5,5,4,5,5,5,5],9:[0,0,4,5,5,6,6,6,6,7]},

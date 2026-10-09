@@ -13,18 +13,5 @@ const SV7={
 addUnique(SV_THEMES,SV7,'SV_THEMES'); for(const k in SV7) addUnique(THEME_NAME,{[k]:SV7[k].name},'THEME_NAME');
 const SV7_EARLY=['pxboot','pxapple','pxcga'], SV7_MID=['pxram','pxcga','pxapple'], SV7_LATE=['pxweb','pxcloud','pxram'];
 const SV7_BOSS={syntax:[3,'pxboot'],snake:[7,'pxapple'],dark:[11,'pxcga'],copy:[15,'pxram'],nula:[18,'pxweb']};
-let SV7_PLAN=[], SV7_SEED=-1;
-function sv7Plan(k){
-  if(SV7_SEED!==survSeed){ SV7_PLAN=[]; SV7_SEED=survSeed; }
-  while(SV7_PLAN.length<=k){
-    const j=SV7_PLAN.length, r=mkRng(survSeed*163+j*7919+67), pick=a=>a[Math.floor(r()*a.length)];
-    if(j%5===4){ const pool=j<10?['syntax','snake','dark']:Object.keys(SV7_BOSS), rb=SV7_PLAN.filter(q=>q.boss).slice(-2).map(q=>q.boss), c=pool.filter(b=>!rb.includes(b)), boss=pick(c.length?c:pool);
-      SV7_PLAN.push({theme:SV7_BOSS[boss][1],muts:[],boss}); continue; }
-    const pool=j<5?SV7_EARLY:j<10?SV7_EARLY.concat(SV7_MID):SV7_EARLY.concat(SV7_MID,SV7_LATE,SV7_LATE);
-    const recent=SV7_PLAN.slice(-3).map(q=>q.theme); let cand=pool.filter(t=>!recent.includes(t)); if(!cand.length) cand=pool;
-    const theme=pick(cand), tg=SV7[theme], muts=[], mp=j<2?0:Math.min(0.6,0.15+j*0.03);
-    if(r()<mp){ const opts=['swarm','scarce']; if(!tg.sky) opts.push('dark'); muts.push(pick(opts)); }
-    SV7_PLAN.push({theme,muts,boss:null});
-  }
-  return SV7_PLAN[k];
-}
+const SV7_SPEC={salt:[163,7919,67],early:SV7_EARLY,mid:SV7_MID,late:SV7_LATE,recent:3,boss:{map:SV7_BOSS,early:['syntax','snake','dark'],recent:2},
+  mut:{base:0.15,max:0.6,opts:(tg,j)=>{ const o=['swarm','scarce']; if(!tg.sky) o.push('dark'); return o; }}};
