@@ -11,7 +11,7 @@ function buildEras(){
   prerender(); const dB={lamps,beacons,crystals,zTiles,convTiles};
   let skyB=skyA; if(L.skyB){ L.sky=L.skyB; buildSky(); skyB=SKY; L.sky=skyDefA; SKY=skyA; }
   L.theme=thA; L.deco=decoA; LV=cA; lx=LV.getContext('2d'); map=mapA; lamps=dA.lamps; beacons=dA.beacons; crystals=dA.crystals; zTiles=dA.zTiles; convTiles=dA.convTiles;
-  const eB=[]; for(const [t,tx,row,flag] of (L.spawnsB||[])){ if(!allow(flag)) continue; if(DIMS[t]){ const e=makeEnemy(t,tx*T+8,(row+1)*T); e.era=1; if(t==='turret') e.face=-1; eB.push(e); } }
+  const eB=[]; for(const [t,tx,row,flag] of (L.spawnsB||[])){ if(!allow(flag)) continue; if(DIMS[t]){ const e=makeEnemy(t,tx*T+8,(row+1)*T); e.era=1; eB.push(e); } }
   ERAD={maps:[mapA,mB],cv:[cA,cB],data:[dA,dB],themes:[thA,L.themeB],skies:[skyA,skyB],enem:[enemies,eB]};
 }
 function switchEra(force){
@@ -26,6 +26,7 @@ function switchEra(force){
   return true;
 }
 defMech('eras',{
+  chips(chip){ if(ERAD) chip('◷ '+LVL.eraNames[ERA]+'   ·   E — смени епохата','#ffd08a'); },
   load(){ ERA=0; ERAD=null; cpEra=0; eraCd=0; const L=LVL;
   if(L.buildB) buildEras();
   },

@@ -20,10 +20,10 @@ function updEscort(s,dt){
   if(rectHas(s.x,s.y+s.h-6,s.w,6,'~')) escHurt(dt*30);
   if(s.onGround&&elecOn()&&onTile(s,'Z')) escHurt(dt*40);
   for(const b of ebullets) if(b.life>0&&b.x>s.x&&b.x<s.x+s.w&&b.y>s.y&&b.y<s.y+s.h){ b.life=0; escHurt((b.dmg||7)*0.8); }
-  for(const e of enemies){ if(e.dead||e.type==='target'||e.type==='crab') continue; if(ov(e,s)){ e.escBite=(e.escBite||0)-dt; if(e.escBite<=0){ e.escBite=0.9; escHurt(8); } } }
+  for(const e of enemies){ if(e.dead||FOES[e.type].noEscBite) continue; if(ov(e,s)){ e.escBite=(e.escBite||0)-dt; if(e.escBite<=0){ e.escBite=0.9; escHurt(8); } } }
   if(s.bt<=0&&!want&&LVL.escort.lines){ s.bt=rnd(9,15); bark(s,LVL.escort.lines[Math.floor(rnd(LVL.escort.lines.length))],2.6); }
 }
-function escHurt(d){ const s=ESC; if(!s||s.state==='dead'||player.dead||chtOn('god')) return; s.hp-=d*[0.45,1,1.35][DI]; s.hurtT=0.15; if(s.hp<=0){ s.hp=0; s.state='dead'; blood(s.x+5,s.y+8,false,16); showMsg(LVL.escort.name+' загина! Опитай отново.',3); die(); } }
+function escHurt(d){ const s=ESC; if(!s||s.state==='dead'||player.dead||chtOn('god')) return; s.hp-=d*D.escDmg; s.hurtT=0.15; if(s.hp<=0){ s.hp=0; s.state='dead'; blood(s.x+5,s.y+8,false,16); showMsg(LVL.escort.name+' загина! Опитай отново.',3); die(); } }
 function drawEscort(s){
   begin(s); if(s.hurtT>0) tint='#ffffff';
   if(s.state==='dead'){ ctx.rotate(-Math.PI/2); }
@@ -36,6 +36,7 @@ function drawEscort(s){
 }
 
 defMech('escort',{
+  chips(chip){ if(ESC){ chip(LVL.escort.name.toUpperCase(),'#ffd08a'); chip.bar(ESC.hp,ESC.max,'#ffd08a'); } },
   load(){ ESC=null; const L=LVL;
   if(L.escort){ const tx=L.escort.x; ESC={x:tx*T+3,y:groundY(tx)-24,w:10,h:24,vx:0,vy:0,hp:100,max:100,face:-1,onGround:false,anim:0,state:'idle',esc:true,bt:5,hurtT:0,dropThrough:0}; scientists.push(ESC); }
   },

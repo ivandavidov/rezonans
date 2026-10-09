@@ -23,7 +23,7 @@ function bossDeathFx(b,dt){
 }
 function volley(b,offset){
   const p=player, ox=b.x+b.w/2, oy=b.y+b.h/2+6, base=Math.atan2(p.y+p.h/2-oy,p.x+p.w/2-ox);
-  const n=[3,5,7][b.phase-1]+(DI===2?2:0)-(DI===0?1:0), spread=0.22, sp=115*D.bspd*(b.phase===3?1.15:1);
+  const n=[3,5,7][b.phase-1]+D.volley, spread=0.22, sp=115*D.bspd*(b.phase===3?1.15:1);
   for(let i=0;i<n;i++){ const a=base+(i-(n-1)/2)*spread+(offset?spread/2:0); ebullets.push({x:ox,y:oy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:5,dmg:10,r:4,orb:true}); }
   sfxAt('orb',b); light(ox,oy,100,0.9,'rgba(200,120,255,');
 }

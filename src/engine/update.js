@@ -1,6 +1,6 @@
 /* ================= UPDATE ================= */
 function update(dt){
-  const p=player; lvT+=dt; const edt=dt*timeScale();
+  const p=player; lvT+=dt; const edt=dt*foeTime;
   stats.time+=dt;
   if(LVL.tick) LVL.tick(dt);
   updLifts(); mechRun('update',dt);
@@ -36,7 +36,7 @@ function update(dt){
   for(const b of barrels) if(!b.dead&&b.fuse>=0){ b.fuse-=dt; if(b.fuse<0){ b.dead=true; explode(b.x+6,b.y+8,74,90); } }
   for(const b of chtOn('freeze')?[]:ebullets){
     if(b.grav) b.vy+=G*edt;
-    if(b.hornet&&!p.dead){ const sp=Math.hypot(b.vx,b.vy), cur=Math.atan2(b.vy,b.vx), tg=Math.atan2(p.y+p.h/2-b.y,p.x+p.w/2-b.x), turn=(DI===0?0.9:DI===2?2.2:1.5)*dt, na=cur+clamp(angDiff(tg,cur),-turn,turn); b.vx=Math.cos(na)*sp; b.vy=Math.sin(na)*sp; }
+    if(b.hornet&&!p.dead){ const sp=Math.hypot(b.vx,b.vy), cur=Math.atan2(b.vy,b.vx), tg=Math.atan2(p.y+p.h/2-b.y,p.x+p.w/2-b.x), turn=D.hTurn*dt, na=cur+clamp(angDiff(tg,cur),-turn,turn); b.vx=Math.cos(na)*sp; b.vy=Math.sin(na)*sp; }
     b.x+=b.vx*edt; b.y+=b.vy*edt; b.life-=edt;
     if(b.orb&&Math.random()<0.5) part(b.x,b.y,rnd(-10,10),rnd(-10,10),0.3,b.ice?'#cfe8ff':b.acid?'#a6ff6a':b.hornet?'#e8ff6a':b.red?'#ff8a5a':'#d79bff',1,0);
     if(solidAt(b.x,b.y)){ b.life=0; sparks(b.x,b.y,3,b.orb?'#d79bff':'#ffd36b'); }

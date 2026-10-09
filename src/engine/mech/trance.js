@@ -42,7 +42,7 @@ function tranceUpdate(dt){
   for(const s of SONAR){ const r=s.t*300, c0=Math.floor((s.x-r-20)/T), c1=Math.floor((s.x+r+20)/T);
     for(let tx=Math.max(0,c0);tx<=Math.min(COLS-1,c1);tx++) for(let ty=0;ty<ROWS;ty++) if(map[ty][tx]==='h'){ const d=Math.hypot(tx*T+8-s.x,ty*T+8-s.y); if(d<r+10&&!HREV[tx+','+ty]){ HREV[tx+','+ty]=lvT; if(!M3.hmsg){ M3.hmsg=1; showMsg('Стената звучи кухо — зад нея има проход.',2.5); } } } }
   // хора в транс
-  const sp=(DI===2?17:DI===0?11:14);
+  const sp=D.sleepSp;
   for(const s of SLEEPERS){ s.anim+=dt;
     if(s.ok){ s.t+=dt; continue; }
     if(s.fall>0){ if(!s.fadeOnly){ s.vy+=G*dt; s.y+=s.vy*dt; } s.fall-=dt; if(s.fall<=0){ if(s.onLost) s.onLost(s); if(s.gone){ s.dead=true; continue; } s.x=s.x0; s.y=s.y0; s.vy=0; s.heal=0; s.fadeOnly=false; if(!M3.lostMsg||lvT-M3.lostMsg>6){ M3.lostMsg=lvT; showMsg('Човекът се събуди за миг, обърка се и пак тръгна отначало.',2.4); } } continue; }

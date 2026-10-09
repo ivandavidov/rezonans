@@ -1,5 +1,5 @@
 /* ================= CRUSHERS ================= */
-const crPer=()=>DI===0?3.8:DI===2?2.6:3.2;
+const crPer=()=>D.crush;
 function crPos(c){ if(chtOn('traps')) return 0; const per=crPer(), t=((lvT+c.off*per)%per+per)%per; if(t<per-1.2) return 0; if(t<per-0.8) return 0.03+0.02*Math.sin(t*70); if(t<per-0.65) return (t-(per-0.8))/0.15; if(t<per-0.4) return 1; return 1-(t-(per-0.4))/0.4; }
 function crRect(c){ const pos=crPos(c), y0=2*T+4, h=22; return {x:c.tx*T,y:y0+pos*(15*T-h-y0),w:c.w*T,h,pos}; }
 function updCrushers(dt){

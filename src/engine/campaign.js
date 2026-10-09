@@ -33,29 +33,20 @@ function drawHudStd(){
   ctx.fillStyle='rgba(4,14,18,0.55)'; ctx.fillRect(W-112,236,106,30); ctx.fillStyle=A; ctx.fillRect(W-8,236,2,30);
   ctx.textAlign='right'; ctx.font='600 6px "IBM Plex Mono",monospace'; ctx.fillStyle='rgba(200,240,240,0.7)'; ctx.fillText(p.reload>0?'ПРЕЗАРЕЖДАНЕ…':NAMES[p.cur],W-13,244);
   ctx.font='12px '+DFONT(); ctx.fillStyle='#e8fbff';
-  if(p.cur==='grenade'||p.cur==='rocket') ctx.fillText('× '+p.ammo[p.cur].mag,W-13,261);
-  else if(p.cur!=='wrench'){ const a=p.ammo[p.cur]; ctx.font='8px '+DFONT(); ctx.fillStyle='#7fb8bc'; const rs=String(a.res); ctx.fillText(rs,W-13,261); const rw=ctx.measureText(rs).width; ctx.font='12px '+DFONT(); ctx.fillStyle=a.mag===0?'#ff4d3a':'#e8fbff'; ctx.fillText(a.mag+' /',W-16-rw,261); }
+  const K=WEAPONS[p.cur].kind; if(K==='mag') ctx.fillText('× '+p.ammo[p.cur].mag,W-13,261);
+  else if(K!=='melee'){ const a=p.ammo[p.cur]; ctx.font='8px '+DFONT(); ctx.fillStyle='#7fb8bc'; const rs=String(a.res); ctx.fillText(rs,W-13,261); const rw=ctx.measureText(rs).width; ctx.font='12px '+DFONT(); ctx.fillStyle=a.mag===0?'#ff4d3a':'#e8fbff'; ctx.fillText(a.mag+' /',W-16-rw,261); }
   else ctx.fillText('—',W-13,261);
   ctx.textAlign='left';
   // status chips (top-left)
   let cy=8; const chip=(t,col)=>{ ctx.font='600 6px "IBM Plex Mono",monospace'; const w=ctx.measureText(t).width+10; ctx.fillStyle='rgba(4,14,18,0.6)'; ctx.fillRect(6,cy,w,10); ctx.fillStyle=col; ctx.fillRect(6,cy,2,10); ctx.fillText(t,11,cy+7); cy+=12; };
-  if(ERAD) chip('◷ '+LVL.eraNames[ERA]+'   ·   E — смени епохата','#ffd08a');
-  if(FLIPS.length) chip(FLIP?'⇅ ГРАВИТАЦИЯТА Е ОБЪРНАТА':'⇅ НОРМАЛНА ГРАВИТАЦИЯ','#d8c4ff');
-  if(LVL.zeroG||inZG(p)) chip('◌ БЕЗТЕГЛОВНОСТ · X — тласък','#9fe8ff');
-  if(LVL.sun) chip(MT.flare?'☼ ИЗБЛИК — СТОЙ НА СЯНКА!':MT.warn?'☼ ИДВА ИЗБЛИК…':'☼ слънцето е спокойно',MT.flare||MT.warn?'#ffb04a':'#c8b890');
-  if(ESC){ chip(LVL.escort.name.toUpperCase(),'#ffd08a'); hudBar(8,cy-1,60,ESC.hp,ESC.max,'#ffd08a'); cy+=7; }
-  if(GENS.length){ GENS.forEach((g,i)=>{ ctx.font='600 6px "IBM Plex Mono",monospace'; ctx.fillStyle='rgba(200,240,240,0.7)'; ctx.fillText('ГЕН. '+(i+1),8,cy+5); hudBar(36,cy+1,40,Math.max(0,g.hp),g.max,g.hp<35?'#ff4d3a':A); cy+=9; }); }
+  chip.bar=(v,max,col)=>{ hudBar(8,cy-1,60,v,max,col); cy+=7; };   // лента под надписа (спътникът)
+  chip.row=(t,v,max,col)=>{ ctx.font='600 6px "IBM Plex Mono",monospace'; ctx.fillStyle='rgba(200,240,240,0.7)'; ctx.fillText(t,8,cy+5); hudBar(36,cy+1,40,v,max,col); cy+=9; };   // ред с лента (генераторите)
   mechRun('chips',chip);
   if(muted){ ctx.font='600 6px "IBM Plex Mono",monospace'; ctx.fillStyle='#7f8e97'; ctx.fillText('БЕЗ ЗВУК (M)',8,cy+6); }
   // boss bar
   if(bossActive&&boss&&!boss.dead&&boss.state!=='intro'){ const bw=200,bx=(W-bw)/2; ctx.fillStyle='rgba(0,0,0,0.6)'; ctx.fillRect(bx-1,15,bw+2,6); ctx.fillStyle=(BOSSES[boss.type]||{}).col||A; ctx.fillRect(bx,16,bw*clamp(boss.hp/boss.max,0,1),4);
     ctx.font='600 7px "IBM Plex Mono",monospace'; ctx.textAlign='center'; ctx.fillStyle='#e8fbff'; ctx.fillText((BOSSES[boss.type]||{}).name||'',W/2,12); ctx.textAlign='left'; }
-  // message
-  if(msg){ const a=clamp(Math.min(msg.age*4,(msg.d-msg.age)*2),0,1); ctx.globalAlpha=a; ctx.font='600 9px "IBM Plex Mono",monospace';
-    const lines=wrap(msg.t,360), lw=Math.max(...lines.map(l=>ctx.measureText(l).width)), who=msg.who, w=lw+20, h=lines.length*12+6+(who?10:0), y=bossActive?30:20, x=W/2-w/2;
-    const wcol=who==='Д-Р ИЛИЕВА'?'#94ff57':'#7fd8ff'; ctx.fillStyle='rgba(4,14,18,0.82)'; ctx.fillRect(x,y,w,h); ctx.fillStyle=who?wcol:A; ctx.fillRect(x,y,2,h); ctx.fillRect(x+w-2,y,2,h);
-    let ly=y+11; if(who){ ctx.font='600 7px "IBM Plex Mono",monospace'; ctx.fillStyle=wcol; ctx.fillText('◉ '+who,x+10,ly-1); ly+=10; ctx.font='600 9px "IBM Plex Mono",monospace'; }
-    ctx.fillStyle='#eaf6f6'; for(const l of lines){ ctx.fillText(l,x+10,ly); ly+=12; } ctx.globalAlpha=1; }
+  drawMsgBox(bossActive?30:20,MSG_STD);
   ctx.font='600 6px "IBM Plex Mono",monospace'; ctx.fillStyle='rgba(200,240,240,0.5)'; ctx.textAlign='right'; ctx.fillText((SURV?(GAME.name+' · ОЦЕЛЯВАНЕ · СЕКТОР '+(survK+1)+' · '+D.name):LVL.training?(GAME.name+' · ТРЕНИРОВКА · '+D.name):(GAME.name+' · '+chShort(gChOf(LI))+' · ЕП. '+LVL.n+' · '+D.name))+chtTag(),W-6,9); ctx.textAlign='left';
   if(SURV){ ctx.font='600 7px "IBM Plex Mono",monospace'; ctx.textAlign='right'; ctx.fillStyle='#ff6a8a'; ctx.fillText('♥'.repeat(Math.max(0,survLives)),W-6,19); ctx.fillStyle=A; ctx.fillText('ТОЧКИ '+(survScore+stats.kills*10),W-6-survLives*8-6,19); ctx.textAlign='left'; }
   ctx.restore();
@@ -116,7 +107,7 @@ defFoe('imp',{upd:(e,dt)=>{
   const dx=tx-(e.x+e.w/2); e.face=sgn(dx)||e.face;
   if(e.onGround){ e.vx=Math.abs(dx)>6?sgn(dx)*72*D.bspd:0; if(e.vx&&wallAhead(e,e.face)) e.vy=-300; }
   physics(e,dt);
-  if(tg&&ov(e,tg)){ tg.hp-=dt*[5,8,11][DI]; tg.hitT=0.1; if(Math.random()<dt*6) sparks(tg.x+14,tg.y+8,2,'#bfe8ff'); if(tg.hp<=0){ tg.hp=0; sfxAt('boom',tg); explode(tg.x+14,tg.y+10,40,0,0,true); showMsg('Генератор е унищожен!',2); } }
+  if(tg&&ov(e,tg)){ tg.hp-=dt*D.burn; tg.hitT=0.1; if(Math.random()<dt*6) sparks(tg.x+14,tg.y+8,2,'#bfe8ff'); if(tg.hp<=0){ tg.hp=0; sfxAt('boom',tg); explode(tg.x+14,tg.y+10,40,0,0,true); showMsg('Генератор е унищожен!',2); } }
   if(!p.dead&&ov(e,p)&&e.bite<=0){ hurtPlayer(8,e.face*90); e.bite=0.8; }
 }});
 defFoe('imp',{draw:e=>{ begin(e); tint=e.hitT>0?'#fff':null; const s=Math.sin(e.anim)>0?1:0;

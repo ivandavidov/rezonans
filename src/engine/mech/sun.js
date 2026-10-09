@@ -3,6 +3,7 @@
 let sunWarned=false;
 function shaded(p){ const cx=Math.floor((p.x+p.w/2)/T); for(let ty=Math.floor(p.y/T)-1;ty>=0;ty--){ const c=tileAt(cx,ty); if(SOLID.has(c)||c==='-') return true; } return false; }
 defMech('sun',{
+  chips(chip){ if(LVL.sun) chip(MT.flare?'☼ ИЗБЛИК — СТОЙ НА СЯНКА!':MT.warn?'☼ ИДВА ИЗБЛИК…':'☼ слънцето е спокойно',MT.flare||MT.warn?'#ffb04a':'#c8b890'); },
   load(){ sunWarned=false; },
   update(dt){ const p=player;
   // sun flares

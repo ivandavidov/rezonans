@@ -100,7 +100,7 @@ function updTurret(e,dt){
 function updFlyer(e,dt){
   const p=player, pcx=p.x+p.w/2, pcy=p.y+p.h/2, ex=e.x+e.w/2, ey=e.y+e.h/2, dx=pcx-ex, dy=pcy-ey, dist=Math.hypot(dx,dy)||1;
   e.anim+=dt; e.dropThrough=1; e.bite-=dt;
-  if(!e.alert){ e.vx=Math.sin(e.anim*0.8)*20; e.vy=Math.sin(e.anim*2)*14; if(dist<260*(DI===2?1.25:1)&&los(ex,ey,pcx,pcy)){ e.alert=true; sfxAt('flyer',e); } }
+  if(!e.alert){ e.vx=Math.sin(e.anim*0.8)*20; e.vy=Math.sin(e.anim*2)*14; if(dist<260*D.sight&&los(ex,ey,pcx,pcy)){ e.alert=true; sfxAt('flyer',e); } }
   else if(p.dead){ e.vy=-30; e.vx*=0.95; }
   else if(e.state==='dive'){ e.t-=dt; if(e.t<=0||e.hitWall){ e.state='retreat'; e.t=0.7; } }
   else if(e.state==='retreat'){ e.vy=-90; e.vx=-sgn(dx)*60; e.t-=dt; if(e.t<=0) e.state='hover'; }
@@ -120,7 +120,7 @@ function updZombie(e,dt){
   if(!e.alert){ e.vx=0; if(adx<230&&Math.abs(dy)<90&&los(e.x+e.w/2,e.y+6,p.x+p.w/2,p.y+p.h/2)){ e.alert=true; sfxAt('zgroan',e); } }
   else if(!p.dead){
     if(e.state==='swing'){ e.vx=0; e.t-=dt; if(e.t<=0){ if(adx<24&&Math.abs(dy)<26) hurtPlayer(14,sgn(dx)*170); sfxAt('swingZ',e); e.state='walk'; e.cd=0.9*D.rate; } }
-    else { e.state='walk'; e.face=sgn(dx); e.vx=e.face*(DI===2?36:DI===0?20:28); if(!groundAhead(e,e.face)||wallAhead(e,e.face)) e.vx=0; e.cd-=dt;
+    else { e.state='walk'; e.face=sgn(dx); e.vx=e.face*D.walk; if(!groundAhead(e,e.face)||wallAhead(e,e.face)) e.vx=0; e.cd-=dt;
       if(adx<20&&Math.abs(dy)<26&&e.cd<=0){ e.state='swing'; e.t=Math.max(0.3,0.55*D.react); e.vx=0; }
       if(Math.random()<dt*0.12) sfxAt('zgroan',e); }
   } else e.vx=0;
@@ -129,7 +129,7 @@ function updZombie(e,dt){
 function updNest(e,dt){
   const p=player, dist=Math.hypot(p.x+p.w/2-(e.x+e.w/2),p.y+p.h/2-(e.y+e.h/2));
   e.anim+=dt; e.kids=(e.kids||[]).filter(k=>!k.dead);
-  if(!p.dead&&dist<330){ e.alert=true; e.cd-=dt; const cap=e.big?4:2+(DI===2?1:0);
+  if(!p.dead&&dist<330){ e.alert=true; e.cd-=dt; const cap=e.big?4:2+D.nestCap;
     if(e.cd<=0&&e.kids.length<cap){ const fl=e.big&&Math.random()<0.4, k=makeEnemy(fl?'flyer':'crab',e.x+e.w/2,e.y+e.h-2); k.alert=true;
       if(!fl){ k.vy=-230*Math.sqrt(G/900); k.vx=sgn(p.x-e.x)*90; k.t=0.6; }
       enemies.push(k); e.kids.push(k); sfxAt('birth',e); blood(e.x+e.w/2,e.y+4,true,6); e.cd=(e.big?3.5:6)*D.rate; e.pop=0.3; } }
@@ -145,7 +145,7 @@ function updGuard(e,dt){
     else { e.state='walk'; const want=adx>170?e.face:0; e.vx=want*30; if(want&&(!groundAhead(e,want)||wallAhead(e,want))) e.vx=0;
       e.cd-=dt; e.cd2=(e.cd2||0)-dt;
       if(adx<24&&Math.abs(dy)<30&&e.cd2<=0){ e.state='punch'; e.t=Math.max(0.25,0.4*D.react); e.vx=0; }
-      else if(e.cd<=0&&e.burst<=0&&adx<330&&los(ex,ey,pcx,pcy)){ e.burst=DI===0?2:DI===2?4:3; e.bt=0.3; e.cd=rnd(2.2,3.2)*D.rate; } }
+      else if(e.cd<=0&&e.burst<=0&&adx<330&&los(ex,ey,pcx,pcy)){ e.burst=D.burst; e.bt=0.3; e.cd=rnd(2.2,3.2)*D.rate; } }
     if(e.burst>0){ e.bt-=dt; if(e.bt<=0){ e.burst--; e.bt=0.2; const ox=ex+e.face*10, oy=e.y+11, a=Math.atan2(pcy-oy,pcx-ox)+rnd(-0.25,0.25);
       ebullets.push({x:ox,y:oy,vx:Math.cos(a)*165*D.bspd,vy:Math.sin(a)*165*D.bspd,life:3,dmg:8,r:2,orb:true,hornet:true}); sfxAt('hornet',e); e.flashT=0.08; } }
   } else e.vx=0;
@@ -162,5 +162,12 @@ function updScientist(s,dt){ if(s.esc) return updEscort(s,dt);
 defFoes('dims',{crab:[12,8,20],shocker:[14,28,60],soldier:[12,26,60],turret:[12,10,50],flyer:[14,10,24],zombie:[12,26,55],nest:[20,16,90],guard:[16,30,110],target:[14,23,1]});
 defFoes('upd',{crab:updCrab,shocker:updShocker,soldier:updSoldier,turret:updTurret,flyer:updFlyer,zombie:updZombie,nest:updNest,guard:updGuard,target:updTarget});
 defFoes('draw',{crab:drawCrab,shocker:drawShocker,soldier:drawSoldier,turret:drawTurret,flyer:drawFlyer,zombie:drawZombie,nest:drawNest,guard:drawGuard,target:drawTarget});
-defFoes('fixed',{turret:true,nest:true}); defFoes('noCrush',{flyer:true,nest:true}); defFoes('fly',{flyer:true}); defFoes('mech',{turret:true,target:true}); defFoes('human',{soldier:true,zombie:true});
+defFoes('fixed',{turret:true,nest:true}); defFoes('noKnock',{turret:true}); defFoes('hp1',{target:true}); defFoes('noEscBite',{target:true,crab:true});
+defFoes('chargeLight',{shocker:true}); defFoes('noTorch',{nest:true}); defFoes('gore',{nest:30}); defFoes('radio',{soldier:true}); defFoes('dropSfx',{crab:'crabIdle',zombie:'zgroan',shocker:'growl'});
+defFoes('hit',{shocker:e=>{ if(e.state==='charge'&&Math.random()<0.35){ e.state='stagger'; e.t=0.45; } }});
+defFoes('pain',{zombie:e=>{ if(Math.random()<0.3) sfxAt('zgroan',e); },shocker:e=>{ if(Math.random()<0.4) sfxAt('alienPain',e); },soldier:e=>{ if(Math.random()<0.4) sfxAt('humanDie',e); }});
+defFoes('dieFx',{target:(e,cx)=>{ sparks(cx,e.y+7,10,'#fff3b0'); e.vy=-120; if(AC){ osc({type:'square',f:880,t:0.07,v:0.08}); osc({when:0.07,type:'square',f:1320,t:0.12,v:0.08}); } }});
+defFoes('die',{zombie:(e,cx)=>{ sfxAt('zgroan',e); if(Math.random()<D.crabSpawn){ const c=makeEnemy('crab',cx,e.y+10); c.alert=true; c.vy=-150; enemies.push(c); } },
+  guard:e=>sfxAt('alienDie',e), nest:e=>{ sfxAt('birth',e); sfxAt('alienDie',e); shake=Math.max(shake,4); }, crab:e=>sfxAt('crabDie',e), shocker:e=>sfxAt('alienDie',e), flyer:e=>sfxAt('alienDie',e),
+  soldier:e=>{ sfxAt('humanDie',e); if(Math.random()<D.drop){ const g=player.weapons.grenade&&Math.random()<0.2; pickups.push({type:g?'grenade':'ammo',x:e.x,y:e.y+e.h-10,w:12,h:10,taken:false,bob:0,vy:-80}); } }}); defFoes('noCrush',{flyer:true,nest:true}); defFoes('fly',{flyer:true}); defFoes('mech',{turret:true,target:true}); defFoes('human',{soldier:true,zombie:true});
 

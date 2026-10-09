@@ -2,6 +2,7 @@
    LVL.gens: [[tx,row]] — генератори, които враговете (или босът) удрят; възстановяват се бавно. */
 let GENS=[];
 defMech('gens',{
+  chips(chip){ GENS.forEach((g,i)=>chip.row('ГЕН. '+(i+1),Math.max(0,g.hp),g.max,g.hp<35?'#ff4d3a':ACC())); },
   load(){ GENS=[]; const L=LVL;
   if(L.gens) GENS=L.gens.map(([tx,row])=>({x:tx*T-6,y:(row+1)*T-22,w:28,h:22,hp:100,max:100,hitT:0}));
   },

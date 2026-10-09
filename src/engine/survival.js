@@ -6,6 +6,7 @@ addUnique(MUT_NAME,{bats:'Рояци прилепи'},'MUT_NAME');   // мута
    (от тригерите му — само маркираните с cp:N и boss:1) или я строи GAME.svArena (r1). */
 const SV_THEMES={};
 const SV_LOAD={w:['wrench','pistol'],ammo:{pistol:[17,51]},armor:0,cur:'pistol'};
+const SV_WEAP={1:'shotgun',2:'grenade',6:'pulse',10:'rocket'};   // в кой сектор се появява ново оръжие (в началото му)
 const svSky=key=>key&&SKIES[key]||null;
 /* ---------- план на секторите: една функция, данните са на частта (GAME.svSpec) ----------
    salt — множители на семето; early/mid/late — темите по етапи; recent — без повторение в последните N теми;
@@ -51,10 +52,16 @@ function svBoss(k,plan){
    foesK ([[от сектор, враг]]; без него — пазачи от сектор 7), air (летящ враг над веригите), deco/decoB(x,y,h,py) (декор на
    земята в колоните x-1…x+1 — под тях има равен под), sign, eraNames, alarmFoe.
    Теглата на сегментите се изчисляват от етикетите. Сектор с бос: GAME.svArena строи арената (r1); копията от кампанията — svBoss. */
+// ролите на враговете в секторите — общият състав на поредицата; частта може да ги смени в svSpec.roles:
+// air — летящият над веригите, elite — пазачът от сектор 7, sniper — войникът на високо (и скача в сражение), any — ако темата няма друг,
+// perch — [картечница, засада] на издатините, swim — [риба, медуза] в басейните, hover — летящият на място, zero — в безтегловност
+const SV_ROLES={air:'flyer',elite:'guard',sniper:'soldier',any:'crab',perch:['turret','shocker'],swim:['fish','jelly'],hover:'drone',zero:['guard','shocker','crab']};
+const svRoles=()=>Object.assign({},SV_ROLES,GAME.svSpec&&GAME.svSpec.roles);
 function svTry(k,plan,att,simple){
+  const RL=svRoles();
   const r=mkRng(survSeed*7919+k*104729+att*31337+13), ri=(a,b)=>a+Math.floor(r()*(b-a+1)), pick=a=>a[Math.floor(r()*a.length)], ch=p=>r()<p;
   const theme=plan.theme, tg=SV_THEMES[theme], sky=!!tg.sky, era=!!tg.era, lowg=!!tg.lowg||plan.muts.includes('lowg'), isBoss=!!plan.boss;
-  const swarm=plan.muts.includes('swarm'), scarce=plan.muts.includes('scarce'), air=tg.air!==undefined?tg.air:tg.foes.includes('flyer')?'flyer':null;
+  const swarm=plan.muts.includes('swarm'), scarce=plan.muts.includes('scarce'), air=tg.air!==undefined?tg.air:tg.foes.includes(RL.air)?RL.air:null;
   const MAXC=460, g=[]; for(let y=0;y<ROWS;y++) g.push(new Array(MAXC).fill('.'));
   const set=(x,y,c)=>{ if(x>=0&&x<MAXC&&y>=0&&y<ROWS) g[y][x]=c; };
   const fill=(x0,y0,x1,y1,c)=>{ for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++) set(x,y,c); };
@@ -69,9 +76,9 @@ function svTry(k,plan,att,simple){
   const ground=n=>{ for(let i=0;i<n;i++){ colG(b.x,b.gy); b.x++; } };
   const stepTo=ty=>{ let guard=0; while(b.gy!==ty&&guard++<20){ const d=ty-b.gy; b.gy+=d<0?-Math.min(-d,ri(1,2)):Math.min(d,ri(1,3)); ground(ri(2,4)); } };
   const loot=(x,y,good)=>{ const roll=r(); let t; if(good) t=roll<0.35?'battery':roll<0.6&&k>=2?'grenade':roll<0.8&&k>=6?'rockets':'health'; else t=roll<0.4?'health':roll<0.8?'ammo':'battery'; fixed.push([t,x,y-1]); };
-  const foeT=(onGround,B)=>{ let pool=((B&&tg.foesB)||tg.foes).slice(); if(onGround) pool=pool.filter(t=>t!=='flyer');
-    for(const [kk,t] of (tg.foesK||[[6,'guard']])) if(k>=kk&&!(onGround&&t==='flyer')&&!(t==='guard'&&tg.noGuard)) pool.push(t);
-    if(k>=4&&tg.turret&&!onGround) pool.push('soldier'); return pick(pool.length?pool:['crab']); };
+  const foeT=(onGround,B)=>{ let pool=((B&&tg.foesB)||tg.foes).slice(); if(onGround) pool=pool.filter(t=>t!==RL.air);
+    for(const [kk,t] of (tg.foesK||[[6,RL.elite]])) if(k>=kk&&!(onGround&&t===RL.air)&&!(t===RL.elite&&tg.noGuard)) pool.push(t);
+    if(k>=4&&tg.turret&&!onGround) pool.push(RL.sniper); return pick(pool.length?pool:[RL.any]); };
   const F={
     terrain(){ const n=ri(8,16), x0=b.x; for(let i=0;i<n;i++){ if(i>1&&ch(0.22)){ b.gy=clamp(b.gy+(ch(0.5)?-ri(1,2):ri(1,2)),GMIN,15); } colG(b.x,b.gy); b.x++; }
       for(let j=ri(0,2);j>0;j--){ const x=x0+ri(1,n-3), w=ri(1,2), h=ri(1,3), top=gtop[x]-h;   // сандък — до 3 реда над съседите (не на ръба на стъпало); в резервния опит — без
@@ -117,13 +124,13 @@ function svTry(k,plan,att,simple){
       for(let n=ri(1,3);n>0;n--){ const px=x0+ri(2,W-6), py=b.gy-pick([3,3,6]); if(py>GMIN-2){ fill(px,py,px+ri(2,4),py,'-'); if(b.gy-py>3) fill(px-3,b.gy-3,px-1,b.gy-3,'-'); } }   // до високата платформа — стъпало
       const dxc=b.x; colG(dxc,b.gy); fill(dxc,sky?0:2,dxc,b.gy-1,'D'); noCeil.add(dxc); noSpawn.add(dxc); b.x++; ground(2);
       const waves=[], nw=2+(k>=8?1:0), per=2+Math.floor(k/6);
-      for(let w=0;w<nw;w++){ const wv=[]; for(let i=0;i<per;i++){ const t=foeT(false); wv.push(FOES[t].fly?[t,x0+ri(3,W-3),'portal',null,b.gy-ri(4,6)]:[t,x0+ri(3,W-3),(t==='soldier'&&!sky)?'drop':'portal']); } wv.push([foeT(true),x0+ri(3,W-3),'portal','H']); waves.push(wv); }
+      for(let w=0;w<nw;w++){ const wv=[]; for(let i=0;i<per;i++){ const t=foeT(false); wv.push(FOES[t].fly?[t,x0+ri(3,W-3),'portal',null,b.gy-ri(4,6)]:[t,x0+ri(3,W-3),(t===RL.sniper&&!sky)?'drop':'portal']); } wv.push([foeT(true),x0+ri(3,W-3),'portal','H']); waves.push(wv); }
       const door=[dxc,sky?0:2,b.gy-1];
       triggers.push({x:x0+3,fn:()=>startEncounter({msg:'Засада!',doorOut:door,waves,done:()=>showMsg('Чисто е. Продължавай.',1.8)})}); },
     nests(){ if(nestDone||era) return F.terrain(); nestDone=true; ground(2); const W=ri(14,20), x0=b.x; ground(W);
       for(let n=ri(2,3),i=0;i<n;i++) fixed.push(['nestG',x0+2+Math.floor((W-4)*(i+0.5)/n),b.gy-1]);
       const dxc=b.x; colG(dxc,b.gy); fill(dxc,sky?0:2,dxc,b.gy-1,'D'); noCeil.add(dxc); noSpawn.add(dxc); b.x++; gate={door:[dxc,sky?0:2,b.gy-1],msg:'Гнездата са унищожени — проходът е свободен.'}; ground(2); },
-    perch(){ ground(2); const w=ri(3,5), h=ri(2,3); for(let i=0;i<w;i++) colG(b.x+i,b.gy-h); fixed.push([(tg.turret||tg.human)&&ch(0.6)?'turret':'shocker',b.x+(w>>1),b.gy-h-1]); b.x+=w; ground(ri(3,6)); },
+    perch(){ ground(2); const w=ri(3,5), h=ri(2,3); for(let i=0;i<w;i++) colG(b.x+i,b.gy-h); fixed.push([(tg.turret||tg.human)&&ch(0.6)?RL.perch[0]:RL.perch[1],b.x+(w>>1),b.gy-h-1]); b.x+=w; ground(ri(3,6)); },
     islands(){ F.chain(true); },
     drop(){ if(b.gy>11) return F.stairs(); ground(2); b.gy=ri(b.gy+3,15); ground(ri(3,6)); },
     zfloor(){ if(b.gy<GMIN+3) stepTo(GMIN+4); ground(2); const n=ri(6,11), x0=b.x; for(let i=0;i<n;i++){ colG(b.x,b.gy); set(b.x,b.gy,'Z'); b.x++; }
@@ -135,8 +142,8 @@ function svTry(k,plan,att,simple){
       for(let x=x0;x<=x1;x++){ colG(x,15); fill(x,gy,x,14,'w'); gtop[x]=99; noSpawn.add(x); }
       gvOps.push([x0,gy,x1,16,'#']);
       if(dive){ const xm=x0+ri(3,W-5); fill(xm,2,xm+1,gy+1,'#'); gvOps.push([xm,0,xm+1,gy-1,'.']); fixed.push([ch(0.5)?'air':'airR',xm+(ch(0.5)?-1:2),13]); once('dive',x0-1,'Стената стига до водата — гмурни се отдолу.',3); }
-      if(k>=1&&ch(0.8)) fixed.push([ch(0.65)?'fish':'jelly',x0+ri(1,W-2),13]);
-      if(k>=5&&ch(0.4)) fixed.push(['fish',x0+ri(1,W-2),12,'H']);
+      if(k>=1&&ch(0.8)) fixed.push([ch(0.65)?RL.swim[0]:RL.swim[1],x0+ri(1,W-2),13]);
+      if(k>=5&&ch(0.4)) fixed.push([RL.swim[0],x0+ri(1,W-2),12,'H']);
       if(ch(0.35)) loot(x0+(W>>1),15,ch(0.5));
       b.x=x1+1; ground(ri(2,4)); },
     sluice(){ if(b.gy<8||b.gy>13) stepTo(ri(9,12)); ground(4);
@@ -264,9 +271,9 @@ function svTry(k,plan,att,simple){
   const placed=[];
   for(const [x,y] of cells){ if(placed.length>=nE*1.35) break; if(placed.some(p=>Math.abs(p[0]-x)<4)) continue; placed.push([x,y]); }
   const put=(arr,B)=>(([x,y],i)=>{ const hard=i>=nE, elev=y<gtop[x]-1; let t=foeT(true,B);
-    if(tg.human&&elev&&k>=3&&ch(0.5)) t=ch(0.3)?'turret':'soldier';
-    if(((B&&tg.foesB)||tg.foes).includes('flyer')&&ch(0.22)){ const fy=y-ri(3,5); if(fy>1&&g[fy][x]==='.'&&g[fy+1][x]==='.'){ arr.push(['flyer',x,fy].concat(hard?['H']:[])); return; } }
-    if(t==='drone'){ const fy=y-ri(2,4); if(fy>1&&g[fy][x]==='.'&&g[fy+1][x]==='.'){ arr.push(['drone',x,fy].concat(hard?['H']:[])); return; } }
+    if(tg.human&&elev&&k>=3&&ch(0.5)) t=ch(0.3)?RL.perch[0]:RL.sniper;
+    if(((B&&tg.foesB)||tg.foes).includes(RL.air)&&ch(0.22)){ const fy=y-ri(3,5); if(fy>1&&g[fy][x]==='.'&&g[fy+1][x]==='.'){ arr.push([RL.air,x,fy].concat(hard?['H']:[])); return; } }
+    if(t===RL.hover){ const fy=y-ri(2,4); if(fy>1&&g[fy][x]==='.'&&g[fy+1][x]==='.'){ arr.push([RL.hover,x,fy].concat(hard?['H']:[])); return; } }
     arr.push([t,x,y-1].concat(hard?['H']:[])); });
   placed.forEach(put(spawns,false));
   if(era) placed.forEach(put(spawnsB,true));
@@ -276,7 +283,7 @@ function svTry(k,plan,att,simple){
     if(best) loot(best[0],best[1],best[2]); }
   for(let x=20;x<end;x+=ri(24,32)){ for(let xx=x;xx<x+5;xx++){ const y=gyEq(xx); if(y<16&&safe(xx,y)){ spawns.push(['health',xx,y-1,'E']); break; } } }
   for(const f of fixed) if(!spawns.includes(f)) spawns.push(f);   // плячката, добавена след разстановката на враговете
-  const WEAP={1:'shotgun',2:'grenade',6:'pulse',10:'rocket'}; const sy=gyEq(8);
+  const WEAP=SV_WEAP; const sy=gyEq(8);
   if(WEAP[k]) spawns.push([WEAP[k],8,sy-1]); if(k>=10&&k%5===0) spawns.push(['rockets',9,sy-1]); spawns.push(['health',10,sy-1,'E']);
   // предмет на недостижимо място — до най-близкото безопасно (до 8 колони) или отпада; предметите под вода остават
   for(let i=spawns.length-1;i>=0;i--){ const [t,x,y]=spawns[i]; if(DIMS[t]||t==='barrel'||t.startsWith('nest')||V.R[(y+1)*cols+x]||g[y]&&g[y][x]==='w') continue;
@@ -322,6 +329,7 @@ function svTry(k,plan,att,simple){
 
 /* ---------- zero-g sectors (Източникът · Безтегловност) ---------- */
 function svZero(k,plan,att){
+  const RL=svRoles();
   const r=mkRng(survSeed*7919+k*104729+att*31337+29), ri=(a,b)=>a+Math.floor(r()*(b-a+1)), ch=p=>r()<p, pick=a=>a[Math.floor(r()*a.length)];
   const cols=ri(140,170)+Math.min(40,k*2), g=[]; for(let y=0;y<ROWS;y++) g.push(new Array(cols).fill('#'));
   const clr=(x0,y0,x1,y1)=>{ for(let y=Math.max(2,y0);y<=Math.min(14,y1);y++) for(let x=Math.max(2,x0);x<=Math.min(cols-3,x1);x++) g[y][x]='.'; };
@@ -345,9 +353,9 @@ function svZero(k,plan,att){
   const cell=x=>{ const [a,b2]=mid[x]; for(let t=0;t<8;t++){ const y=ri(a,b2-1); if(free(x,y)) return y; } return -1; };
   const nE=Math.min(22,Math.round((cols-30)/14*(0.7+0.05*k)*(plan.muts.includes('swarm')?1.5:1)));
   for(let i=0,x=22;i<nE*1.3&&x<cols-18;i++,x+=ri(5,9)){ if(lx.has(x)) continue; const y=cell(x); if(y<0) continue; const hard=i>=nE;
-    const t=ch(0.65)?'drone':pick(['guard','shocker','crab']); spawns.push([t,x,t==='drone'?y:bot(x)].concat(hard?['H']:[])); }
+    const t=ch(0.65)?RL.hover:pick(RL.zero); spawns.push([t,x,t===RL.hover?y:bot(x)].concat(hard?['H']:[])); }
   for(let x=18;x<cols-10;x+=ri(12,18)*(plan.muts.includes('scarce')?1.6:1)){ const xx=Math.floor(x); if(lx.has(xx)) continue; spawns.push([pick(['health','ammo','battery','ammo']),xx,bot(xx)]); }
-  const WEAP={1:'shotgun',2:'grenade',6:'pulse',10:'rocket'}; if(WEAP[k]) spawns.push([WEAP[k],8,14]); spawns.push(['health',10,14,'E']);
+  const WEAP=SV_WEAP; if(WEAP[k]) spawns.push([WEAP[k],8,14]); spawns.push(['health',10,14,'E']);
   for(let x=30;x<cols-16;x+=ri(26,36)){ let cx=x; while(lx.has(cx)||lx.has(cx-1)||lx.has(cx+1)) cx++; triggers.push({x:cx,fn:()=>setCp(cx)}); }
   const zt=SV_THEMES[plan.theme], exit=cols-5, signT='СЕКТОР '+(k+1)+' · '+zt.name.toUpperCase()+' · БЕЗТЕГЛОВНОСТ';
   return {n:100+k,title:'СЕКТОР '+(k+1),surv:true,cols,grav:900,music:Object.assign({},zt.mus),start:4,dark:false,alarm:false,zeroG:true,

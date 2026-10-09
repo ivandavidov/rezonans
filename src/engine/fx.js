@@ -12,7 +12,7 @@ function explode(x,y,r=70,dmg=80,selfMul=1,fromBoss=false){
   sfxAt('boom',{x,y,w:0});
   const hurtIn=e=>{ const cx=e.x+e.w/2,cy=e.y+e.h/2,d=Math.hypot(cx-x,cy-y); return d<r?dmg*(1-d/r)+12:0; };
   if(player&&!player.dead&&selfMul>0){ const d=hurtIn(player)*selfMul; if(d>0){ hurtPlayer(d,sgn(player.x+5-x)*220); player.vy=-220; } }
-  for(const e of enemies) if(!e.dead){ const d=hurtIn(e); if(d>0){ hurtEnemy(e,d*1.4,sgn(e.x-x)*200); if(e.type!=='turret') e.vy=-200; } }
+  for(const e of enemies) if(!e.dead){ const d=hurtIn(e); if(d>0){ hurtEnemy(e,d*1.4,sgn(e.x-x)*200); if(!FOES[e.type].noKnock) e.vy=-200; } }
   for(const s of scientists) if(s.state!=='dead'&&hurtIn(s)>0) killSci(s);
   if(boss&&!boss.dead&&!fromBoss){ const cx=boss.x+boss.w/2,cy=boss.y+boss.h/2,d=Math.hypot(cx-x,cy-y); if(d<r+30) hurtBoss(150*(1-d/(r+30))+40,true); }
   for(const b of barrels) if(!b.dead&&b.fuse<0&&Math.hypot(b.x+6-x,b.y+8-y)<r) b.fuse=0.15;

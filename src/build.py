@@ -66,7 +66,7 @@ loads=''.join(",document.fonts.load('"+f+"')" for _,g in games for f in g.get('f
 # основата на двигателя по раздели (бившата база), регистрите (defs.js) и споделеното съдържание (lib/) — в този ред
 BASE=['core.js','defs.js','difficulty.js','synth.js','lib/themes.js','map.js','prerender.js','sky.js','input.js','state.js','fx.js',
       'combat.js','player.js','enemies.js','lifts.js','crushers.js','trains.js','bosses.js','missiles.js','survgen.js','flow.js',
-      'update.js','render.js','training.js']
+      'update.js','render.js','training.js','lib/weapons.js','lib/items.js']
 # механиките (engine/mech/) — core.js първи; редът на куките е в MECH_ORDER (core.js), не тук
 MECH=['core','water','levers','escort','flips','shifters','allies','eras','gens','chase','sun','winds','echo','plates','cams','terms','snow',
       'freqsonar','trance','tone','cursors']

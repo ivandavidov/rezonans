@@ -15,7 +15,7 @@ defMech('chase',{
   // chase
   const C=LVL.chase;
   if(C&&!CHASE&&p.x>C.start*T){ CHASE={x:p.x-C.lead*T,done:false}; shake=10; showMsg(C.msg||'Лавина! Бягай!',2.5); SFX.cascade&&SFX.cascade(); }
-  if(CHASE&&!CHASE.done){ CHASE.x+=C.speed*[0.82,1,1.12][DI]*dt; if(p.x-CHASE.x>C.lead*T+6*T) CHASE.x=p.x-(C.lead+6)*T;
+  if(CHASE&&!CHASE.done){ CHASE.x+=C.speed*D.chase*dt; if(p.x-CHASE.x>C.lead*T+6*T) CHASE.x=p.x-(C.lead+6)*T;
     shake=Math.max(shake,clamp(6-(p.x-CHASE.x)/(3*T),0,5));
     if(chtOn('god')&&p.x<CHASE.x+4*T) CHASE.x=p.x-4*T;   // чийт: безсмъртие — не те стига
     if(!p.dead&&p.x<CHASE.x+4){ die(); showMsg(C.die||'Лавината те затрупа!',2.5); }

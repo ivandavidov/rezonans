@@ -30,6 +30,7 @@ function waterMove(p,dt,dir,U,Dn){
   return true;
 }
 defMech('water',{
+  chips(chip){ if(LVL.zeroG||inZG(player)) chip('◌ БЕЗТЕГЛОВНОСТ · X — тласък','#9fe8ff'); },
   load(){ FLOOD=null; airWarned=false; const L=LVL;
   if(player){ player.air=100; player.swim=false; player.wet=false; player.headWet=false; }
   if(L.flood) FLOOD={y:L.flood.y*T, y0:L.flood.y*T, rate:L.flood.rate, top:L.flood.top*T, on:!L.flood.wait, x0:(L.flood.x0||0)*T, x1:(L.flood.x1||COLS)*T};
@@ -37,13 +38,13 @@ defMech('water',{
   update(dt){ const p=player;
   // air
   if(!p.dead){
-    if(p.headWet){ p.air-=dt*100/[22,15,11][DI]; if(p.air<30&&!airWarned){ airWarned=true; showMsg('Въздухът свършва — изплувай или намери мехурчета!',2.5); }
+    if(p.headWet){ p.air-=dt*100/D.air; if(p.air<30&&!airWarned){ airWarned=true; showMsg('Въздухът свършва — изплувай или намери мехурчета!',2.5); }
       if(p.air<=0){ p.air=0; p.drownT=(p.drownT||0)-dt; if(p.drownT<=0){ p.drownT=0.6; hurtPlayer(7,0,true); } }
       if(Math.random()<dt*2.5) part(p.x+p.w/2+p.face*4,p.y+6,rnd(-6,6),rnd(-40,-25),1.2,'#cfefff',1.5,-10); }
     else { if(p.air<100) p.air=Math.min(100,p.air+dt*60); if(p.air>60) airWarned=false; }
   }
   // flood
-  if(FLOOD&&FLOOD.on){ const far=FLOOD.y-(p.y+p.h)>8*T; FLOOD.y=Math.max(FLOOD.top,FLOOD.y-FLOOD.rate*[0.7,1,1.25][DI]*(far?1.8:1)*dt); if(Math.random()<dt*0.5) sfxAt('steam',{x:p.x,y:FLOOD.y,w:0}); }
+  if(FLOOD&&FLOOD.on){ const far=FLOOD.y-(p.y+p.h)>8*T; FLOOD.y=Math.max(FLOOD.top,FLOOD.y-FLOOD.rate*D.flood*(far?1.8:1)*dt); if(Math.random()<dt*0.5) sfxAt('steam',{x:p.x,y:FLOOD.y,w:0}); }
   if(FLOOD&&FLOOD.drain){ FLOOD.y=Math.min(FLOOD.y0,FLOOD.y+70*dt); if(FLOOD.y>=FLOOD.y0) FLOOD.drain=false; }
   if(LVL.flood&&LVL.flood.wait&&FLOOD&&!FLOOD.on&&!FLOOD.drain&&FLOOD.y>=FLOOD.y0&&p.x>LVL.flood.wait*T&&!MT.floodDone){ FLOOD.on=true; MT.floodDone=true; shake=8; showMsg(LVL.flood.msg||'Водата нахлува!',2.5); }
   },

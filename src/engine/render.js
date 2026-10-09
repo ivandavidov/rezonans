@@ -28,20 +28,13 @@ function drawPlayer(){
   }
   tint=null; ctx.restore();
 }
-function drawGun(p,y){
-  if(p.cur==='none') return;
+function drawGun(p,y){   // оръжието в ръката — по defWeapon (sprite, rot, flash)
+  if(p.cur==='none') return; const G=WEAPONS[p.cur]||WEAPONS.wrench;
   ctx.save(); ctx.translate(1,y);
-  if(p.cur==='wrench'){ const s=p.swingT>0?(1-p.swingT/0.22):0; ctx.rotate(p.swingT>0?-1.4+s*2.2:-0.5); }
-  else if(p.cur==='grenade'){ ctx.rotate(p.swingT>0?-1.2+(1-p.swingT/0.2)*1.6:-0.2); }
-  else if(p.aimUp) ctx.rotate(-Math.PI/4);
+  if(G.rot) ctx.rotate(G.rot(p)); else if(p.aimUp) ctx.rotate(-Math.PI/4);
   px(-1,-1,5,2,'#b5832b'); px(3,-1,2,2,'#e2b48f');
-  if(p.cur==='pistol'){ px(4,-2,6,2,'#2a2e33'); px(4,0,2,2,'#2a2e33'); px(5,-2,4,1,'#4b525a'); }
-  else if(p.cur==='shotgun'){ px(0,-2,13,2,'#2a2e33'); px(5,0,6,1,'#6b4a2a'); px(-3,0,4,2,'#6b4a2a'); }
-  else if(p.cur==='pulse'){ px(-2,-3,14,3,'#33413a'); px(2,0,5,2,'#33413a'); px(4,-2,6,1,'#5dffa8'); px(11,-2,3,1,'#9affc8'); }
-  else if(p.cur==='grenade'){ px(4,-3,4,4,'#3c4a2a'); px(5,-4,2,1,'#9aa3aa'); }
-  else if(p.cur==='rocket'){ px(-6,-4,20,4,'#3d4430'); px(-6,-4,20,1,'#5a6348'); px(13,-5,2,6,'#22261c'); px(2,0,3,3,'#22261c'); if(p.ammo.rocket.mag>0) px(14,-3,2,2,'#c9473a'); }
-  else { px(4,-1,9,2,'#9aa3aa'); px(12,-3,3,2,'#9aa3aa'); px(12,1,3,2,'#9aa3aa'); px(4,-1,9,1,'#c6ccd0'); }
-  if(p.flashT>0&&!tint){ const L=p.cur==='shotgun'?14:p.cur==='pulse'?15:11; ctx.fillStyle=p.cur==='pulse'?'#d8ffe8':'#fff6c8'; ctx.fillRect(L,-3,4,4); ctx.fillStyle=p.cur==='pulse'?'#5dffa8':'#ffb43a'; ctx.fillRect(L+3,-2,4,2); ctx.fillRect(L+1,-5,2,2); ctx.fillRect(L+1,2,2,2); }
+  G.sprite(p);
+  if(p.flashT>0&&!tint){ const [L=11,c1='#fff6c8',c2='#ffb43a']=G.flash||[]; ctx.fillStyle=c1; ctx.fillRect(L,-3,4,4); ctx.fillStyle=c2; ctx.fillRect(L+3,-2,4,2); ctx.fillRect(L+1,-5,2,2); ctx.fillRect(L+1,2,2,2); }
   ctx.restore();
 }
 function fade(e,start){ const a=1-clamp(e.deadT-start,0,1); ctx.globalAlpha=a; return a>0; }
@@ -156,16 +149,7 @@ function drawScientist(s){ if(s.esc) return drawEscort(s);
 }
 function drawPickup(k){
   const x=Math.round(k.x-cam), y=Math.round(k.y+(k.vy===undefined?Math.sin(titleT*3+k.bob)*1.5:0));
-  if((ITEMS[k.type]||{}).draw) return ITEMS[k.type].draw(k,x,y);
-  if(k.type==='health'){ px(x,y,12,10,'#e9eef0'); px(x,y,12,1,'#ffffff'); px(x,y+9,12,1,'#a7b0b5'); px(x+5,y+2,2,6,'#d22a2a'); px(x+3,y+4,6,2,'#d22a2a'); }
-  else if(k.type==='battery'){ px(x+2,y-2,8,12,'#1f3f6b'); px(x+4,y-3,4,1,'#9aa3aa'); px(x+3,y,6,8,'#3c8ce0'); px(x+3,y+5-Math.floor((titleT*4)%4),6,1,'#bfe4ff'); }
-  else if(k.type==='ammo'){ px(x,y+2,12,8,'#4d5636'); px(x,y+2,12,1,'#6b7650'); px(x+2,y+4,8,3,'#c9a227'); px(x+3,y+5,6,1,'#7a6418'); }
-  else if(k.type==='pistol'){ px(x,y+4,11,3,'#2a2e33'); px(x,y+4,11,1,'#5a616a'); px(x+1,y+6,3,4,'#3a4046'); px(x+9,y+4,2,1,'#8e9aa3'); }
-  else if(k.type==='shotgun'){ px(x-4,y+4,18,2,'#2a2e33'); px(x+4,y+6,7,2,'#6b4a2a'); px(x-6,y+5,4,3,'#6b4a2a'); px(x-4,y+4,18,1,'#5a616a'); }
-  else if(k.type==='pulse'){ px(x-4,y+3,18,3,'#33413a'); px(x,y+6,5,2,'#33413a'); px(x-1,y+4,10,1,'#5dffa8'); px(x+12,y+4,3,1,'#9affc8'); }
-  else if(k.type==='rocket'){ px(x-6,y+3,22,4,'#3d4430'); px(x-6,y+3,22,1,'#5a6348'); px(x+14,y+2,2,6,'#22261c'); px(x+2,y+7,3,3,'#22261c'); }
-  else if(k.type==='rockets'){ px(x,y+3,12,7,'#4d5636'); px(x,y+3,12,1,'#6b7650'); for(const o of [2,7]){ px(x+o,y,3,4,'#c9473a'); px(x+o,y-1,3,1,'#e8796c'); } }
-  else if(k.type==='grenade'){ for(const o of [0,6]){ px(x+o,y+3,5,6,'#3c4a2a'); px(x+o+1,y+2,3,1,'#9aa3aa'); px(x+o,y+4,5,1,'#55663c'); } }
+  const it=ITEMS[k.type]; if(it&&it.draw) it.draw(k,x,y);
 }
 function drawBarrel(b){
   if(b.dead) return; const x=Math.round(b.x-cam), y=Math.round(b.y);
@@ -216,8 +200,8 @@ function drawLights(){
   for(const po of portals) if(po.t>0) L.push([po.x,po.y,po.big?140:80,0.9]);
   for(const o of orbs) L.push([o.x,o.y,50,0.8]);
   for(const b of ebullets) if(b.orb) L.push([b.x,b.y,30,0.7]);
-  for(const e of enemies) if(!e.dead&&e.type==='shocker'&&e.state==='charge') L.push([e.x+e.w/2+e.face*8,e.y+8,46,0.7]);
-  if(torch) for(const e of enemies) if(!e.dead&&e.type!=='nest'&&e.x>cam-40&&e.x<cam+W+40) L.push([e.x+e.w/2,e.y+e.h/2,30,0.45]);
+  for(const e of enemies) if(!e.dead&&FOES[e.type].chargeLight&&e.state==='charge') L.push([e.x+e.w/2+e.face*8,e.y+8,46,0.7]);
+  if(torch) for(const e of enemies) if(!e.dead&&!FOES[e.type].noTorch&&e.x>cam-40&&e.x<cam+W+40) L.push([e.x+e.w/2,e.y+e.h/2,30,0.45]);
   if(boss&&!boss.dead){ const g=BOSSES[boss.type].glow; L.push(g?g(boss):[boss.x+boss.w/2,boss.y+26,70,0.7]); }
   if(exitPortal) L.push([exitPortal.x,exitPortal.y,120,1]);
   for(const t of trains) L.push([t.dir>0?t.x+TL:t.x,13*T+20,90,0.9]);
@@ -305,17 +289,12 @@ function drawHUD(){ if(!GAME.classic) return drawHudStd();
   ctx.font='600 6px "IBM Plex Mono",monospace'; ctx.fillText('БРОНЯ',90,246);
   ctx.textAlign='right';
   ctx.font='600 7px "IBM Plex Mono",monospace'; ctx.fillText(p.reload>0?'ПРЕЗАРЕЖДАНЕ…':NAMES[p.cur],470,244);
-  if(p.cur==='grenade'||p.cur==='rocket'){ ctx.font='17px '+DFONT(); ctx.fillText('× '+p.ammo[p.cur].mag,470,263); }
-  else if(p.cur!=='wrench'){ const a=p.ammo[p.cur]; ctx.font='11px '+DFONT(); const rs=String(a.res); ctx.fillText(rs,470,263); const rw=ctx.measureText(rs).width; ctx.font='17px '+DFONT(); ctx.fillStyle=a.mag===0?'#ff4d3a':A; ctx.fillText(a.mag+' /',466-rw,263); }
+  const K=WEAPONS[p.cur].kind; if(K==='mag'){ ctx.font='17px '+DFONT(); ctx.fillText('× '+p.ammo[p.cur].mag,470,263); }
+  else if(K!=='melee'){ const a=p.ammo[p.cur]; ctx.font='11px '+DFONT(); const rs=String(a.res); ctx.fillText(rs,470,263); const rw=ctx.measureText(rs).width; ctx.font='17px '+DFONT(); ctx.fillStyle=a.mag===0?'#ff4d3a':A; ctx.fillText(a.mag+' /',466-rw,263); }
   else { ctx.font='11px '+DFONT(); ctx.fillText('—',470,263); }
   ctx.textAlign='left'; ctx.shadowBlur=0;
   if(bossActive&&boss&&!boss.dead&&boss.state!=='intro'){ const bw=180,bx=(W-bw)/2; ctx.fillStyle='rgba(0,0,0,0.6)'; ctx.fillRect(bx-1,15,bw+2,6); ctx.fillStyle=BOSSES[boss.type].col; ctx.fillRect(bx,16,bw*Math.max(0,boss.hp)/boss.max,4); ctx.font='600 7px "IBM Plex Mono",monospace'; ctx.textAlign='center'; ctx.fillStyle='#e8ddff'; ctx.fillText(BOSSES[boss.type].name,W/2,12); ctx.textAlign='left'; }
-  if(msg){ const a=clamp(Math.min(msg.age*4,(msg.d-msg.age)*2),0,1); ctx.globalAlpha=a; ctx.font='600 9px "IBM Plex Mono",monospace';
-    const lines=wrap(msg.t,360), lw=Math.max(...lines.map(l=>ctx.measureText(l).width)), who=msg.who, w=lw+20, h=lines.length*12+6+(who?10:0), y=bossActive?30:20, x=W/2-w/2;
-    const wcol=who==='ИНСТРУКТОР'?'#7fd8ff':'#94ff57'; ctx.fillStyle='rgba(6,8,10,0.78)'; ctx.fillRect(x,y,w,h); ctx.fillStyle=who?wcol:A; ctx.fillRect(x,y,2,h);
-    let ly=y+11; if(who){ ctx.font='600 7px "IBM Plex Mono",monospace'; ctx.fillStyle=wcol; ctx.fillText('◉ '+who,x+10,ly-1); ly+=10; ctx.font='600 9px "IBM Plex Mono",monospace'; }
-    ctx.fillStyle='#f3e6cf'; for(const l of lines){ ctx.fillText(l,x+10,ly); ly+=12; }
-    ctx.globalAlpha=1; }
+  drawMsgBox(bossActive?30:20,MSG_CLASSIC);
   ctx.font='600 6px "IBM Plex Mono",monospace'; ctx.fillStyle='rgba(200,210,215,0.5)'; ctx.textAlign='right'; ctx.fillText((SURV?('ОЦЕЛЯВАНЕ · СЕКТОР '+(survK+1)+' · '+D.name):LVL.training?('ТРЕНИРОВКА · '+D.name):(chShort(gChOf(LI))+' · ЕП. '+LVL.n+' · '+D.name))+chtTag(),472,9); ctx.textAlign='left';
   if(SURV){ ctx.font='600 7px "IBM Plex Mono",monospace'; ctx.fillStyle='#ff6a5a'; ctx.fillText('♥'.repeat(Math.max(0,survLives)),8,10); ctx.fillStyle='#ffa62b'; ctx.fillText('ТОЧКИ '+(survScore+stats.kills*10),8+survLives*9+6,10); ctx.font='600 6px "IBM Plex Mono",monospace'; }
   if(muted){ ctx.fillStyle='#7f8e97'; ctx.fillText('БЕЗ ЗВУК (M)',8,SURV?20:9); }
@@ -366,7 +345,7 @@ function render(){
     overlay(0.8); centerText('ИЗБЕРИ ТРУДНОСТ',58,'16px '+DFONT(),ACC());
     menuList(DIFFS.map(d=>({t:d.name})),menuSel,100,24);
     const d=DIFFS[menuSel]; centerText(d.desc[0],184,'600 8px "IBM Plex Mono",monospace','#cfd8dc'); centerText(d.desc[1],197,'600 8px "IBM Plex Mono",monospace','#cfd8dc');
-    if(modeSel===1) centerText('Оцеляване · животи: '+[3,2,1][menuSel]+' · рекорд: '+bestTxt(menuSel),214,'600 8px "IBM Plex Mono",monospace','#94ff57'); if(modeSel===1) svDiffNote(menuSel);
+    if(modeSel===1) centerText('Оцеляване · животи: '+DIFFS[menuSel].lives+' · рекорд: '+bestTxt(menuSel),214,'600 8px "IBM Plex Mono",monospace','#94ff57'); if(modeSel===1) svDiffNote(menuSel);
     centerText('↑ ↓ избор · Z потвърди · Esc / X назад',244,'600 7px "IBM Plex Mono",monospace','#7f8e97');
     return;
   }

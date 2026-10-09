@@ -12,7 +12,7 @@ const MECH_ORDER={
   drawBack:['freqsonar','trance','terms','plates','levers','gens'],
   drawWorld:['winds','water','flips','shifters','cams','echo','level','snow','freqsonar','trance','tone','cursors','chase','allies'],
   lights:['cams','terms','echo','flash','level','chase','freqsonar','trance','tone','cursors','gens','flips','allies','foes','water'],
-  chips:['echo','cams','gusts','cursors','freqsonar','trance','tone'],
+  chips:['eras','flips','water','sun','escort','gens','echo','cams','gusts','cursors','freqsonar','trance','tone'],
   respawn:['freqsonar','trance','tone','cursors','echo','cams','noise','terms','water','checkpoint','chase','escort','allies','arena','winds'],
   preRespawn:['flips','eras'], setCp:['flips','eras','checkpoint'], exitOk:['trance','escort'], move:['water'], force:['winds'], postFx:['water','sun','freqsonar'],
 };

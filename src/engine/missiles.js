@@ -3,7 +3,7 @@ function missPop(m){ m.dead=true; sparks(m.x,m.y,10,'#ffb53a'); for(let i=0;i<6;
 function updMissiles(dt){
   const p=player;
   for(const m of bmiss){ if(m.dead) continue; m.t+=dt; m.life-=dt; const sp=Math.hypot(m.vx,m.vy);
-    if(m.t>0.5&&!p.dead){ const cur=Math.atan2(m.vy,m.vx), tg=Math.atan2(p.y+p.h/2-m.y,p.x+p.w/2-m.x), turn=(DI===0?1.1:DI===2?2.2:1.6)*dt, na=cur+clamp(angDiff(tg,cur),-turn,turn), ns=Math.min(DI===0?115:DI===2?180:155,sp+60*dt); m.vx=Math.cos(na)*ns; m.vy=Math.sin(na)*ns; }
+    if(m.t>0.5&&!p.dead){ const cur=Math.atan2(m.vy,m.vx), tg=Math.atan2(p.y+p.h/2-m.y,p.x+p.w/2-m.x), turn=D.mTurn*dt, na=cur+clamp(angDiff(tg,cur),-turn,turn), ns=Math.min(D.mSpd,sp+60*dt); m.vx=Math.cos(na)*ns; m.vy=Math.sin(na)*ns; }
     m.x+=m.vx*dt; m.y+=m.vy*dt;
     if(Math.random()<0.6) part(m.x-m.vx*0.03,m.y-m.vy*0.03,rnd(-10,10),rnd(-10,10),rnd(0.3,0.5),'#8a8a8a',2,-10,2);
     if(m.life<=0||(m.t>0.3&&solidAt(m.x,m.y))) missPop(m);

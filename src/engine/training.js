@@ -24,11 +24,15 @@ function drawKeyHint(t,y){
   ctx.restore();
 }
 
-function drawMsgBox(y){
+// кутията за съобщения (msg): st — видът (MSG_STD — HUD на продълженията, MSG_CLASSIC — HUD на r1, MSG_INTRO — интрата);
+// говорещият е с цвета си от GAME.voices, иначе — с цвета на вида; без говорещ чертата е st.none (или акцентът на частта)
+const MSG_STD={bg:'rgba(4,14,18,0.82)',text:'#eaf6f6',voice:'#7fd8ff',right:1}, MSG_CLASSIC={bg:'rgba(6,8,10,0.78)',text:'#f3e6cf',voice:'#94ff57'},
+  MSG_INTRO={bg:'rgba(6,8,10,0.8)',text:'#f3e6cf',voice:'#7fd8ff',none:'#ffa62b'};
+function drawMsgBox(y,st=MSG_INTRO){
   if(!msg) return; const a=clamp(Math.min(msg.age*4,(msg.d-msg.age)*2),0,1); ctx.globalAlpha=a; ctx.font='600 9px "IBM Plex Mono",monospace';
   const lines=wrap(msg.t,360), lw=Math.max(...lines.map(l=>ctx.measureText(l).width)), who=msg.who, w=lw+20, h=lines.length*12+6+(who?10:0), x=W/2-w/2;
-  ctx.fillStyle='rgba(6,8,10,0.8)'; ctx.fillRect(x,y,w,h); const wc=who==='Д-Р ИЛИЕВА'?'#94ff57':who?'#7fd8ff':'#ffa62b'; ctx.fillStyle=wc; ctx.fillRect(x,y,2,h);
+  const wc=(GAME.voices||{})[who]||st.voice; ctx.fillStyle=st.bg; ctx.fillRect(x,y,w,h); ctx.fillStyle=who?wc:st.none||ACC(); ctx.fillRect(x,y,2,h); if(st.right) ctx.fillRect(x+w-2,y,2,h);
   let ly=y+11; if(who){ ctx.font='600 7px "IBM Plex Mono",monospace'; ctx.fillStyle=wc; ctx.fillText('◉ '+who,x+10,ly-1); ly+=10; ctx.font='600 9px "IBM Plex Mono",monospace'; }
-  ctx.fillStyle='#f3e6cf'; for(const l of lines){ ctx.fillText(l,x+10,ly); ly+=12; } ctx.globalAlpha=1;
+  ctx.fillStyle=st.text; for(const l of lines){ ctx.fillText(l,x+10,ly); ly+=12; } ctx.globalAlpha=1;
 }
 

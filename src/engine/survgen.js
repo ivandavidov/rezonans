@@ -100,12 +100,12 @@ function genLevel(k){ return svGen(k); }
 function startSurv(k,carry){
   const sv=carry&&carry!==true?carry:null; if(sv) carry=false; const prev=carry?player:null; chtStart(carry);
   SURV=true; survK=k; bossMul=0.75+0.2*Math.floor(k/5); ehpMul=1+0.03*k;
-  if(!carry){ survScore=0; survLives=[3,2,1][DI]; survSeed=(Date.now()%90000)+10000; survNewBest=false; survStartBest=survBest(); if(sv){ survSeed=sv.seed; survScore=sv.score|0; } }
+  if(!carry){ survScore=0; survLives=D.lives; survSeed=(Date.now()%90000)+10000; survNewBest=false; survStartBest=survBest(); if(sv){ survSeed=sv.seed; survScore=sv.score|0; } }
   loadLevel(-1,genLevel(k)); if(LVL.arena) bossMul*=bossNorm(LVL.arena.type); if(LVL.arena&&(GAME.bossMulOne||[]).includes(LVL.arena.type)) bossMul=1;
   const p=player;
   if(prev){ for(const w of ORDER) if(prev.weapons[w]) p.weapons[w]=true;
     for(const kk in p.ammo){ p.ammo[kk].mag=Math.max(p.ammo[kk].mag,prev.ammo[kk].mag); p.ammo[kk].res=Math.max(p.ammo[kk].res,prev.ammo[kk].res); }
-    p.armor=prev.armor; p.hp=Math.min(100,Math.max(1,prev.hp)+(DI===0?50:25)); if(p.weapons[prev.cur]) p.cur=prev.cur; }
+    p.armor=prev.armor; p.hp=Math.min(100,Math.max(1,prev.hp)+D.svHeal); if(p.weapons[prev.cur]) p.cur=prev.cur; }
   if(sv) svApply(sv); svSave(k);
   state='play'; mInt=0; storyT=0;
   showMsg('СЕКТОР '+(k+1)+' · '+LVL.themeName+(LVL.muts&&LVL.muts.length?' · '+LVL.muts.map(m=>MUT_NAME[m]).join(', '):'')+(LVL.isBoss?' · БОС':''),3.5);

@@ -1,8 +1,8 @@
 /* ================= PLAYER ================= */
 const ladderAt=(x,y)=>tileP(x,y)==='H';
 function onOneWay(e){ const ty=Math.floor((e.y+e.h+1)/T); for(let tx=Math.floor(e.x/T);tx<=Math.floor((e.x+e.w-0.01)/T);tx++){ const c=tileAt(tx,ty); if(c==='-'||c==='H') return true; } return false; }
-const elecOn=()=>{ if(chtOn('traps')) return false; const cyc=DI===0?3.8:DI===2?3.0:3.4, on=DI===0?1.0:DI===2?1.6:1.3; return (lvT%cyc)<on; };
-const elecWarn=()=>{ const cyc=DI===0?3.8:DI===2?3.0:3.4; return (lvT%cyc)>cyc-0.6; };
+const elecOn=()=>{ if(chtOn('traps')) return false; const cyc=D.elecCyc, on=D.elecOn; return (lvT%cyc)<on; };
+const elecWarn=()=>{ const cyc=D.elecCyc; return (lvT%cyc)>cyc-0.6; };
 function updPlayer(dt){
   const p=player;
   p.cool-=dt; p.flashT-=dt; p.swingT-=dt; p.inv-=dt; p.hurtT-=dt; p.hurtAgo+=dt;
@@ -63,19 +63,9 @@ function updPlayer(dt){
   for(const k of pickups) if(!k.taken&&ov(p,k)) takePickup(k);
   if(p.hp<=25){ lowBeep-=dt; if(lowBeep<=0){ lowBeep=2.2; SFX.beep(); } }
 }
-function addAmmo(w,n){ const a=player.ammo[w]; if(w==='grenade'||w==='rocket') a.mag=Math.min(CAP[w],a.mag+n); else a.res=Math.min(RES_MAX[w],a.res+n); }
+function addAmmo(w,n){ const a=player.ammo[w]; if(WEAPONS[w].kind==='mag') a.mag=Math.min(CAP[w],a.mag+n); else a.res=Math.min(RES_MAX[w],a.res+n); }
 function takePickup(k){
-  const p=player, m=D.ammo;
-  if((ITEMS[k.type]||{}).take){ if(ITEMS[k.type].take(k)===false) return; k.taken=true; if(k.respawn) k.rt=k.respawn; return; }
-  if(k.type==='health'){ if(p.hp>=100) return; const n=D.heal; p.hp=Math.min(100,p.hp+n); SFX.pickup(); showMsg('Аптечка  +'+n,1.4); }
-  else if(k.type==='battery'){ if(p.armor>=100) return; const n=D.bat; p.armor=Math.min(100,p.armor+n); SFX.armor(); showMsg('Броня  +'+n,1.4); }
-  else if(k.type==='ammo'){ addAmmo('pistol',Math.ceil(17*m)); if(p.weapons.shotgun) addAmmo('shotgun',Math.ceil(6*m)); if(p.weapons.pulse) addAmmo('pulse',Math.ceil(30*m)); SFX.reload(); showMsg('Муниции',1.2); }
-  else if(k.type==='pistol'){ p.weapons.pistol=true; p.ammo.pistol.mag=17; addAmmo('pistol',34); p.cur='pistol'; p.reload=0; SFX.gunGet(); showMsg('Пистолет! Стреляй със Z',2.5); }
-  else if(k.type==='shotgun'){ p.weapons.shotgun=true; p.ammo.shotgun.mag=8; addAmmo('shotgun',8); p.cur='shotgun'; p.reload=0; SFX.gunGet(); showMsg('Пушка! Смени оръжието с Q',3); }
-  else if(k.type==='pulse'){ p.weapons.pulse=true; p.ammo.pulse.mag=40; addAmmo('pulse',40); p.cur='pulse'; p.reload=0; SFX.gunGet(); showMsg('Импулсна пушка! Задръж Z за непрекъсната стрелба',3); }
-  else if(k.type==='rocket'){ p.weapons.rocket=true; addAmmo('rocket',DI===0?4:3); p.cur='rocket'; p.reload=0; SFX.gunGet(); showMsg('Ракетомет! Ракетите пробиват бронята. Избери го с Q или 6',3.5); }
-  else if(k.type==='rockets'){ if(p.ammo.rocket.mag>=CAP.rocket) return; p.weapons.rocket=true; const n=DI===0?3:2; addAmmo('rocket',n); SFX.reload(); showMsg('Ракети  +'+n,1.4); }
-  else if(k.type==='grenade'){ const first=!p.weapons.grenade; p.weapons.grenade=true; const n=DI===0?3:2; addAmmo('grenade',n); SFX.gunGet(); showMsg(first?'Гранати! Избери ги с Q или 5 и хвърляй със Z':'Гранати  +'+n,first?3.5:1.4); }
+  const it=ITEMS[k.type]; if(it&&it.take&&it.take(k)===false) return;   // предметите — в регистъра (общите — engine/lib/items.js)
   k.taken=true; if(k.respawn) k.rt=k.respawn;
 }
 

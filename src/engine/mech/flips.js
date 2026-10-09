@@ -22,6 +22,7 @@ function flipWorld(quiet){
   if(!quiet){ shake=6; flash=0.55; flashCol='#e0d4ff'; SFX.portal&&SFX.portal(0.6); }
 }
 defMech('flips',{
+  chips(chip){ if(FLIPS.length) chip(FLIP?'⇅ ГРАВИТАЦИЯТА Е ОБЪРНАТА':'⇅ НОРМАЛНА ГРАВИТАЦИЯ','#d8c4ff'); },
   load(){ FLIPS=[]; FLIP=false; flipCd=0; cpFlip=false; const L=LVL;
   if(L.flips) FLIPS=L.flips.map(([tx,ty])=>({x:tx*T+8,y:ty*T+8,t:0,armed:true}));
   },

@@ -1,6 +1,6 @@
 /* ================= TRAINS & ROCKETS ================= */
 const TL=7*T;
-const trainSpd=()=>DI===0?300:DI===2?430:360, trainPer=()=>DI===0?10:DI===2?6:8, trainWarn=()=>DI===0?3.2:DI===2?2:2.6;
+const trainSpd=()=>D.trainSpd, trainPer=()=>D.trainPer, trainWarn=()=>D.trainWarn;
 function updTrains(dt){
   const p=player;
   for(const tr of tracks){

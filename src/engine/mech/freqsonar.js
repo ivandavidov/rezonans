@@ -3,19 +3,19 @@
      Враг с e.fq е уязвим само в своя тон (LVL.fqFoes раздава тонове на враговете в нивото).
    Сонар (LVL.sonar): E изпраща импулс, който за миг осветява стените — и вдига шум.
    Застинало време (LVL.still или LVL.stillZones:[[tx0,tx1]]): враговете и снарядите се движат
-     само докато се движиш ти (base update ползва timeScale()).
+     само докато се движиш ти (механиката задава foeTime на двигателя).
    Спомени: пикап 'memory' — по един в епизод, пазят се под KEY('mem'); текстът е в LVL.memory. */
 const FQ_COL=['#ff6a8a','#5ad2ff','#ffd04a'], FQ_DARK=['#5a1a2a','#123a4a','#4a3a10'], FQ_RGB=['255,106,138','90,210,255','255,208,74'], FQ_NAME=['ДО','МИ','СОЛ'], FQ_HZ=[523,659,784];
 let FREQ=0, FQT=[], SONAR=[], sonarCd=0, STILL={k:1,on:false}, fqBlockT=0;
 function fqApply(){ for(const c of '123') SOLID.delete(c); SOLID.add(String(FREQ+1)); }
 fqApply();
 function fqsLoad(){
-  const L=LVL; FREQ=L&&L.freqStart||0; fqApply(); FQT=[]; SONAR=[]; sonarCd=0; STILL={k:1,on:false}; fqBlockT=0;
+  const L=LVL; FREQ=L&&L.freqStart||0; fqApply(); FQT=[]; SONAR=[]; sonarCd=0; STILL={k:1,on:false}; foeTime=1; fqBlockT=0;
   if(!L) return;
   if(L.freq) for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++){ const c=map[y][x]; if(c==='1'||c==='2'||c==='3') FQT.push([x,y,+c-1]); }
   if(L.fqFoes) for(const e of enemies) if(e.fq==null&&!e.tag) e.fq=Math.floor(e.x/T/6)%(L.freqN||3);
 }
-function fqsRespawn(){ SONAR=[]; STILL.k=1; }
+function fqsRespawn(){ SONAR=[]; STILL.k=1; foeTime=1; }
 function freqNext(){
   const p=player, n=LVL.freqN||3, nf=(FREQ+1)%n;
   for(const [x,y,f] of FQT) if(f===nf&&ov(p,{x:x*T,y:y*T,w:T,h:T})){ fqBlockT=0.6; if(AC) osc({type:'square',f:140,t:0.12,v:0.06}); return; }
@@ -29,7 +29,6 @@ function sonarPing(){
   for(const e of enemies) if(!e.dead&&Math.hypot(e.x-x,e.y-y)<13*T) e.alert=true;
   if(AC){ osc({type:'sine',f:1800,f2:600,t:0.5,v:0.09}); osc({type:'sine',f:900,f2:300,t:0.7,v:0.05,when:0.12}); }
 }
-function timeScale(){ return STILL.k; }
 function fqsUpdate(dt){
   const p=player; if(!p) return;
   const tx0=(p.x+p.w/2)/T; STILL.son=!!LVL.sonar||!!(LVL.sonarZones&&LVL.sonarZones.some(z=>tx0>=z[0]&&tx0<=z[1]));
@@ -38,7 +37,7 @@ function fqsUpdate(dt){
   for(const s of SONAR) s.t+=dt; SONAR=SONAR.filter(s=>s.t<1.6);
   const tx=(p.x+p.w/2)/T; STILL.on=!p.dead&&(!!LVL.still||!!(LVL.stillZones&&LVL.stillZones.some(z=>tx>=z[0]&&tx<=z[1])));
   const tgt=STILL.on?clamp(Math.abs(p.vx)/150+Math.abs(p.vy)/420+(p.cool>0?0.3:0)+(p.climb&&(keys.up||keys.down)?0.5:0),0.03,1):1;
-  STILL.k+=(tgt-STILL.k)*Math.min(1,dt*(tgt>STILL.k?14:7));
+  STILL.k+=(tgt-STILL.k)*Math.min(1,dt*(tgt>STILL.k?14:7)); foeTime=STILL.k;
 }
 function fqsDrawBack(){
   if(!FQT.length) return; const a=(Math.sin(titleT*4)+1)/2;

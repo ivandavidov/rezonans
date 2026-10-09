@@ -4,9 +4,9 @@ function updLifts(){ const p=player; for(const l of lifts){ const [nx,ny]=liftPo
 function drawLifts(){ for(const l of lifts){ const x=Math.round(l.x-cam), y=Math.round(l.y); if(x<-60||x>W+10) continue;
   if(LVL.liftStyle==='cable'){ px(x+4,2*T,1,y-2*T,'#3a3f45'); px(x+l.w-5,2*T,1,y-2*T,'#3a3f45'); px(x,y,l.w,6,'#4a4f56'); px(x,y,l.w,1,'#9aa2a7'); for(let i=0;i<l.w;i+=8) px(x+i,y+3,4,3,'#c99a1c'); }
   else { px(x,y,l.w,5,'#5c4878'); px(x,y,l.w,1,'#4dffc3'); px(x+4,y+5,l.w-8,3,'#3d2e52'); px(x+l.w/2-3,y+8,6,2,'#2c2238'); } } }
-const lzPer=()=>DI===0?3.6:DI===2?2.6:3.0;
+const lzPer=()=>D.laser;
 function lzState(l){ if(chtOn('traps')) return 0; const per=lzPer(), t=((lvT+(l.off||0)*per)%per+per)%per; if(t<per*0.5) return 2; if(t>per-0.45) return 1; return 0; }
-const vtPer=()=>DI===0?3.8:DI===2?2.6:3.2;
+const vtPer=()=>D.vent;
 function vtState(v){ if(chtOn('traps')) return 0; const per=vtPer(), t=((lvT+(v.off||0)*per)%per+per)%per; if(t<1.2) return 2; if(t>per-0.5) return 1; return 0; }
 function updHazards(dt){
   const p=player;
