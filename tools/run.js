@@ -41,7 +41,7 @@ async function suite() {
   for (const g of games) { const r = await check(env, 'baseline', { game: g });
     out.push(`baseline ${g} сектори=${r.сектори} отпечатък=${r.отпечатък} терен=${r.терен} население=${r.население} без връщане=${r['без връщане']}`);
     let b = null; try { b = await check(env, 'back', { games: [g] }); } catch (e) {}   // по-стара сборка (без опциите на svValidate) — „—“
-    out.push(b ? `back ${g} нива=${b.нива} препятствия=${b.препятствия} без изход в модела=${b['без изход в модела'].length}` : `back ${g} —`); }
+    out.push(b ? `back ${g} нива=${b.нива} препятствия=${b.препятствия} без изход в модела=${b['без изход в модела'].length} недостижими предмети=${b['недостижими предмети'].length} платформи=${b['недостижими платформи'].length}` : `back ${g} —`); }
   const s = await check(boot(), 'smoke', {});   // smoke — в чист контекст
   for (const g of games) { const q = s.части[g]; out.push(`smoke ${g} сценарии=${q.сценарии} грешки=${q.грешки} отпечатък=${q.отпечатък}`); for (const d of q.подробно) out.push('  ' + g + ' ' + d); }
   for (const e of s.грешки) out.push(`грешка ${e.част} · ${e.сценарий}: ${e.грешка}`);

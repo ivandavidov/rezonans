@@ -20,7 +20,9 @@
                  Брои препятствията — откъде се влиза в област без връщане (x,ред↓колко плочки пада). Моделът е валидаторът
                  на генератора в режим exact (скоковете точно по замерите в движка): вратите — отворени, вода и възходящи
                  течения — свободно движение, епохи и подвижни зали — два слоя. Не се броят арената на боса (от вратата ѝ
-                 нататък), гонитбите (L.chase) и нивата с L.noBack. Секторите на оцеляването — в baseline („без връщане“).
+                 нататък), гонитбите (L.chase) и нивата с L.noBack. Отделно: недостижими предмети (по всички трудности;
+                 очаквано 0) и висящи платформи, до които не се стига (за преглед: навесите в r2:14, постовете на пазачите в r3).
+                 Секторите на оцеляването — в baseline („без връщане“).
      smoke     — за всяка част: меню, интро, тренировка, всеки епизод (+ старт на боса), сектори 1 и 5 — с програмиран вход и
                  семенен Math.random. Хваща грешки и дава отпечатък на сценарий („златен образец“): при чисто преструктуриране
                  трябва да остане същият. Записите в localStorage се възстановяват след проверката. Може да се пуска многократно
@@ -128,7 +130,22 @@ function bkLevel(L, rows, dbg) {
     const c = id % N, x = c % cols, y = (c / cols) | 0, o = ent.get(cv); if (!o || x < o.x) ent.set(cv, { x, y, пада: (((n % N) / cols) | 0) - y }); }
   let exit = false; for (let id = 0; id < NN; id++) if (R[id] && spot(id) && (id % N) % cols >= exitX - 1) exit = true;
   if (dbg) return { R, comp, sid, N, maps, Ls, adj };   // за разглеждане на картата
-  return { exit, препятствия: [...ent.values()].sort((p, q) => p.x - q.x) };
+  return { exit, препятствия: [...ent.values()].sort((p, q) => p.x - q.x), R, N, maps, Ls, flip, lim };
+}
+// предмети, до които не се стига (стоиш до тях, скачаш до 5 реда нагоре или изскачаш от вода/стълба/течение до 4), и висящи
+// платформи (място за стоене с въздух отдолу), до които не се стига — до арената; в обърнатия свят редовете са огледални
+function bkSpots(L, a, items) {
+  const { R, N, maps, Ls, flip, lim } = a, cols = L.cols, rows = maps[0].length, out = { предмети: [], платформи: [] };
+  const rowIn = (e, y) => flip && e === 1 ? rows - 1 - y : y;
+  for (const k of items) { const tx = Math.floor((k.x + 6) / T), row = Math.round((k.y + k.h) / T) - 1; if (tx >= lim) continue; let ok = false;
+    for (let e = 0; e < Ls.length && !ok; e++) { const ly = Ls[e], r0 = rowIn(e, row);
+      for (let sx = Math.max(0, tx - 1); sx <= Math.min(cols - 1, tx + 1) && !ok; sx++) for (let sy = r0 + 1; sy <= Math.min(rows - 1, r0 + 5) && !ok; sy++) if (ly.V.kind[sy * cols + sx] && R[e * N + sy * cols + sx]) ok = true;
+      for (let fx = Math.max(0, tx - 2); fx <= Math.min(cols - 1, tx + 2) && !ok; fx++) for (let fy = Math.max(0, r0); fy <= Math.min(rows - 1, r0 + 4) && !ok; fy++) if (ly.free[fy * cols + fx] && R[e * N + fy * cols + fx]) ok = true; }
+    if (!ok) out.предмети.push(k.type + ' x' + tx + ',' + row); }
+  const plat = (x, y) => { let any = false; for (let e = 0; e < Ls.length; e++) { const ry = rowIn(e, y), c = ry * cols + x, below = ry + 1;
+    if (R[e * N + c]) return 0; if (Ls[e].V.kind[c] && below >= 0 && below < rows && !BK_SOL.includes(maps[e][below][x]) && maps[e][below][x] !== 'D') any = true; } return any ? 1 : 0; };
+  for (let y = 1; y < rows; y++) for (let x = 0; x < lim; x++) { if (!plat(x, y)) continue; const x0 = x; while (x + 1 < lim && plat(x + 1, y)) x++; if (x > x0) out.платформи.push('x' + x0 + '–' + x + ',' + y); }
+  return out;
 }
 
 const C = {
@@ -174,16 +191,20 @@ const C = {
     z().toMenu(2); return r;
   },
   async back({ games = null } = {}) {
-    const r = { нива: 0, 'нива с препятствия': 0, препятствия: 0, 'без изход в модела': [], изключени: [], подробно: [] };
+    const r = { нива: 0, 'нива с препятствия': 0, препятствия: 0, 'без изход в модела': [], изключени: [], подробно: [], 'недостижими предмети': [], 'недостижими платформи': [] }, di0 = z().DI;
     for (const g of games || z().GAMES.map(q => q.id)) { z().enterGame(g, 2); const lv = z().levels;
-      for (let i = 0; i < lv.length; i++) { z().loadLevel(i); const L = z().LVL, name = g + ':' + (i + 1);
+      for (let i = 0; i < lv.length; i++) { const name = g + ':' + (i + 1), items = [], seen = new Set();
+        for (const di of [0, 1, 2]) { z().setDiff(di); z().loadLevel(i); for (const k of z().pickups) { const key = k.type + k.x + ',' + k.y; if (!seen.has(key)) { seen.add(key); items.push(k); } } }   // предметите по всички трудности
+        const L = z().LVL, a = bkLevel(L, z().map.length), sp = bkSpots(L, a, items);
+        if (sp.предмети.length) r['недостижими предмети'].push(name + ' ' + L.title + ': ' + sp.предмети.join(' '));
+        if (sp.платформи.length) r['недостижими платформи'].push(name + ' ' + L.title + ': ' + sp.платформи.join(' '));
         if (L.chase || L.noBack) { r.изключени.push(name); continue; }
-        const a = bkLevel(L, z().map.length); r.нива++; if (!a.exit) r['без изход в модела'].push(name);
+        r.нива++; if (!a.exit) r['без изход в модела'].push(name);
         if (a.препятствия.length) { r['нива с препятствия']++; r.препятствия += a.препятствия.length;
           r.подробно.push(name + ' ' + L.title + ': ' + a.препятствия.map(p => 'x' + p.x + ',' + p.y + (p.пада > 0 ? '↓' + p.пада : '')).join(' ')); }
         if (i % 4 === 3) await pause(); }
       z().toMenu(2); }
-    return r;
+    z().setDiff(di0); return r;
   },
   async baseline(o) {
     const out = [], ter = [], pop = []; let noBack = 0, haveB = true;
