@@ -227,7 +227,27 @@ function svTry(k,plan,att,simple){
   for(let y=0;y<ROWS;y++) g[y].length=cols;
   // validation grid: water/updrafts bridged, era walls ignored, era bridges solid
   const gv=g.map(row=>row.slice()); for(const [x0,y0,x1,y1,c] of gvOps) for(let y=Math.max(0,y0);y<=Math.min(16,y1);y++) for(let x=x0;x<=x1;x++) gv[y][x]=c;
-  const V=svValidate(gv,cols,sky,lowg,lifts,4,exit); if(window.__svdbg) window.__svdbg(gv,V,cols);
+  // назад: от всяко място, до което може да се стигне, има път обратно до началото (арената — от вратата ѝ нататък не се брои).
+  //   Спускане без връщане получава стълба до ръба — от нивото на ръба до земята, в свободна колона; ако не стане — нов опит.
+  const bx=arena?arena.door:cols, noLad=new Set(noSpawn);
+  for(const l of lasers) noLad.add(l.tx); for(const v of vents) noLad.add(v.tx); for(const c of crushers) for(let i=0;i<(c.w||2);i++) noLad.add(c.tx+i);
+  for(const l of lifts) for(let x=Math.min(l.x0,l.x1)-1;x<=Math.max(l.x0,l.x1)+l.w;x++) noLad.add(x);
+  for(const w of winds) for(let x=w[0];x<=w[2];x++) noLad.add(x);
+  for(const e of eraR) for(let x=e.r[0];x<=e.r[2];x++) noLad.add(x);
+  const lad=(lx,top)=>{ if(lx<3||lx>=bx||noLad.has(lx)||(g[top][lx]!=='.'&&g[top][lx]!=='-')||gv[top][lx]!==g[top][lx]) return 0;   // стълба от реда top до земята → редът на земята
+    let gy=top+1; while(gy<ROWS&&g[gy][lx]==='.'&&gv[gy][lx]==='.') gy++; return gy<ROWS&&'#=B-H'.includes(g[gy][lx])&&gv[gy][lx]===g[gy][lx]?gy:0; };
+  let V=svValidate(gv,cols,sky,lowg,lifts,4,exit,{backX:bx}), tries=0;
+  for(let fix=0;V&&V.backTraps.length&&fix<12&&tries<40;fix++){ const {adjB,B,RO}=V, cand=[]; let V2=null;
+    for(let u=0;u<adjB.length;u++) if(adjB[u]&&B[u]&&RO[u]) for(const v of adjB[u]) if(!B[v]&&RO[v]&&v%cols<bx&&((v/cols)|0)>((u/cols)|0)&&v%cols!==u%cols) cand.push([u,v]);
+    cand.sort((p,q)=>p[0]%cols-q[0]%cols||p[0]-q[0]);
+    find: for(const [u,v] of cand){ const ux=u%cols, uy=(u/cols)|0, vx=v%cols, s=Math.sign(vx-ux);
+      for(const lx of new Set([ux+s,vx,vx-s])){ const gy=lad(lx,uy); if(!gy||tries>=40) continue; tries++;   // до ръба, на мястото на кацане, до него
+        const old=[]; for(let yy=uy;yy<gy;yy++){ old.push(g[yy][lx]); g[yy][lx]='H'; gv[yy][lx]='H'; }
+        V2=svValidate(gv,cols,sky,lowg,lifts,4,exit,{backX:bx}); if(V2&&V2.backTraps.length<V.backTraps.length) break find;
+        for(let yy=uy;yy<gy;yy++){ g[yy][lx]=old[yy-uy]; gv[yy][lx]=old[yy-uy]; } V2=null; } }   // не помага — махаме я
+    if(!V2) break; V=V2; }
+  if(V&&V.backTraps.length&&!simple) V=null;   // резервният сектор (simple) се приема и така
+  if(window.__svdbg) window.__svdbg(gv,V,cols);
   if(!V) return null;
   // безопасно място: стига се, не е в колона с врата, нито до дъното на яма с киселина, нито в забранена колона
   const {kind,Q,path,gyEq}=V, RR=V.R, safe=(x,y)=>{ const id=y*cols+x; return kind[id]===1&&!V.virt[id]&&RR[id]&&Q[id]&&!noSpawn.has(x)&&!noSpawn.has(x-1)&&!noSpawn.has(x+1)

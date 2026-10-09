@@ -11,10 +11,13 @@ function mkRng(seed){ let a=seed>>>0; return ()=>{ a=(a+0x6D2B79F5)>>>0; let t=a
 function svPlan(k){ return svPlanBy(GAME.svSpec,k); }
 /* ---------- reachability validator ---------- */
 // Jump reach measured in the engine (tiles) by headroom f (free rows above the higher ledge) and rise dy (index +5..-4).
+// Опции (o): exact — скоковете точно по замерите, без запаса на генератора (проверката на кампаниите); all — целият граф,
+//   без ранен изход; backX — връщането до началото се смята (по замерите, граф adjB) за местата преди тази колона (арената не
+//   се брои); back — и такова място без връщане отхвърля сектора.
 const SV_MT={g900:{2:[0,0,3,2,1,1,2,2,2,3],3:[0,0,4,3,3,2,3,3,3,4],4:[0,0,4,5,4,3,4,4,4,5],5:[0,0,4,5,5,4,5,5,5,5],9:[0,0,4,5,5,6,6,6,6,7]},
              g600:{2:[4,3,2,2,2,1,2,2,2,3],3:[6,5,4,3,3,3,3,4,4,4],4:[6,6,5,5,4,3,4,4,5,5],5:[6,6,7,6,5,4,5,5,6,6],9:[6,6,7,7,8,8,8,8,8,8]}};
 function svMD(dy,f,lowg){ if(f<2||dy>5) return 0; const row=SV_MT[lowg?'g600':'g900'][f>=9?9:f>=5?5:f]; const v=row[5-Math.max(-4,dy)]; return v>0?Math.max(1,v>=5?v-2:v-1):0; }
-function svValidate(g,cols,sky,lowg,lifts,startX,exitX){
+function svValidate(g,cols,sky,lowg,lifts,startX,exitX,o={}){
   const N=cols*ROWS, solidT=c=>c==='#'||c==='='||c==='B'||c==='Z'||c==='>'||c==='<'||c==='^';
   const tile=(x,y)=>x<0||x>=cols?'#':y<0?(sky?'.':'#'):y>=ROWS?'.':g[y][x];
   const freeT=(x,y)=>{ const c=tile(x,y); return !solidT(c)&&c!=='~'; };
@@ -33,7 +36,8 @@ function svValidate(g,cols,sky,lowg,lifts,startX,exitX){
     liftGroups.push(G); }
   const up=new Int16Array(N); for(let x=0;x<cols;x++){ let run=sky?99:0; for(let y=0;y<ROWS;y++){ up[y*cols+x]=run; const c=g[y][x]; run=(!solidT(c)&&c!=='~'&&c!=='-')?run+1:0; } }
   const MDo=(dy,f)=>{ if(f<2||dy>5) return 0; const row=SV_MT[lowg?'g600':'g900'][f>=9?9:f>=5?5:f], v=row[5-Math.max(-4,dy)]; return v>0?v+1+(dy<-4?Math.ceil((-4-dy)*0.7):0):0; };
-  const build=opt=>{ const K=opt?kindO:kind, MD=opt?MDo:(dy,f)=>svMD(dy,f,lowg);
+  const MDe=(dy,f)=>{ const v=MDo(dy,f); return v>0?v-1:0; };
+  const build=(opt,ex)=>{ const EX=o.exact||ex, K=opt?kindO:kind, MD=opt?MDo:EX?MDe:(dy,f)=>svMD(dy,f,lowg);
   const nbs=(x,y)=>{ const res=[], k0=K[y*cols+x], onPad=tile(x,y)==='^';
     if(!onPad) for(const d of [-1,1]){ const nx=x+d; if(nx<1||nx>=cols-1) continue; const nid=y*cols+nx;
       if(K[nid]){ res.push(nid); continue; }
@@ -49,8 +53,9 @@ function svValidate(g,cols,sky,lowg,lifts,startX,exitX){
           const dy=y-ty, top=Math.min(y,ty), bot=Math.max(y,ty), x0=Math.min(x,tx), x1=Math.max(x,tx); let f=99, ok=true;
           for(let cx=x0;cx<=x1&&ok;cx++){ const fa=up[top*cols+cx]; if(fa<f) f=fa; if(cx!==x&&cx!==tx) for(let ry=Math.max(0,top-(opt?1:3));ry<bot;ry++){ const cc=tile(cx,ry); if(solidT(cc)||(!opt&&cc==='-'&&ry<top)){ ok=false; break; } } }
           if(ok&&dy>0) for(let ry=Math.max(0,top-2);ry<y;ry++) if(solidT(tile(x,ry))){ ok=false; break; }
+          if(ok&&dy<0&&EX&&(dx===1||dx===-1)) for(let ry=Math.max(0,y-2);ry<ty;ry++) if(solidT(tile(tx,ry))){ ok=false; break; }   // в съседната колона се пада отгоре
           if(ok&&Math.abs(dx)<=MD(dy,f)) res.push(tid); } } }
-    if(onPad){ const R0=opt?6:5; for(let dx=-R0;dx<=R0;dx++){ const tx=x+dx; if(tx<1||tx>=cols-1) continue;
+    if(onPad){ const R0=opt?6:EX&&lowg?7:5; for(let dx=-R0;dx<=R0;dx++){ const tx=x+dx; if(tx<1||tx>=cols-1) continue;
       for(let ty=Math.max(1,y-(opt?11:10));ty<=(opt?ROWS-1:y);ty++){ const tid=ty*cols+tx, kt=K[tid]; if(kt!==1&&kt!==3) continue; if(tile(tx,ty)==='^') continue; let ok=true; const top=Math.min(ty,y);
         for(let ry=Math.max(0,top-3);ry<y;ry++) if(solidT(tile(x,ry))){ ok=false; break; }
         for(let cx=Math.min(x,tx);cx<=Math.max(x,tx)&&ok;cx++){ if(cx===x) continue; for(let ry=Math.max(0,top-3);ry<top;ry++) if(solidT(tile(cx,ry))){ ok=false; break; } }
@@ -61,12 +66,12 @@ function svValidate(g,cols,sky,lowg,lifts,startX,exitX){
   if(opt){ for(const G of liftGroups) for(const a of G) for(const b of G) if(a!==b) adj[a].push(b); }
   else for(const [A,B] of pairs) for(const a of A) for(const b of B){ adj[a].push(b); adj[b].push(a); }
   return adj; };
-  const adj=build(false), adjO=build(true);
+  const adj=build(false), adjO=build(true), adjB=o.exact||(o.backX==null&&!o.back)?adj:build(false,true);
   const gyEq=x=>{ let ty=1; while(ty<16&&solidT(tile(x,ty))) ty++; while(ty<16&&!solidT(tile(x,ty))&&tile(x,ty)!=='-') ty++; return ty; };
-  const sid=gyEq(startX)*cols+startX; if(!kind[sid]) return null;
+  const sid=gyEq(startX)*cols+startX; if(!kind[sid]&&!o.all) return null;
   const R=new Uint8Array(N), par=new Int32Array(N).fill(-1), q=[sid]; R[sid]=1; let ex=-1;
-  for(let h=0;h<q.length;h++){ const id=q[h]; if(id%cols>=exitX&&ex<0) ex=id; for(const n of adj[id]) if(!R[n]){ R[n]=1; par[n]=id; q.push(n); } }
-  if(ex<0) return null;
+  for(let h=0;h<q.length;h++){ const id=q[h]; if(id%cols>=exitX&&ex<0) ex=id; for(const n of adj[id]||[]) if(!R[n]){ R[n]=1; par[n]=id; q.push(n); } }
+  if(ex<0&&!o.all) return null;
   const radj=new Array(N); for(let id=0;id<N;id++) if(adj[id]) for(const n of adj[id]) (radj[n]||(radj[n]=[])).push(id);
   const Q=new Uint8Array(N), q2=[]; for(let id=0;id<N;id++) if(kind[id]&&id%cols>=exitX){ Q[id]=1; q2.push(id); }
   for(let h=0;h<q2.length;h++){ const id=q2[h]; if(radj[id]) for(const n of radj[id]) if(!Q[n]){ Q[n]=1; q2.push(n); } }
@@ -74,15 +79,20 @@ function svValidate(g,cols,sky,lowg,lifts,startX,exitX){
   const RO=new Uint8Array(N), q3=[sid]; RO[sid]=1;
   for(let h=0;h<q3.length;h++){ const id=q3[h]; if(adjO[id]) for(const n of adjO[id]) if(!RO[n]){ RO[n]=1; q3.push(n); } }
   const traps=[]; for(let id=0;id<N;id++) if(RO[id]&&kind[id]&&!Q[id]) traps.push(id);
-  if(traps.length&&!svValidate.noTrap) return svValidate.dbg?{traps}:null;
+  if(traps.length&&!svValidate.noTrap&&!o.all) return svValidate.dbg?{traps}:null;
+  let radjB=radj; if(adjB!==adj){ radjB=new Array(N); for(let id=0;id<N;id++) if(adjB[id]) for(const n of adjB[id]) (radjB[n]||(radjB[n]=[])).push(id); }
+  const B=new Uint8Array(N), q4=[sid]; B[sid]=1;   // откъдето се стига обратно до началото
+  for(let h=0;h<q4.length;h++){ const id=q4[h]; if(radjB[id]) for(const n of radjB[id]) if(!B[n]){ B[n]=1; q4.push(n); } }
+  const bx=o.backX==null?cols:o.backX, backTraps=[]; for(let id=0;id<N;id++) if(RO[id]&&kind[id]&&!B[id]&&id%cols<bx) backTraps.push(id);
+  if(o.back&&backTraps.length&&!o.all) return svValidate.dbg?{traps:backTraps}:null;
   // weighted route (walking is cheaper than jumping) for the bot and loot placement
   const dist=new Float64Array(N).fill(1e9), pr=new Int32Array(N).fill(-1), heap=[[0,sid]]; dist[sid]=0;
   const cost=(a,b)=>{ const ax=a%cols, ay=(a/cols)|0, bx=b%cols, by=(b/cols)|0; return (acid[b]?40:0)+((Math.abs(ax-bx)<=1&&by>=ay)?1:(ax===bx?2:3+Math.abs(ax-bx))); };
   while(heap.length){ let bi=0; for(let h=1;h<heap.length;h++) if(heap[h][0]<heap[bi][0]) bi=h; const [dd,id]=heap[bi]; heap[bi]=heap[heap.length-1]; heap.pop(); if(dd>dist[id]) continue;
-    for(const n of adj[id]){ const nd=dd+cost(id,n); if(nd<dist[n]){ dist[n]=nd; pr[n]=id; heap.push([nd,n]); } } }
+    for(const n of adj[id]||[]){ const nd=dd+cost(id,n); if(nd<dist[n]){ dist[n]=nd; pr[n]=id; heap.push([nd,n]); } } }
   let best=-1; for(let id=0;id<N;id++) if(kind[id]&&id%cols>=exitX&&dist[id]<1e9&&(best<0||dist[id]<dist[best])) best=id;
   const path=new Uint8Array(N), pathList=[]; for(let id=best;id>=0;id=pr[id]){ path[id]=1; pathList.push(id); } pathList.reverse();
-  return {kind,virt,R,Q,RO,traps,path,pathList,gyEq,cols,adj};
+  return {kind,virt,R,Q,RO,traps,path,pathList,gyEq,cols,adj,adjB,B,backTraps,sid};
 }
 
 /* ---------- генераторът: общият (engine/survival.js · svGen) ---------- */

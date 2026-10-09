@@ -16,6 +16,11 @@
      reach     — недостижими платформи и предмети по валидатора на генератора (0 / 0). Арените, копирани от кампанията
                  (продълженията), нямат данни от валидатора и се прескачат; предметите под вода — също (стигат се с плуване).
      acidSim   — героят минава през 40 сектора с киселина (r1), враговете се движат; живи врагове в киселина (0)
+     back      — обратна проходимост на нивата от кампаниите: от всяко място, до което се стига, има път обратно до началото.
+                 Брои препятствията — откъде се влиза в област без връщане (x,ред↓колко плочки пада). Моделът е валидаторът
+                 на генератора в режим exact (скоковете точно по замерите в движка): вратите — отворени, вода и възходящи
+                 течения — свободно движение, епохи и подвижни зали — два слоя. Не се броят арената на боса (от вратата ѝ
+                 нататък), гонитбите (L.chase) и нивата с L.noBack. Секторите на оцеляването — в baseline („без връщане“).
      smoke     — за всяка част: меню, интро, тренировка, всеки епизод (+ старт на боса), сектори 1 и 5 — с програмиран вход и
                  семенен Math.random. Хваща грешки и дава отпечатък на сценарий („златен образец“): при чисто преструктуриране
                  трябва да остане същият. Записите в localStorage се възстановяват след проверката. Може да се пуска многократно
@@ -51,6 +56,81 @@ async function* sectors({ game = 'r1', seeds = 20, from = 1, ks = 40, dis = [0, 
 }
 
 const SM_KEYS = ['left', 'right', 'up', 'down', 'fire', 'jump', 'crouch', 'swap', 'era', 'enter', 'esc', 'pause'];
+/* ---------- back: обратна проходимост на нивата от кампаниите ---------- */
+// Картата за модела: вратите — отворени (назад се минава, след като са отворени), скритите проходи и тоновите врати — минават
+// се, честотните плочки — като '-'. Скоковете — svValidate в режим exact; вода, стълби и възходящи течения — свободно движение.
+const BK_SOL = '#=BZ><^';
+const bkPrep = (map, L) => map.map(r => r.map(c => c === 'h' || c === 'D' || (c === 't' && L.tone) ? '.' : c === '1' || c === '2' || c === '3' ? '-' : c));
+function bkLayer(g, L, cols, rows, exitX) {
+  const lifts = (L.lifts || []).map(l => ({ x0: l.x0, y0: l.y0, x1: l.x1, y1: l.y1, w: l.w || 3 }));
+  const sky = g[0].filter(c => c === '.').length > cols / 2;   // отворено небе — като темите със sky в генератора
+  const V = z().svValidate(g, cols, sky, (L.grav || 900) < 800, lifts, L.start, exitX, { exact: true, all: true });
+  const N = cols * rows, adj = Array.from(V.adj, a => a ? a.slice() : []), free = new Uint8Array(N);
+  const sol = (x, y) => x < 0 || x >= cols || y < 0 || (y < rows && BK_SOL.includes(g[y][x]));
+  for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) if (g[y][x] === 'w' || g[y][x] === 'H') free[y * cols + x] = 1;   // стълбата се хваща и отстрани, и в падане
+  for (const w of L.winds || []) if (w[5] < 0) for (let y = Math.max(0, w[1]); y <= Math.min(rows - 1, w[3]); y++) for (let x = Math.max(0, w[0]); x <= Math.min(cols - 1, w[2]); x++) if (!sol(x, y)) free[y * cols + x] = 1;
+  if (L.zeroG || L.zgZones) for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++)   // безтегловност — също свободно движение
+    if (!sol(x, y) && (L.zeroG || L.zgZones.some(([x0, y0, x1, y1]) => x >= x0 && x <= x1 && y >= y0 && y <= y1))) free[y * cols + x] = 1;
+  const fall = (x, y, from, drift = 0) => { for (let cx = Math.max(0, x - drift); cx <= Math.min(cols - 1, x + drift); cx++)   // падане (с отнасяне встрани до drift колони)
+    for (let ry = y; ry < rows; ry++) { const c = ry * cols + cx; if (free[c] || (ry > y && V.kind[c])) { adj[from].push(c); break; } if (sol(cx, ry)) break; } };
+  for (let id = 0; id < N; id++) if (free[id]) { const x = id % cols, y = (id / cols) | 0;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = x + dx, ny = y + dy; if (nx < 0 || nx >= cols || ny < 0 || ny >= rows || sol(nx, ny)) continue;
+      if (free[ny * cols + nx]) adj[id].push(ny * cols + nx); else fall(nx, ny, id, 2); }   // излизане през всеки ръб — до първото място отдолу
+    const surf = y > 0 && !free[id - cols] && !sol(x, y - 1), r = surf ? 3 : 1;   // брегът — до водата; от повърхността — скок до 3 нагоре и встрани
+    for (let tx = Math.max(0, x - r); tx <= Math.min(cols - 1, x + r); tx++) for (let ty = Math.max(1, y - (surf ? 2 : 0)); ty <= Math.min(rows - 1, y + 2); ty++) {
+      const s = ty * cols + tx; if (!V.kind[s]) continue; const near = Math.abs(tx - x) <= 1 && (ty - 1 === y || ty - 2 === y);
+      if (near || surf) adj[id].push(s); if (near) adj[s].push(id); } }
+  if (free.some(v => v)) for (let s = 0; s < N; s++) if (V.kind[s]) { const x = s % cols, y = (s / cols) | 0;   // влизане: сход в съседната колона или скок до 3 встрани и 4 нагоре
+    for (const d of [-1, 1]) if (x + d >= 0 && x + d < cols && !sol(x + d, y - 1)) fall(x + d, y - 1, s);
+    for (let fy = Math.max(0, y - 4); fy < y - 1; fy++) { if (sol(x, fy)) continue; for (const d of [-1, 1]) for (let fx = x + d, k = 0; k < 3 && fx >= 0 && fx < cols && !sol(fx, fy); fx += d, k++) if (free[fy * cols + fx]) adj[s].push(fy * cols + fx); } }
+  return { V, adj, free };
+}
+// едно ниво: откъде се влиза в област без връщане до началото. Картата — пълната (L.build; касетата я пълни постепенно), с
+// приложените POKE от курсорите (назад се минава, след като са изпълнени); GOTO — връзка. Слоеве с преминаване между тях: епохите,
+// подвижните зали (положения a и b); обърнатият свят — само през сферите (L.flips). Честотите — един слой (виж долу).
+function bkLevel(L, rows, dbg) {
+  const cols = L.cols, a = L.arena, N = cols * rows;
+  const lim = a ? (a.door != null ? a.door : a.x0 != null ? a.x0 : a.minX != null ? a.minX : cols) : cols, exitX = Math.min(lim, L.exit && L.exit < cols ? Math.floor(L.exit) : cols - 3);
+  const fill = m => (x0, y0, x1, y1, c) => { for (let y = Math.max(0, y0); y <= Math.min(rows - 1, y1); y++) for (let x = Math.max(0, x0); x <= Math.min(cols - 1, x1); x++) m[y][x] = c; };
+  const pokes = (L.cursors || []).filter(c => c[0] === 'POKE').flatMap(c => (c[3] && c[3].set) || []);
+  const mk = build => { const m = []; for (let y = 0; y < rows; y++) m.push(new Array(cols).fill('.')); build(fill(m), cols); for (const s of pokes) fill(m)(...s); return m; };
+  const base = mk(L.build); let maps = [base], flip = false;
+  if (L.buildB) maps.push(mk(L.buildB));
+  else if (L.shifters && L.shifters.length) { const sh = side => { const m = base.map(r => r.slice()); for (const s of L.shifters) { for (const [x0, y0, x1, y1] of side ? s.a : s.b) fill(m)(x0, y0, x1, y1, '.');
+      for (const [x0, y0, x1, y1, c] of side ? s.b : s.a) fill(m)(x0, y0, x1, y1, c || '#'); } return m; }; maps = [sh(0), sh(1)]; }
+  else if (L.freq) { const fq = c => c === '1' || c === '2' || c === '3';   // честотите се сменят и във въздуха: платформите — '-', стените (колони) — проходими
+    maps = [base.map((r, y) => r.map((c, x) => !fq(c) ? c : (y > 0 && fq(base[y - 1][x])) || (y < rows - 1 && fq(base[y + 1][x])) ? '.' : '-'))]; }
+  else if (L.flips && L.flips.length) { maps.push(base.slice().reverse()); flip = true; }
+  maps = maps.map(m => bkPrep(m, L));
+  const Ls = maps.map(g => bkLayer(g, L, cols, rows, exitX)), NN = N * Ls.length, adj = [];
+  Ls.forEach((ly, e) => { for (let id = 0; id < N; id++) adj[e * N + id] = ly.adj[id].map(n => e * N + n); });
+  const land = (e, x, y0) => { for (let ry = Math.max(0, y0); ry < rows; ry++) { const id = ry * cols + x; if (Ls[e].V.kind[id] || Ls[e].free[id]) return id; if (BK_SOL.includes(maps[e][ry][x])) return -1; } return -1; };
+  if (flip) for (const [tx, ty] of L.flips) for (let e = 0; e < 2; e++) {   // сферата: светът се обръща, героят пада в другия слой
+    const sy = e ? rows - 1 - ty : ty, t = land(1 - e, tx, e ? ty + 2 : rows - ty + 1); if (t < 0) continue;
+    for (let x = Math.max(0, tx - 1); x <= Math.min(cols - 1, tx + 1); x++) for (let y = sy + 1; y <= Math.min(rows - 1, sy + 4); y++) if (Ls[e].V.kind[y * cols + x]) adj[e * N + y * cols + x].push((1 - e) * N + t); }
+  else for (let e = 0; e < Ls.length; e++) for (let f = 0; f < Ls.length; f++) if (f !== e) { const A = Ls[e], gB = maps[f];   // преминаване: тялото е свободно в другия слой
+    for (let id = 0; id < N; id++) { if (!A.V.kind[id] && !A.free[id]) continue; const x = id % cols, y = (id / cols) | 0;
+      if ((A.free[id] ? [y] : [y - 1, y - 2]).some(yy => yy < 0 || BK_SOL.includes(gB[yy][x]))) continue;
+      const t = A.free[id] && Ls[f].free[id] ? id : land(f, x, A.free[id] ? y + 1 : y); if (t >= 0) adj[e * N + id].push(f * N + t); } }
+  for (const [cmd, tx, row, o] of L.cursors || []) if (cmd === 'GOTO' && o && o.to) for (let e = 0; e < Ls.length; e++) adj[e * N + (row + 1) * cols + tx].push(e * N + (o.to[1] + 1) * cols + o.to[0]);
+  const sid = Ls[0].V.sid, spot = id => Ls[(id / N) | 0].V.kind[id % N] && (id % N) % cols < lim;
+  const R = new Uint8Array(NN), q = [sid]; R[sid] = 1; for (let h = 0; h < q.length; h++) for (const n of adj[q[h]]) if (!R[n]) { R[n] = 1; q.push(n); }
+  // силно свързаните области на достижимото (Тарян, без рекурсия): вътре се ходи напред-назад; всяка друга област е препятствие
+  const comp = new Int32Array(NN).fill(-1), low = new Int32Array(NN), idx = new Int32Array(NN).fill(-1), on = new Uint8Array(NN), st = []; let ix = 0, nc = 0;
+  for (let s0 = 0; s0 < NN; s0++) { if (!R[s0] || idx[s0] >= 0) continue; const cs = [[s0, 0]]; idx[s0] = low[s0] = ix++; st.push(s0); on[s0] = 1;
+    while (cs.length) { const fr = cs[cs.length - 1], v = fr[0];
+      if (fr[1] < adj[v].length) { const w = adj[v][fr[1]++]; if (!R[w]) continue; if (idx[w] < 0) { idx[w] = low[w] = ix++; st.push(w); on[w] = 1; cs.push([w, 0]); } else if (on[w]) low[v] = Math.min(low[v], idx[w]); }
+      else { cs.pop(); if (cs.length) { const u = cs[cs.length - 1][0]; low[u] = Math.min(low[u], low[v]); }
+        if (low[v] === idx[v]) { let w; do { w = st.pop(); on[w] = 0; comp[w] = nc; } while (w !== v); nc++; } } } }
+  const size = new Int32Array(nc); for (let id = 0; id < NN; id++) if (comp[id] >= 0 && spot(id)) size[comp[id]]++;
+  const ent = new Map();
+  for (let id = 0; id < NN; id++) if (R[id]) for (const n of adj[id]) { const cv = comp[n]; if (cv === comp[id] || cv === comp[sid] || !size[cv] || !spot(n)) continue;
+    const c = id % N, x = c % cols, y = (c / cols) | 0, o = ent.get(cv); if (!o || x < o.x) ent.set(cv, { x, y, пада: (((n % N) / cols) | 0) - y }); }
+  let exit = false; for (let id = 0; id < NN; id++) if (R[id] && spot(id) && (id % N) % cols >= exitX - 1) exit = true;
+  if (dbg) return { R, comp, sid, N, maps, Ls, adj };   // за разглеждане на картата
+  return { exit, препятствия: [...ent.values()].sort((p, q) => p.x - q.x) };
+}
+
 const C = {
   async placement(o) {
     const r = { сектори: 0, 'резервен генератор': 0, врагове: 0, предмети: 0, 'в стена/врата': 0, 'на дъното на яма с киселина': 0, примери: [] };
@@ -93,12 +173,26 @@ const C = {
       await pause(); }
     z().toMenu(2); return r;
   },
+  async back({ games = null } = {}) {
+    const r = { нива: 0, 'нива с препятствия': 0, препятствия: 0, 'без изход в модела': [], изключени: [], подробно: [] };
+    for (const g of games || z().GAMES.map(q => q.id)) { z().enterGame(g, 2); const lv = z().levels;
+      for (let i = 0; i < lv.length; i++) { z().loadLevel(i); const L = z().LVL, name = g + ':' + (i + 1);
+        if (L.chase || L.noBack) { r.изключени.push(name); continue; }
+        const a = bkLevel(L, z().map.length); r.нива++; if (!a.exit) r['без изход в модела'].push(name);
+        if (a.препятствия.length) { r['нива с препятствия']++; r.препятствия += a.препятствия.length;
+          r.подробно.push(name + ' ' + L.title + ': ' + a.препятствия.map(p => 'x' + p.x + ',' + p.y + (p.пада > 0 ? '↓' + p.пада : '')).join(' ')); }
+        if (i % 4 === 3) await pause(); }
+      z().toMenu(2); }
+    return r;
+  },
   async baseline(o) {
-    const out = [], ter = [], pop = [];
-    for await (const { s, k, di, L } of sectors(o)) { out.push([s, k, di, L.themeName, L.cols, z().enemies.length, z().pickups.length].join(','));
-      ter.push(hstr(z().map.map(r => r.join('')).join('|'))); pop.push(hstr(L.spawns.map(q => q.join(':')).join(';'))); }
+    const out = [], ter = [], pop = []; let noBack = 0, haveB = true;
+    for await (const { s, k, di, L, probe: P } of sectors(o)) { out.push([s, k, di, L.themeName, L.cols, z().enemies.length, z().pickups.length].join(','));
+      ter.push(hstr(z().map.map(r => r.join('')).join('|'))); pop.push(hstr(L.spawns.map(q => q.join(':')).join(';')));
+      if (!P || !P.V) continue; if (!P.V.B) { haveB = false; continue; }   // сектор без връщане: място, до което може да се стигне, без път до началото (без арената)
+      const V = P.V, cols = P.cols, lim = L.arena ? L.arena.door : cols; for (let id = 0; id < V.kind.length; id++) if (V.RO[id] && V.kind[id] && !V.B[id] && id % cols < lim) { noBack++; break; } }
     let h = 0; for (const c of out.join('\n')) h = (h * 31 + c.charCodeAt(0)) | 0;
-    return { сектори: out.length, отпечатък: (h >>> 0).toString(16), терен: hstr(ter.join(',')), население: hstr(pop.join(',')), първите: out.slice(0, 5) };
+    return { сектори: out.length, отпечатък: (h >>> 0).toString(16), терен: hstr(ter.join(',')), население: hstr(pop.join(',')), 'без връщане': haveB ? noBack : '—', първите: out.slice(0, 5) };
   },
   async smoke({ games = null, frames = 900, boss = 300, intro = 480, training = 900, surv = 600, sectors = [0, 4], seed = 1 } = {}) {
     const Z = z(), res = { части: {}, грешки: [] }, saved = lsSnap(), raf = window.requestAnimationFrame, rnd0 = Math.random, di0 = Z.DI;
