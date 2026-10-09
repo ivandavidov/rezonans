@@ -57,7 +57,7 @@ const LEVELS6=[
  deco(){ acSign(2,6,'ПОСЛЕДНИЯТ ПОКРИВ'); for(const x of [28,52]) R(x*T+4,15*T-34,2,34,'#4a4e56'); },
  arena:{type:'shadow',door:26,r0:2,r1:14,exitDoor:[55,0,14],msg:'Сянката изчезна. Марина те чака.'},
  spawns:[['health',8,14],['ammo',12,14],['memory',16,14],['grenade',20,14],['health',58,14]],
- triggers:[{x:4,fn:()=>mar('Куршумите минават през нея. Изпей тона — тогава ще стане истинска за няколко секунди!')},{x:22,fn:()=>setCp(22)},{x:28,fn:()=>startBoss()}]},
+ triggers:[{x:4,fn:()=>mar('Куршумите минават през нея. Изпей тона — тогава ще стане истинска за няколко секунди!')},{x:22,cp:22,fn:()=>setCp(22)},{x:28,boss:1,fn:()=>startBoss()}]},
 
 /* ---------- ГЛАВА II · СЪНЯТ ---------- */
 {title:'ЯСЛАТА В СЪНЯ',cols:180,grav:900,music:MUS6.dream,start:4,theme:()=>'acdream',themeB:()=>'acdreamB',sky:SKY6.dream,skyB:SKY6.dreamB,loadout:LOAD6_2,exit:176,hero:'i',
@@ -120,7 +120,7 @@ const LEVELS6=[
  deco(){ acSign(2,6,'ЯВЕ'); }, decoB(){ acSign(2,6,'СЪН'); },
  arena:{type:'echoes',door:26,r0:2,r1:14,exitDoor:[55,0,14],msg:'Ехотата заглъхнаха. Събуди се.'},
  spawns:[['health',8,14],['ammo',12,14],['memory',16,14],['grenade',20,14],['health',58,14]],
- triggers:[{x:4,fn:()=>showMsg('Наяве ехотата са само сенки — куршумите ги минават. Удряй ги в съня.',3.5)},{x:22,fn:()=>setCp(22)},{x:28,fn:()=>startBoss()}]},
+ triggers:[{x:4,fn:()=>showMsg('Наяве ехотата са само сенки — куршумите ги минават. Удряй ги в съня.',3.5)},{x:22,cp:22,fn:()=>setCp(22)},{x:28,boss:1,fn:()=>startBoss()}]},
 
 /* ---------- ГЛАВА III · ПАЗИТЕЛКАТА ---------- */
 {title:'ПЕРПЕРИКОН',cols:180,grav:900,music:MUS6.rhod,start:4,theme:()=>'acperp',sky:SKY6.rhod,loadout:LOAD6_2,exit:176,hero:'m',tone:true,
@@ -170,7 +170,7 @@ const LEVELS6=[
  deco(){ acAltar(4,15*T); acSign(2,6,'ВЪРХЪТ НА ТАТУЛ'); },
  arena:{type:'priest',door:26,r0:2,r1:14,exitDoor:[55,0,14],msg:'Жрецът падна. Пътят към Триград е свободен.'},
  spawns:[['health',8,14],['ammo',12,14],['memory',16,14],['rockets',20,14],['health',58,14]],
- triggers:[{x:4,fn:()=>mar('Огньовете го пазят. Угаси ги — после него.')},{x:22,fn:()=>setCp(22)},{x:28,fn:()=>startBoss()}]},
+ triggers:[{x:4,fn:()=>mar('Огньовете го пазят. Угаси ги — после него.')},{x:22,cp:22,fn:()=>setCp(22)},{x:28,boss:1,fn:()=>startBoss()}]},
 
 /* ---------- ГЛАВА IV · ДЯВОЛСКОТО ГЪРЛО ---------- */
 {title:'ТРИГРАДСКОТО ЖДРЕЛО',cols:180,grav:900,music:MUS6.rhod,start:4,theme:()=>'acgorge',sky:SKY6.rhod,loadout:LOAD6_3,exit:176,hero:'i',tone:true,
@@ -228,7 +228,7 @@ const LEVELS6=[
  deco(){ acSign(3,5,'ПОРТАТА'); for(const x of [4,14,22]) acMenhir(x,15*T,30); },
  arena:{type:'cerber',door:26,r0:2,r1:14,exitDoor:[55,2,14],msg:'Портата се отвори. Към Белинташ.'},
  spawns:[['health',8,14],['ammo',12,14],['memory',16,14],['rockets',20,14],['health',58,14]],
- triggers:[{x:4,fn:()=>ivn('Изпей тона, когато главите пеят — ще ги зашеметиш. Тогава стреляй.')},{x:22,fn:()=>setCp(22)},{x:28,fn:()=>startBoss()}]},
+ triggers:[{x:4,fn:()=>ivn('Изпей тона, когато главите пеят — ще ги зашеметиш. Тогава стреляй.')},{x:22,cp:22,fn:()=>setCp(22)},{x:28,boss:1,fn:()=>startBoss()}]},
 
 /* ---------- ГЛАВА V · АКОРДЪТ ---------- */
 {title:'БЕЛИНТАШ',cols:180,grav:900,music:MUS6.belin,start:4,theme:()=>'acbelin',sky:SKY6.stars,loadout:LOAD6_3,exit:176,hero:'i',tone:true,
@@ -266,7 +266,7 @@ const LEVELS6=[
  deco(){ for(const x of [6,14,22,52]) acGlyph(x,6); },
  arena:{type:'firsttone',door:26,r0:2,r1:14,exitDoor:[55,2,14],msg:'Първият тон чака отговор. Излез на платото.'},
  spawns:[['health',8,14],['ammo',12,14],['memory',16,14],['rockets',20,14],['health',58,14]],
- triggers:[{x:4,fn:()=>mar('Щитът му е от звук. Тонът ти го пробива — после стреляй!')},{x:22,fn:()=>setCp(22)},{x:28,fn:()=>startBoss()}]},
+ triggers:[{x:4,fn:()=>mar('Щитът му е от звук. Тонът ти го пробива — после стреляй!')},{x:22,cp:22,fn:()=>setCp(22)},{x:28,boss:1,fn:()=>startBoss()}]},
 
 {title:'АКОРДЪТ',cols:80,grav:900,music:{tr:-7,bpm:60,alien:true},start:4,theme:()=>'acbelin',sky:SKY6.stars,loadout:LOAD6_3,exit:999,hero:'i',
  story:['Платото на Белинташ, малко преди изгрев. Марина води Никола и Александър за ръка.','Над вас Наблюдателите чакат. Тонът е навсякъде — в скалата, във въздуха, в теб.'],

@@ -60,7 +60,7 @@ const LEVELS7=[
  deco(){ pxSign(2,5,'?SYNTAX ERROR IN 40'); pxPC(4,15*T); },
  arena:{type:'syntax',door:26,r0:2,r1:14,exitDoor:[55,2,14],msg:'Грешката е поправена. Към цвета!'},
  spawns:[['health',8,14],['ammo',12,14],['memory',16,14],['shotgun',20,14],['health',58,14]],
- triggers:[{x:4,fn:()=>pesho('Голяма грешка. Значи някой голям я е направил.')},{x:22,fn:()=>setCp(22)},{x:28,fn:()=>startBoss()}]},
+ triggers:[{x:4,fn:()=>pesho('Голяма грешка. Значи някой голям я е направил.')},{x:22,cp:22,fn:()=>setCp(22)},{x:28,boss:1,fn:()=>startBoss()}]},
 
 /* ---------- ГЛАВА II · ЦВЕТЪТ ---------- */
 {title:'ХАЙ-РЕЗ',cols:180,grav:900,music:MUS7.apple,start:4,theme:()=>'pxappA',themeB:()=>'pxappB',loadout:LOAD7_2,exit:176,
@@ -118,7 +118,7 @@ const LEVELS7=[
  deco(){ pxSign(2,5,'SNAKE.BAS · РЕКОРД 0'); },
  arena:{type:'snake',door:26,r0:2,r1:14,exitDoor:[55,2,14],msg:'Змията свърши. Към периферията!'},
  spawns:[['health',8,14],['ammo',12,14],['memory',16,14],['grenade',20,14],['health',58,14]],
- triggers:[{x:4,fn:()=>mira('Удряй само главата. Тялото ѝ е от байтове — минава през куршумите.')},{x:22,fn:()=>setCp(22)},{x:28,fn:()=>startBoss()}]},
+ triggers:[{x:4,fn:()=>mira('Удряй само главата. Тялото ѝ е от байтове — минава през куршумите.')},{x:22,cp:22,fn:()=>setCp(22)},{x:28,boss:1,fn:()=>startBoss()}]},
 
 /* ---------- ГЛАВА III · ПЕРИФЕРИЯТА ---------- */
 {title:'DOS',cols:170,grav:900,music:MUS7.cga,start:4,theme:()=>'pxcga',loadout:LOAD7_2,exit:166,
@@ -171,7 +171,7 @@ const LEVELS7=[
  deco(){ pxSign(2,5,'VIRUS.COM'); }, decoB(){ pxSign(2,5,'VIRUS.COM'); },
  arena:{type:'dark',door:26,r0:2,r1:14,exitDoor:[55,2,14],msg:'Тъмния изчезна. Към паметта!'},
  spawns:[['health',8,14],['ammo',12,14],['memory',16,14],['rockets',20,14],['health',58,14]],
- triggers:[{x:4,fn:()=>pesho('Хамелеон. Добре. И аз мога да сменям цвета си.')},{x:22,fn:()=>setCp(22)},{x:28,fn:()=>startBoss()}]},
+ triggers:[{x:4,fn:()=>pesho('Хамелеон. Добре. И аз мога да сменям цвета си.')},{x:22,cp:22,fn:()=>setCp(22)},{x:28,boss:1,fn:()=>startBoss()}]},
 
 /* ---------- ГЛАВА IV · ПАМЕТТА ---------- */
 {title:'СТЕКЪТ',cols:180,grav:900,music:MUS7.ram,start:4,theme:()=>'pxram',loadout:LOAD7_3,exit:176,
@@ -224,7 +224,7 @@ const LEVELS7=[
  deco(){ pxSign(2,5,'COPY A: B:'); },
  arena:{type:'copy',door:26,r0:2,r1:14,exitDoor:[55,2,14],msg:'Копието е изтрито. Към бъдещето!'},
  spawns:[['health',8,14],['ammo',12,14],['memory',16,14],['rockets',20,14],['health',58,14]],
- triggers:[{x:4,fn:()=>pesho('Хубаво съм се направил. Само мустаците са по-рошави.')},{x:22,fn:()=>setCp(22)},{x:28,fn:()=>startBoss()}]},
+ triggers:[{x:4,fn:()=>pesho('Хубаво съм се направил. Само мустаците са по-рошави.')},{x:22,cp:22,fn:()=>setCp(22)},{x:28,boss:1,fn:()=>startBoss()}]},
 
 /* ---------- ГЛАВА V · БЪДЕЩЕТО ---------- */
 {title:'МОДЕМЪТ',cols:180,grav:900,music:MUS7.web,start:4,theme:()=>'pxweb',loadout:LOAD7_3,exit:176,
@@ -262,7 +262,7 @@ const LEVELS7=[
  deco(){ pxWin(2,4,70,30,'Нула.exe'); },
  arena:{type:'nula',door:26,r0:2,r1:14,exitDoor:[55,2,14],msg:'Нулата стана единица. Върни се в началото.'},
  spawns:[['health',8,14],['ammo',12,14],['memory',16,14],['rockets',20,14],['health',58,14]],
- triggers:[{x:4,fn:()=>pesho('Голяма, кръгла и празна. Като отчет в края на месеца.')},{x:22,fn:()=>setCp(22)},{x:28,fn:()=>startBoss()}]},
+ triggers:[{x:4,fn:()=>pesho('Голяма, кръгла и празна. Като отчет в края на месеца.')},{x:22,cp:22,fn:()=>setCp(22)},{x:28,boss:1,fn:()=>startBoss()}]},
 
 {title:'RUN',cols:80,grav:900,music:{tr:-5,bpm:80},start:4,theme:()=>'pxboot',loadout:LOAD7_3,exit:999,
  story:['Пак в началото. Зеленият екран, мигащият курсор, тишината на клуба след часовете.','Мира чака на последния ред. Програмата ѝ е събрана от всички редове, които си намерил по пътя.'],

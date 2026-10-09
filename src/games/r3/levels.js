@@ -50,7 +50,7 @@ const LEVELS3=[
  deco(){ metroSign(4,5,'ДЕПО · ЛИНИЯ 3'); trainBody(6,16,11); },
  arena:{type:'wolf',door:26,r0:2,r1:14,exitDoor:[55,2,14],msg:'Вълкът е унищожен. Вратата на депото се отваря.'},
  spawns:[['health',8,14],['ammo',12,14],['grenade',18,14],['health',58,14]],
- triggers:[{x:4,fn:()=>radio('Тази машина е строена за тунелите. Когато се блъсне в стената, бронята ѝ се отваря.')},{x:22,fn:()=>setCp(22)},{x:28,fn:()=>startBoss()}]},
+ triggers:[{x:4,fn:()=>radio('Тази машина е строена за тунелите. Когато се блъсне в стената, бронята ѝ се отваря.')},{x:22,cp:22,fn:()=>setCp(22)},{x:28,boss:1,fn:()=>startBoss()}]},
 
 /* ---------- ГЛАВА II · ВИТОША ---------- */
 {title:'ЛИФТЪТ',cols:200,grav:900,music:MUS3.vit,start:4,theme:()=>'vitosha',sky:SKY3.vitosha,snow:2,gusts:{per:9,dur:3,force:-230},liftStyle:'cable',loadout:LOAD3_2,exit:195,
@@ -103,7 +103,7 @@ const LEVELS3=[
  deco(){ drawSign(3,6,'КОПИТОТО · 1345 м','#1a1a12','#c99a1c'); },
  arena:{type:'beacon',door:26,r0:2,r1:14,exitDoor:[55,2,14],msg:'Кулата-страж е изключена.'},
  spawns:[['health',8,14],['ammo',12,14],['rockets',16,14],['health',58,14]],
- triggers:[{x:4,fn:()=>radio('Кулата се захранва от три възела. Унищожи ги и щитът ѝ ще падне. Крий се зад бетона, когато лъчът те търси.')},{x:22,fn:()=>setCp(22)},{x:28,fn:()=>startBoss()}]},
+ triggers:[{x:4,fn:()=>radio('Кулата се захранва от три възела. Унищожи ги и щитът ѝ ще падне. Крий се зад бетона, когато лъчът те търси.')},{x:22,cp:22,fn:()=>setCp(22)},{x:28,boss:1,fn:()=>startBoss()}]},
 
 /* ---------- ГЛАВА III · 1977 ---------- */
 {title:'СПОМЕНЪТ',cols:170,grav:900,music:MUS3.s77,start:4,theme:()=>'lab77',loadout:LOAD3_2,exit:166,echo:1,
@@ -155,7 +155,7 @@ const LEVELS3=[
  deco(){ poster(4,4,'ЗАЛА № 0'); },
  arena:{type:'mirror',door:26,r0:2,r1:14,exitDoor:[55,2,14],msg:'Ехото утихна. Вратата е отворена.'},
  spawns:[['health',8,14],['ammo',12,14],['grenade',16,14],['health',58,14]],
- triggers:[{x:4,fn:()=>radio('…Чувам те отново! Каквото и да е това нещо — то те копира. Не стой на едно място.')},{x:22,fn:()=>setCp(22)},{x:28,fn:()=>startBoss()}]},
+ triggers:[{x:4,fn:()=>radio('…Чувам те отново! Каквото и да е това нещо — то те копира. Не стой на едно място.')},{x:22,cp:22,fn:()=>setCp(22)},{x:28,boss:1,fn:()=>startBoss()}]},
 
 /* ---------- ГЛАВА IV · РАЗЛОМЪТ ---------- */
 {title:'ПУКНАТИНИТЕ',cols:190,grav:900,music:MUS3.rift,start:4,theme:()=>'rift',sky:SKY3.rift,loadout:LOAD3_3,exit:186,
@@ -202,7 +202,7 @@ const LEVELS3=[
  deco(){ drawSign(3,6,'ЛЕГОВИЩЕТО','#ff8a9a','#1a0508'); },
  arena:{type:'stalker',door:26,r0:2,r1:14,exitDoor:[55,2,14],msg:'Ловецът е мъртъв. Проходът надолу е отворен.'},
  spawns:[['health',8,14],['ammo',12,14],['rockets',16,14],['health',58,14]],
- triggers:[{x:4,fn:()=>radio('Изстрелът го води към теб. Стреляй и веднага се мести. Когато не те намери, се обърква — тогава е уязвим. Ехото също вдига шум.')},{x:22,fn:()=>setCp(22)},{x:28,fn:()=>startBoss()}]},
+ triggers:[{x:4,fn:()=>radio('Изстрелът го води към теб. Стреляй и веднага се мести. Когато не те намери, се обърква — тогава е уязвим. Ехото също вдига шум.')},{x:22,cp:22,fn:()=>setCp(22)},{x:28,boss:1,fn:()=>startBoss()}]},
 
 /* ---------- ГЛАВА V · ЕПИЦЕНТЪР ---------- */
 {title:'ПОСЛЕДНИЯТ ВЛАК',cols:210,grav:900,music:MUS3.core,start:4,theme:tx=>tx<120?'metro':'rift',loadout:LOAD3_3,exit:206,
@@ -240,7 +240,7 @@ const LEVELS3=[
  deco(){ drawSign(3,5,'ЕПИЦЕНТЪР','#ffffff','#7a1a26'); },
  arena:{type:'fork',door:26,r0:2,r1:14,exitDoor:[55,2,14],msg:'Камертонът е разрушен. Пътят към разлома е свободен.'},
  spawns:[['health',8,14],['ammo',12,14],['rockets',16,14],['health',58,14]],
- triggers:[{x:4,fn:()=>radio('Целият камертон е брониран. Удряй кристалите на зъбите му. Когато ядрото се отвори — то.')},{x:22,fn:()=>setCp(22)},{x:28,fn:()=>startBoss()}]},
+ triggers:[{x:4,fn:()=>radio('Целият камертон е брониран. Удряй кристалите на зъбите му. Когато ядрото се отвори — то.')},{x:22,cp:22,fn:()=>setCp(22)},{x:28,boss:1,fn:()=>startBoss()}]},
 
 {title:'ИЗБОРЪТ',cols:70,grav:900,music:{tr:-12,bpm:66,alien:true},start:4,theme:()=>'epic',loadout:LOAD3_3,exit:999,ilieva:44,final:1,
  story:['Разломът е отворен като рана в сърцето на града. Отвътре се чува гласът на баща ти.','Илиева те чака на ръба. Изглежда уморена — и много по-стара, отколкото си я помнил.'],

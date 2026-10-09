@@ -53,7 +53,7 @@ LEVELS_R2.push(
  decoB(){ column(28,15*T,40,true); column(53,15*T,30,true); },
  arena:{type:'stone',door:26,r0:2,r1:14,exitDoor:[55,2,14],msg:'Стражът падна. Пътят към разлома е свободен.'},
  spawns:[['health',8,14],['ammo',12,14],['rockets',16,14],['health',58,14]],
- triggers:[{x:4,fn:()=>radio('Стражът е непробиваем в своето време. Когато се приближи, смени епохата.')},{x:22,fn:()=>setCp(22)},{x:28,fn:()=>startBoss()}]},
+ triggers:[{x:4,fn:()=>radio('Стражът е непробиваем в своето време. Когато се приближи, смени епохата.')},{x:22,cp:22,fn:()=>setCp(22)},{x:28,boss:1,fn:()=>startBoss()}]},
 
 /* ---------- ГЛАВА IV · ПОГЪЛНАТИТЕ СВЕТОВЕ ---------- */
 {title:'ПЯСЪЧНИЯТ СВЯТ',cols:200,grav:900,music:MUS.worlds,start:4,theme:()=>'dune',sky:SKY2.dune,loadout:LOAD_C4,exit:196,
@@ -87,7 +87,7 @@ LEVELS_R2.push(
  deco(){ for(const x of [28,54]) R(x*T,2*T,T,13*T,'#2a2216'); },
  arena:{type:'swarm',door:26,r0:2,r1:14,exitDoor:[55,2,14],msg:'Роякът е унищожен.'},
  spawns:[['health',8,14],['ammo',12,14],['grenade',16,14],['health',58,14],['shotgun',20,14]],
- triggers:[{x:4,fn:()=>radio('Нещо в стените се движи. Пушката и гранатите са най-добри срещу много малки цели.')},{x:22,fn:()=>setCp(22)},{x:28,fn:()=>startBoss()}]},
+ triggers:[{x:4,fn:()=>radio('Нещо в стените се движи. Пушката и гранатите са най-добри срещу много малки цели.')},{x:22,cp:22,fn:()=>setCp(22)},{x:28,boss:1,fn:()=>startBoss()}]},
 
 {title:'ГАЗОВИЯТ ГИГАНТ',cols:210,grav:900,music:{tr:4,bpm:96,alien:true},start:6,theme:()=>'gas',sky:SKY2.gas,loadout:LOAD_C4,exit:204,
  story:['Третият свят е газов гигант. Под краката ти няма земя — само отломки от погълнати континенти и бездна от облаци.','Въздушните течения тук са толкова силни, че носят камъни. Ще носят и теб.'],
@@ -108,7 +108,7 @@ LEVELS_R2.push(
  winds:[[32,4,33,14,0,-1350],[39,4,40,14,0,-1350],[46,6,46,14,0,-1350]],
  arena:{type:'storm',door:26,r0:2,r1:11,px:53,py:11,msg:'Бурята утихна. Порталът е отворен.'},
  spawns:[['health',8,11],['ammo',12,11],['rockets',16,11],['battery',20,11]],
- triggers:[{x:4,fn:()=>radio('Течението между островите ще те хване, ако паднеш. Пази се от мълниите — виждаш ли червените линии?')},{x:22,fn:()=>setCp(22)},{x:28,fn:()=>startBoss()}]},
+ triggers:[{x:4,fn:()=>radio('Течението между островите ще те хване, ако паднеш. Пази се от мълниите — виждаш ли червените линии?')},{x:22,cp:22,fn:()=>setCp(22)},{x:28,boss:1,fn:()=>startBoss()}]},
 
 {title:'МЪРТВИЯТ ГРАД',cols:200,grav:900,music:{tr:-4,bpm:88,alien:true},start:4,theme:()=>'necro',sky:SKY2.necro,dark:true,loadout:LOAD_C4,exit:196,
  story:['Последният погълнат свят е град. Някога е бил жив — с улици, кули и мостове.','Жителите му отдавна ги няма. Но нещо от тях е останало и те наблюдава.'],
@@ -169,6 +169,6 @@ LEVELS_R2.push(
  deco(){ for(const x of [28,53]) srcPillar(x); },
  arena:{type:'maker',door:26,r0:2,r1:14,px:41,py:13.6,home:true,msg:'Създателят угасна. Порталът към дома е отворен.'},
  spawns:[['health',8,14],['ammo',12,14],['rockets',16,14],['battery',20,14]],
- triggers:[{x:4,fn:()=>radio('Това е краят на пътя. Каквото и да стане — стреляй в сърцевината.')},{x:22,fn:()=>setCp(22)},{x:28,fn:()=>startBoss()}]},
+ triggers:[{x:4,fn:()=>radio('Това е краят на пътя. Каквото и да стане — стреляй в сърцевината.')},{x:22,cp:22,fn:()=>setCp(22)},{x:28,boss:1,fn:()=>startBoss()}]},
 );
 LEVELS_R2.forEach((l,i)=>{ l.n=i+1; l.spawns=l.spawns||[]; l.triggers=l.triggers||[]; l.deco=l.deco||(()=>{}); l.loadout=l.loadout||LOAD_C1; l.story=l.story||[]; l.end=l.end||[]; });

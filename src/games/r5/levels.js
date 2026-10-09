@@ -63,7 +63,7 @@ const LEVELS5=[
  deco(){ haystack(4,15*T); haystack(14,15*T,0.9); sunflowers(20,25,15*T); sunflowers(56,60,15*T); axSign(2,6,'НИВАТА ПРИ ГОРСКАТА ПОЛЯНА'); },
  arena:{type:'combine',door:26,r0:2,r1:14,exitDoor:[55,0,14],msg:'Комбайнът утихна. Пътят към Крушуна е свободен.'},
  spawns:[['health',8,14],['ammo',12,14],['memory',16,14],['grenade',20,14],['health',58,14]],
- triggers:[{x:4,fn:()=>ilv('Кристалът на покрива движи машината. Изчакай да се забие в края на нивата — тогава стреляй по него.')},{x:22,fn:()=>setCp(22)},{x:28,fn:()=>startBoss()}]},
+ triggers:[{x:4,fn:()=>ilv('Кристалът на покрива движи машината. Изчакай да се забие в края на нивата — тогава стреляй по него.')},{x:22,cp:22,fn:()=>setCp(22)},{x:28,boss:1,fn:()=>startBoss()}]},
 
 /* ---------- ГЛАВА II · КРУШУНА ---------- */
 {title:'КРУШУНА',cols:180,grav:900,music:MUS5.krush,start:4,theme:()=>'axkrush',sky:SKY5.day,loadout:LOAD5_2,exit:176,hero:'d',
@@ -125,7 +125,7 @@ const LEVELS5=[
  deco(){ moss(31,12,4); moss(47,12,4); travSteps(4,15*T,5); axSign(2,6,'ЕЗЕРОТО ПОД МААРАТА'); },
  arena:{type:'cascade',door:26,r0:2,r1:14,exitDoor:[55,0,14],msg:'Изворът утихна. Път към Деветаки.'},
  spawns:[['health',8,14],['ammo',12,14],['memory',16,14],['grenade',20,14],['health',58,14]],
- triggers:[{x:4,fn:()=>ilv('Кристалите във вировете го държат цял. Разбий ги — тогава кожата му ще се напука.')},{x:22,fn:()=>setCp(22)},{x:28,fn:()=>startBoss()}]},
+ triggers:[{x:4,fn:()=>ilv('Кристалите във вировете го държат цял. Разбий ги — тогава кожата му ще се напука.')},{x:22,cp:22,fn:()=>setCp(22)},{x:28,boss:1,fn:()=>startBoss()}]},
 
 /* ---------- ГЛАВА III · ДЕВЕТАШКАТА ПЕЩЕРА ---------- */
 {title:'ОСЪМ',cols:180,grav:900,music:MUS5.cave,start:4,theme:()=>'axriver',sky:SKY5.dusk,loadout:LOAD5_3,exit:176,hero:'r',alarmFoe:'agent',
@@ -182,7 +182,7 @@ const LEVELS5=[
  deco(){ for(let x=4;x<60;x+=4) drip(x*T,2*T,8+hash(x,3)*14,false); batCluster(30*T,2*T+3); batCluster(44*T,2*T+3); },
  arena:{type:'moth',door:26,r0:2,r1:14,exitDoor:[55,2,14],msg:'Нощницата се разпадна. Вълчев бяга към Ловеч.'},
  spawns:[['health',8,14],['ammo',12,14],['memory',16,14],['rockets',20,14],['health',58,14]],
- triggers:[{x:4,fn:()=>ilv('Тя е уязвима само на светло — в лъчите от тавана или до ракета. На тъмно куршумите минават през рояка.')},{x:22,fn:()=>setCp(22)},{x:28,fn:()=>startBoss()}]},
+ triggers:[{x:4,fn:()=>ilv('Тя е уязвима само на светло — в лъчите от тавана или до ракета. На тъмно куршумите минават през рояка.')},{x:22,cp:22,fn:()=>setCp(22)},{x:28,boss:1,fn:()=>startBoss()}]},
 
 /* ---------- ГЛАВА IV · ЛОВЕЧ ---------- */
 {title:'ВАРОША',cols:180,grav:900,music:MUS5.lovech,start:4,theme:()=>'axvar',sky:SKY5.night,loadout:LOAD5_3,exit:176,hero:'d',
@@ -234,7 +234,7 @@ const LEVELS5=[
  deco(){ fortTower(4,15*T,50); crenels(26,54,15*T); axSign(2,6,'КУЛАТА'); },
  arena:{type:'valchev',door:26,r0:2,r1:14,exitDoor:[55,0,14],msg:'Вълчев избяга към платото. Върни се в Александрово — бързо.'},
  spawns:[['health',8,14],['ammo',12,14],['memory',16,14],['rockets',20,14],['health',58,14]],
- triggers:[{x:4,fn:()=>ilv('Щитът му пада само когато зарежда удара си. Тогава стреляй.')},{x:22,fn:()=>setCp(22)},{x:28,fn:()=>startBoss()}]},
+ triggers:[{x:4,fn:()=>ilv('Щитът му пада само когато зарежда удара си. Тогава стреляй.')},{x:22,cp:22,fn:()=>setCp(22)},{x:28,boss:1,fn:()=>startBoss()}]},
 
 /* ---------- ГЛАВА V · ИЗВОРЪТ ---------- */
 {title:'ПОД ПЛАТОТО',cols:180,grav:900,music:MUS5.maara,start:4,theme:()=>'axmaara',dark:true,sonar:true,loadout:LOAD5_4,exit:176,hero:'d',
@@ -276,7 +276,7 @@ const LEVELS5=[
  deco(){ k3Sign(3,5,'ЯДРОТО'); consoleAt(6*T,15*T,3); },
  arena:{type:'resonator',door:26,r0:2,r1:14,exitDoor:[55,2,14],msg:'Резонаторът замлъкна. Към яслата — веднага.'},
  spawns:[['health',8,14],['ammo',12,14],['memory',16,14],['rockets',20,14],['health',58,14]],
- triggers:[{x:4,fn:()=>ilv('Пластините се отварят на всеки няколко секунди — тогава ядрото е уязвимо. И не пускай хората до машината — тя се лекува от тях!')},{x:22,fn:()=>setCp(22)},{x:28,fn:()=>startBoss()}]},
+ triggers:[{x:4,fn:()=>ilv('Пластините се отварят на всеки няколко секунди — тогава ядрото е уязвимо. И не пускай хората до машината — тя се лекува от тях!')},{x:22,cp:22,fn:()=>setCp(22)},{x:28,boss:1,fn:()=>startBoss()}]},
 
 {title:'ЯСЛАТА',cols:80,grav:900,music:MUS5.nurs,start:4,theme:()=>'axnurs',loadout:LOAD5_4,exit:999,hero:'r',
  story:['Детската ясла в Александрово, три часа през нощта. Лампите мигат в ритъм — 47 пъти в минута.','Детегледачките вървят насън по коридора. Иван е в последната стая.'],

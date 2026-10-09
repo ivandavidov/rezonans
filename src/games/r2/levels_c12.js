@@ -79,7 +79,7 @@ const LEVELS_R2=[
  flood:{y:11,rate:0,top:11,x0:27,x1:55},
  arena:{type:'deep',door:26,r0:2,r1:9,hatches:[32,38,44,49],tentTop:5,exitDoor:[55,2,9],msg:'Дълбинният потъва в бездната. Шлюзът е отворен!'},
  spawns:[['health',8,9],['ammo',12,9],['battery',16,9],['health',58,9],['health',28,9,'E']],
- triggers:[{x:4,fn:()=>radio('Това е залата на двойника. Каквото и да го пази, не го оставяй да те завлече под водата.')},{x:20,fn:()=>setCp(20)},{x:28,fn:()=>startBoss()}]},
+ triggers:[{x:4,fn:()=>radio('Това е залата на двойника. Каквото и да го пази, не го оставяй да те завлече под водата.')},{x:20,cp:20,fn:()=>setCp(20)},{x:28,boss:1,fn:()=>startBoss()}]},
 
 /* ---------- ГЛАВА II · ГРАДЪТ ---------- */
 {title:'ПОКРИВИТЕ',cols:200,grav:900,music:MUS.town,start:3,theme:()=>'town',sky:SKY2.town,loadout:LOAD_C2,exit:195,
@@ -133,5 +133,5 @@ const LEVELS_R2=[
  gens:[[30,14],[41,14],[51,14]],
  arena:{type:'breach',door:26,r0:2,r1:14,exitDoor:[55,2,14],msg:'Порталът се срути! Площадът е чист.'},
  spawns:[['health',8,14],['ammo',12,14],['battery',16,14],['health',58,14]],
- triggers:[{x:4,fn:()=>radio('Генераторите са готови. Когато влезеш на площада, започвам претоварването. Пази ги!')},{x:22,fn:()=>setCp(22)},{x:28,fn:()=>startBoss()}]},
+ triggers:[{x:4,fn:()=>radio('Генераторите са готови. Когато влезеш на площада, започвам претоварването. Пази ги!')},{x:22,cp:22,fn:()=>setCp(22)},{x:28,boss:1,fn:()=>startBoss()}]},
 ];

@@ -66,7 +66,7 @@ const LEVELS4=[
  deco(){ plSign(3,5,'ГОЛЯМАТА СЦЕНА'); curtains(26,28); curtains(52,54); for(let x=30;x<52;x+=5) puppetHang(x*T,3*T+hash(x,2)*20); },
  arena:{type:'puppeteer',door:26,r0:2,r1:14,exitDoor:[55,2,14],msg:'Конците са скъсани. Мини през сцената — Панорамата е от другата страна на парка.'},
  spawns:[['health',8,14],['ammo',12,14],['memory',16,14],['grenade',20,14],['health',58,14]],
- triggers:[{x:4,fn:()=>gan('Той се крие горе, при конците. Докато куклите са на сцената, не можеш да го достигнеш. Свали ги — тогава ще слезе.')},{x:22,fn:()=>setCp(22)},{x:28,fn:()=>startBoss()}]},
+ triggers:[{x:4,fn:()=>gan('Той се крие горе, при конците. Докато куклите са на сцената, не можеш да го достигнеш. Свали ги — тогава ще слезе.')},{x:22,cp:22,fn:()=>setCp(22)},{x:28,boss:1,fn:()=>startBoss()}]},
 
 /* ---------- ГЛАВА II · СКОБЕЛЕВИЯТ ПАРК ---------- */
 {title:'ОКОПИТЕ',cols:190,grav:900,music:MUS4.park,start:4,theme:()=>'plpark',sky:SKY4.dusk,loadout:LOAD4_2,exit:186,
@@ -126,7 +126,7 @@ const LEVELS4=[
  deco(){ frameEdge(0,61); for(let x=4;x<60;x+=6) paintFig(x*T,13*T-hash(x,7)*20,x); smokePuff(40*T,50,30); },
  arena:{type:'canvas',door:26,r0:2,r1:14,exitDoor:[55,0,14],msg:'Платното утихна. Под ротондата има стълбище към старите галерии.'},
  spawns:[['health',8,14],['ammo',12,14],['memory',16,14],['grenade',20,14],['health',58,14]],
- triggers:[{x:4,fn:()=>gan('Платното се пази с разкъсванията си. Затвори ги — стреляй по тях — и окото му ще се отвори.')},{x:22,fn:()=>setCp(22)},{x:28,fn:()=>startBoss()}]},
+ triggers:[{x:4,fn:()=>gan('Платното се пази с разкъсванията си. Затвори ги — стреляй по тях — и окото му ще се отвори.')},{x:22,cp:22,fn:()=>setCp(22)},{x:28,boss:1,fn:()=>startBoss()}]},
 
 /* ---------- ГЛАВА III · КАЙЛЪКА ---------- */
 {title:'СКАЛИТЕ',cols:180,grav:900,music:MUS4.kail,start:4,theme:()=>'plrock',sky:SKY4.kail,loadout:LOAD4_2,exit:176,liftStyle:'cable',
@@ -185,7 +185,7 @@ const LEVELS4=[
  deco(){ for(const x of [4,12,20,30,44,52]) antCol(x,15*T,60,false); drawSign(2,6,'СТОРГОЗИЯ','#3a2a10','#e0d0aa'); },
  arena:{type:'legion',door:26,r0:2,r1:14,exitDoor:[55,0,14],msg:'Стражът е свободен от поста си. Слизай към Музея на виното.'},
  spawns:[['health',8,14],['ammo',12,14],['memory',16,14],['rockets',20,14],['health',58,14]],
- triggers:[{x:4,fn:()=>gan('Щитът му спира всичко отпред. Заобиколи го — или удряй, когато вдигне копието.')},{x:22,fn:()=>setCp(22)},{x:28,fn:()=>startBoss()}]},
+ triggers:[{x:4,fn:()=>gan('Щитът му спира всичко отпред. Заобиколи го — или удряй, когато вдигне копието.')},{x:22,cp:22,fn:()=>setCp(22)},{x:28,boss:1,fn:()=>startBoss()}]},
 
 /* ---------- ГЛАВА IV · ПОД ПЛЕВЕН ---------- */
 {title:'ВИННАТА ПЕЩЕРА',cols:180,grav:900,music:MUS4.cave,start:4,theme:()=>'plcave',dark:true,flash:true,loadout:LOAD4_3,exit:176,
@@ -244,7 +244,7 @@ const LEVELS4=[
  lightsExtra(L){ const b=boss; if(b&&!b.dead&&b.type==='silent'&&b.state==='recover') L.push([b.x+b.w/2,b.y+b.h/2,60,0.9]); },
  arena:{type:'silent',door:26,r0:2,r1:14,exitDoor:[55,2,14],msg:'Тишината се пропука. Отвъд вратата светлината е бяла.'},
  spawns:[['health',8,14],['ammo',12,14],['memory',16,14],['rockets',20,14],['health',58,14]],
- triggers:[{x:4,fn:()=>gan('Не го виждам на скенера… Той се движи само когато ти се движиш. Сонарът ще ти го покаже, но и той ще те чуе.')},{x:22,fn:()=>setCp(22)},{x:28,fn:()=>startBoss()}]},
+ triggers:[{x:4,fn:()=>gan('Не го виждам на скенера… Той се движи само когато ти се движиш. Сонарът ще ти го покаже, но и той ще те чуе.')},{x:22,cp:22,fn:()=>setCp(22)},{x:28,boss:1,fn:()=>startBoss()}]},
 
 /* ---------- ГЛАВА V · ДИРИГЕНТЪТ ---------- */
 {title:'ОБЪРНАТИЯТ ПЛЕВЕН',cols:180,grav:900,music:MUS4.beyond,start:4,theme:()=>'plbeyond',sky:SKY4.beyond,loadout:LOAD4_3,exit:176,freq:true,fqFoes:true,stillZones:[[120,150]],
@@ -288,7 +288,7 @@ const LEVELS4=[
  deco(){ for(const x of [6,16,46]) invTower(x,3*T,8*T); },
  arena:{type:'conductor',door:26,r0:2,r1:14,exitDoor:[55,0,14],msg:'Тишина. Отвъд пулта стои врата, която не води никъде — и навсякъде.'},
  spawns:[['health',8,14],['ammo',12,14],['memory',16,14],['rockets',20,14],['health',58,14]],
- triggers:[{x:4,fn:()=>gan('Три тона го пазят. Удряй всеки в неговия цвят. А нотите в твоя тон минават през теб!')},{x:22,fn:()=>setCp(22)},{x:28,fn:()=>startBoss()}]},
+ triggers:[{x:4,fn:()=>gan('Три тона го пазят. Удряй всеки в неговия цвят. А нотите в твоя тон минават през теб!')},{x:22,cp:22,fn:()=>setCp(22)},{x:28,boss:1,fn:()=>startBoss()}]},
 
 {title:'ВРАТАТА',cols:70,grav:900,music:{tr:-12,bpm:60,alien:true},start:4,theme:()=>'plbeyond',sky:SKY4.beyond,loadout:LOAD4_3,exit:999,gate4:1,
  story:['Вратата стои сама в бялото поле. Зад нея се чува Плевен — камбани, коли, птици. Пред нея стои баща ти.','„Избери“, казва той. „Аз ще приема каквото решиш.“'],

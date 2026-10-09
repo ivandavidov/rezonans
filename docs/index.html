@@ -2970,7 +2970,7 @@ addUnique(MUT_NAME,{bats:'Рояци прилепи'},'MUT_NAME');   // мута
 /* ================= ДВИГАТЕЛ · ОЦЕЛЯВАНЕ (процедурни сектори) =================
    Темите се регистрират от игрите в SV_THEMES (ключовете трябва да са уникални за поредицата),
    небетата — в SKIES (engine/lib/themes.js). Планът на секторите (кои теми и босове) — svPlanBy(GAME.svSpec,k),
-   а сектор с бос копира арената на епизод GLV[GAME.svBoss[boss][0]]. */
+   а сектор с бос копира арената на епизод GLV[GAME.svBoss[boss][0]] — от тригерите му само маркираните с cp:N и boss:1. */
 const SV_THEMES={};
 const SV_LOAD={w:['wrench','pistol'],ammo:{pistol:[17,51]},armor:0,cur:'pistol'};
 const svSky=key=>key&&SKIES[key]||null;
@@ -3005,7 +3005,7 @@ function svGen(k){
 }
 function svBoss(k,plan){
   const L=GLV[GAME.svBoss[plan.boss][0]], portal=L.arena.px!=null;
-  const trig=L.triggers.map(t=>{ const s=String(t.fn); if(s.includes('startBoss')) return t; if(s.includes('setCp')){ const m=s.match(/setCp\((\d+)\)/), cx=m?+m[1]:t.x; return {x:t.x,fn:()=>setCp(cx)}; } return null; }).filter(Boolean);
+  const trig=L.triggers.filter(t=>t.boss||t.cp!=null).map(t=>t.boss?t:{x:t.x,fn:()=>setCp(t.cp)});   // в нивото с бос: cp — контролна точка, boss — стартът
   return Object.assign({},L,{n:100+k,title:'СЕКТОР '+(k+1),surv:true,story:[],end:[],triggers:trig,loadout:SV_LOAD,
     arena:Object.assign({},L.arena,{home:false,msg:portal?'Порталът към следващия сектор е отворен!':'Вратата към следващия сектор е отворена!'}),
     themeName:THEME_NAME[plan.theme],isBoss:true,muts:[],attempt:0});
