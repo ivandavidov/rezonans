@@ -3,7 +3,7 @@ LEVELS.push(
 {n:6,title:'АНТЕНАТА',cols:200,grav:900,music:{tr:-1,bpm:112},start:4,
  theme:()=>'night',
  barks:['Огън!','Ето го!','Прикрийте ме!'],
- fires:[[15*T+8,15*T],[75*T,15*T],[126*T,12*T],[152*T,15*T]],
+ fires:[[15*T+8,15*T],[75*T,15*T],[122*T+8,12*T],[152*T,15*T]],
  sw:[184,3],
  arena:{type:'heli',lock:false,cp:172,x0:150,minX:140,maxX:196,px:177.5,py:14,msg:'Ретранслаторът държи портала отворен! Слез в основата на кулата и влез в него.'},
  loadout:{w:['wrench','pistol','shotgun','pulse','grenade'],ammo:{pistol:[17,51],shotgun:[8,16],pulse:[40,40],grenade:[2,0]},armor:50,cur:'pulse'},

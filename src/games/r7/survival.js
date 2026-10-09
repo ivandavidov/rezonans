@@ -6,7 +6,7 @@ const SV7={
  pxcga:{name:'Периферията',th:'pxcga',foes:['packet','errbox','bug','blink'],mus:MUS7.cga,
    deco:(x,y,h,fy)=>{ if(h>0.7) pxKey(x,fy,'ЯВЕРТЪ'[Math.floor(h*60)%6]); }},
  pxram:{name:'Паметта',th:'pxram',foes:['bug','packet','blink','errbox'],mus:MUS7.ram,
-   deco:(x,y,h,fy)=>{ if(h>0.66) pxChip(x,fy,3); }},
+   deco:(x,y,h,fy)=>{ if(h>0.66) pxChip(x-1,fy,3); }},
  pxweb:{name:'Бъдещето',th:'pxweb',foes:['popup','packet','bug'],mus:MUS7.web},
  pxcloud:{name:'Облакът',th:'pxcloud',sky:'pxcloud',foes:['packet','popup','bug'],mus:MUS7.web},
 };

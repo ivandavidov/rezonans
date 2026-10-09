@@ -48,7 +48,8 @@ function svBoss(k,plan){
    Темата (SV_THEMES) дава етикети — sky, lowg, alien, cave, dark, human, turret, acid, elec, laser, vent, crush, conv, track, lift ('float'),
    pad, nest, tower, islands, zfloor, wind, water, lever, era, shift, ghost, stealth, term, plate, rhythm, freq, sun, still, sonar, flares,
    sleepers, tone, snow, gusts, noGuard, noPipes — и данни: name, th, thB, sky (ключ или списък от ключове в SKIES), skyB, mus, foes, foesB,
-   foesK ([[от сектор, враг]]; без него — пазачи от сектор 7), air (летящ враг над веригите), deco/decoB(x,y,h,py), sign, eraNames, alarmFoe.
+   foesK ([[от сектор, враг]]; без него — пазачи от сектор 7), air (летящ враг над веригите), deco/decoB(x,y,h,py) (декор на
+   земята в колоните x-1…x+1 — под тях има равен под), sign, eraNames, alarmFoe.
    Теглата на сегментите се изчисляват от етикетите. Сектор с бос: GAME.svArena строи арената (r1); копията от кампанията — svBoss. */
 function svTry(k,plan,att,simple){
   const r=mkRng(survSeed*7919+k*104729+att*31337+13), ri=(a,b)=>a+Math.floor(r()*(b-a+1)), pick=a=>a[Math.floor(r()*a.length)], ch=p=>r()<p;
@@ -283,7 +284,9 @@ function svTry(k,plan,att,simple){
     if(to) spawns[i]=[t,to[0],to[1]-1].concat(spawns[i].slice(3)); else spawns.splice(i,1); }
   // decorations
   const signY=sky?Math.max(2,gyEq(3)-5):Math.max(3,gyEq(3)-4), signT='СЕКТОР '+(k+1)+' · '+tg.name.toUpperCase(), ex=GAME.svSpec.exitCol||['#06201e','#4fe3d6'];
-  const dsp=[]; for(let x=4;x<cols-4;x+=ri(4,9)){ const y=gyEq(x); if(y<16&&g[y][x]==='#'&&g[y-1][x]==='.'&&!noSpawn.has(x)) dsp.push([x,y]); }
+  // декорът на темите заема до 3 плочки (x-1…x+1) и стои цял на земята: мястото се измества с една колона в равен участък, иначе отпада
+  const flat=(c,y)=>c>=3&&c<cols-3&&gyEq(c)===y&&g[y][c]==='#'&&g[y-1][c]==='.'&&!noSpawn.has(c);
+  const dsp=[]; for(let x=4;x<cols-4;x+=ri(4,9)){ const y=gyEq(x); if(y>=16||!flat(x,y)) continue; let a=x,b=x; while(a>x-2&&flat(a-1,y)) a--; while(b<x+2&&flat(b+1,y)) b++; if(b-a>=2) dsp.push([clamp(x,a+1,b-1),y]); }
   const exitDeco=()=>{ if(isBoss) return; const y=gyEq(cols-6); drawSign(cols-10,Math.max(sky?2:3,y-4),'ИЗХОД →',ex[0],ex[1]); lightDot((cols-4)*T,(y-2)*T,ex[1],0); };
   decos.push(()=>{ (tg.sign||drawSign)(3,signY,signT); exitDeco();
     if(!sky&&!tg.noPipes) pipeH(3*T+4,2,cols-2);
