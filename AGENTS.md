@@ -31,8 +31,9 @@ python3 src/win/make_exe.py            # dist/Rezonans-windows/ (Rezonans-x64.ex
   при старт се записва в `%LOCALAPPDATA%\Rezonans\game\`, записите са в `%LOCALAPPDATA%\Rezonans\WebView2`.
 - Проверено на Windows (2026-10-08): работи според очакванията; `--selftest` — шрифтовете са налични, без JS грешки,
   записите оцеляват между стартиранията (`runs` расте). Играта се зарежда от `file://` нарочно (go-webview2 няма
-  virtual host на високо ниво) — localStorage там работи, не го „поправяй“. На Mac .exe не може да се пусне — промени в `main.go`
-  трябва да се пробват на Windows: `Rezonans-x64.exe --selftest` → прозорче с JSON и `%LOCALAPPDATA%\Rezonans\selftest.json`.
+  virtual host на високо ниво) — localStorage там работи, не го „поправяй“. На Mac .exe не може да се пусне; самопроверката
+  (`Rezonans-x64.exe --selftest` → прозорче с JSON и `%LOCALAPPDATA%\Rezonans\selftest.json`) е само на Windows и не е част
+  от обичайната проверка — собственикът не я изисква. Промени в `main.go` на Mac се проверяват само до сглобяването — кажи го.
 - Без подпис: SmartScreen пита веднъж („More info“ → „Run anyway“).
 
 **Общо**
@@ -102,6 +103,8 @@ python3 src/win/make_exe.py            # dist/Rezonans-windows/ (Rezonans-x64.ex
    - `python3 tools/ab.py [ref] [--suite] [--pixels]` — A/B: сглобява ref и работното копие (публикуваните, 7-те части,
      `--offline`), сравнява байт по байт и (с `--suite`) отпечатъците в Node; `--pixels` пише пробите `docs/_ab_old.html` и
      `docs/_ab_new.html` за `pixels` (картината на менютата, екраните, HUD-а и нивата) в браузъра.
+   - Промяна, която не цели да мени поведението, запазва всички отпечатъци (`python3 tools/ab.py HEAD --suite`); при
+     съзнателна промяна новите числа се записват в `notes/handoff.md` (раздел 4) и в commit съобщението.
    - Пробни файлове в `docs/` (напр. `_proba.html` с всички части) не се commit-ват.
 
 ## Стил
