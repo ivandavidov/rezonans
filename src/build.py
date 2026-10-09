@@ -77,15 +77,15 @@ code.append("if(!GAMES.length) throw new Error('Няма регистриран�
 s=(shell+"<script>\n(()=>{\n'use strict';\n"+''.join(rd('engine',f) for f in LEGACY)+'\n'.join(code)+'\n'
    +fill(rd('engine','legacy','loop.js'),'/*@@FONT_LOADS@@*/',loads)+'})();\n</script>\n')
 
-allcode=''.join(rd('engine',f) for f in LEGACY)+'\n'.join(code)   # loop.js не влиза: там са старите псевдоними в window.__rz
+allcode=''.join(rd('engine',f) for f in LEGACY)+'\n'.join(code)+rd('engine','legacy','loop.js')
 left=[w for w in ['R3','R2','r2title',"state='mode'","'r2intro'",'LEVELS2','unlocked2','MO','SEQ','R2B','R2UPD','R2DRAW','R2_TAKE','R2_PDRAW','R2B_TONE','R2B_CMD','R2BAR',
                     'TILE_HOOKS','BACK_HOOKS','BOSS_NORM','drawHUD2','renderEps2','r2EpsInput','r2Tile','r2BackDeco','r2SkyLayer',
                     'r2T','r2Load','r2SetCp','r2PreRespawn','r2Respawn','r2ExitOk','r2Move','r2Wind','r2BuildEras','r2Update','r2DrawBack',
                     'r2DrawWorld','r2Lights','r2PostFx','mechLoad','mechRespawn','mechUpdate','mechDrawBack','mechDrawWorld','mechLights','mechChips',
-                    'svTry2','genSector','r1GenSector','r1SvPlan','SV_TG','THEME_MUSIC'] if re.search(r'(?<![\w])'+re.escape(w)+r'(?![\w])',allcode)]
+                    'svTry2','genSector','r1GenSector','r1SvPlan','SV_TG','THEME_MUSIC','r2Sel','r2ToTitle','leaveR2'] if re.search(r'(?<![\w])'+re.escape(w)+r'(?![\w])',allcode)]
 if left: raise SystemExit('остатъци от старата архитектура: '+', '.join(left))
 # записите: ключове само от списъка в engine/legacy/core.js (STORE_KEYS — общите, STORE_PART — на частта); localStorage — само през store
-full=allcode+rd('engine','legacy','loop.js')
+full=allcode
 sk=re.search(r"const STORE_KEYS=\[([^\]]*)\], STORE_PART=\[([^\]]*)\];",full)
 if not sk: raise SystemExit('няма STORE_KEYS/STORE_PART в engine/legacy/core.js')
 SK,SP=[re.findall(r"'([^']+)'",x) for x in sk.groups()]

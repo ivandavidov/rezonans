@@ -75,7 +75,8 @@ LEVEL FLOW 3020 · UPDATE 3053 · RENDER 3130 · TRAM 3637 · TRAINING 3660 · L
   проверки в тази сесия). Полета: `GAMES, GAME, state, enterGame, toMenu, startEpisode, setDiff, genLevel, loadLevel,
   update, map, enemies, pickups, player, survSeed, startSurv, svLoad/svSave/svClear, hurtEnemy, solidAt, groundY,
   barks, musOn/sfxOn, toggleMute/Mus/Sfx, svValidate, frame, keys/pressed, levels, unl, resetClock, …` + `debug` полетата
-  на игрите. Старите псевдоними (`R2`, `R3`, `LEVELS2`, `r2Sel`, `r2ToTitle`, `leaveR2`) не се ползват от нищо в хранилището.
+  на игрите. Старите псевдоними (`SEQ`, `R2`, `R3`, `LEVELS2`, `r2Sel`, `r2ToTitle`, `leaveR2`) са махнати (2026-10-09) —
+  не ги ползваше нищо; сборката ги спира и в `loop.js`.
 - **Изходът**: един самостоятелен `docs/index.html` + иконите + `manifest.webmanifest`; режим `--offline` (вградени
   шрифтове, без връзки навън) за Mac/Windows приложенията; без npm и без зависимости; публикуваната поредица е само r1.
 - **Поведение, което потребителят изрично поиска** (виж git log): продължаване в оцеляване (пълни животи, точките растат,
