@@ -18,7 +18,7 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Russo+One&display=swap" rel="stylesheet">
 <style>
 :root{
-  /* Layout: one centred arcade screen with a control legend beneath; a single dark control-room look */
+  /* един екран по средата, под него — легендата на клавишите; тъмен вид на контролна зала */
   --bg:#080b0d; --frame:#12191e; --line:#25313a; --fg:#cfd8dc; --dim:#7f8e97; --amber:#ffa62b; --toxic:#94ff57;
   --display:"Russo One","Arial Black",Impact,sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
@@ -29,23 +29,80 @@ body{color:var(--fg);font-family:var(--mono);overflow-x:hidden}
 .wrap{box-sizing:border-box;min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding-inline:16px;padding-block:14px}
 .screen{position:relative;width:min(100%, max(300px, calc((100vh - 150px) * 1.7647)), 1280px);aspect-ratio:480/272;max-width:100%;background:#000;border:1px solid var(--line);box-shadow:0 0 0 6px var(--frame),0 0 0 7px var(--line),0 20px 60px rgba(0,0,0,.6)}
 canvas{display:block;width:100%;height:100%;image-rendering:pixelated;outline:none;filter:brightness(1.08)}
+/* легендата на клавишите (при тъч е скрита) */
 .keys{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 18px;font-size:12px;color:var(--dim);max-width:1280px}
 .keys span{white-space:nowrap}
 kbd{display:inline-block;min-width:1.6em;padding:1px 6px;margin-right:4px;border:1px solid #5a4520;border-bottom-width:2px;border-radius:3px;color:var(--amber);font:600 12px var(--mono);text-align:center;background:#16120a}
+/* тъч бутоните: кръст (.pad) и действия (.acts) — видими само при (pointer:coarse); с клавиш E (has-e) — пети бутон */
 .touch{display:none;width:100%;max-width:720px;justify-content:space-between;align-items:center;gap:12px;user-select:none;-webkit-user-select:none;touch-action:none}
 .pad,.acts{display:grid;gap:8px}
 .pad{grid-template-columns:repeat(3,52px);grid-template-rows:repeat(2,52px)}
 .acts{grid-template-columns:repeat(4,56px)}
 .touch button{font:600 13px var(--mono);color:var(--amber);background:#16120a;border:1px solid #5a4520;border-radius:10px;touch-action:none;-webkit-tap-highlight-color:transparent}
 .touch button:active,.touch button.on{background:#3a2a0e}
-.acts button{height:56px;border-radius:50%;grid-row:2}.acts .esc{grid-row:1;grid-column:1/-1;justify-self:end;height:30px;padding:0 12px;border-radius:10px;border-style:dashed;font-size:11px}
-.pad .am,.pad .as{grid-row:1;width:72%;height:72%;align-self:start;font-size:11px;border-style:dashed}.pad .am{grid-column:1;justify-self:start}.pad .as{grid-column:3;justify-self:end}.touch button.off{opacity:.35}
-.pad .u{grid-column:2;grid-row:1}.pad .l{grid-column:1;grid-row:2}.pad .d{grid-column:2;grid-row:2}.pad .r{grid-column:3;grid-row:2}
+.acts button{height:56px;border-radius:50%;grid-row:2}
+.acts .esc{grid-row:1;grid-column:1/-1;justify-self:end;height:30px;padding:0 12px;border-radius:10px;border-style:dashed;font-size:11px}
+.pad .am,.pad .as{grid-row:1;width:72%;height:72%;align-self:start;font-size:11px;border-style:dashed}
+.pad .am{grid-column:1;justify-self:start}
+.pad .as{grid-column:3;justify-self:end}
+.touch button.off{opacity:.35}
+.pad .u{grid-column:2;grid-row:1}
+.pad .l{grid-column:1;grid-row:2}
+.pad .d{grid-column:2;grid-row:2}
+.pad .r{grid-column:3;grid-row:2}
 body.has-e .acts{grid-template-columns:repeat(5,56px)}
 
-@media (pointer:coarse){.touch{display:flex}.keys{display:none}}
-@media (max-width:540px){.touch{--u:min(56px,calc((100vw - 68px)/5))}body.has-e .touch{--u:min(56px,calc((100vw - 76px)/6))}.pad{grid-template-columns:repeat(3,var(--u));grid-template-rows:repeat(2,var(--u))}.acts,body.has-e .acts{grid-template-columns:repeat(2,var(--u));grid-template-rows:auto repeat(2,var(--u))}body.has-e .acts{grid-template-columns:repeat(3,var(--u))}.acts button{height:var(--u)}.acts [data-k=swap]{grid-area:2/1}.acts [data-k=crouch]{grid-area:2/2}.acts [data-k=jump]{grid-area:3/1}.acts [data-k=fire]{grid-area:3/2}body.has-e .acts [data-k=era]{grid-area:2/3}body.has-e .acts [data-k=jump]{grid-area:3/2}body.has-e .acts [data-k=fire]{grid-area:3/3}}
-@media (pointer:coarse) and (orientation:landscape) and (min-aspect-ratio:8/5){.wrap{padding:4px;gap:0;height:100%}.screen{width:min(100%,calc((100vh - 8px)*1.7647));width:min(100%,calc((100dvh - 8px)*1.7647))}.touch{display:block;position:fixed;inset:0;z-index:2;max-width:none;pointer-events:none;--u:clamp(44px,14vh,60px);--w:clamp(40px,calc((100vw - (100vh - 8px)*1.7647)/4 - 6px),var(--u));--b:max(8px,12vh);--sl:max(6px,env(safe-area-inset-left));--sr:max(6px,env(safe-area-inset-right))}.touch button{pointer-events:auto;opacity:.78;font-size:12px}.touch button.on,.touch button:active{opacity:1}.pad,.acts,body.has-e .acts{position:absolute;bottom:var(--b);gap:6px;grid-template-columns:repeat(2,var(--w))}.pad{left:var(--sl);grid-template-rows:calc(var(--u)*.8) var(--u) calc(var(--u)*.8)}.pad .u{grid-area:1/1/2/3}.pad .l{grid-area:2/1}.pad .r{grid-area:2/2}.pad .d{grid-area:3/1/4/3}.pad .am,.pad .as{position:fixed;top:6px;width:calc(var(--w)*.9);height:calc(var(--u)*.6)}.pad .am,.pad .as{left:var(--sl)}.pad .as{top:calc(12px + var(--u)*.6)}.acts,body.has-e .acts{right:var(--sr);grid-template-rows:repeat(2,var(--u))}body.has-e .acts{grid-template-rows:repeat(3,var(--u))}.acts button{height:auto;border-radius:14px}.acts .esc{position:fixed;top:6px;right:var(--sr);width:calc(var(--w)*1.4);height:calc(var(--u)*.6);padding:0}.acts .eh{display:none}.acts [data-k=crouch]{grid-area:1/1}.acts [data-k=swap]{grid-area:1/2}.acts [data-k=jump]{grid-area:2/1}.acts [data-k=fire]{grid-area:2/2}body.has-e .acts [data-k=era]{grid-area:1/1/2/3}body.has-e .acts [data-k=crouch]{grid-area:2/1}body.has-e .acts [data-k=swap]{grid-area:2/2}body.has-e .acts [data-k=jump]{grid-area:3/1}body.has-e .acts [data-k=fire]{grid-area:3/2}}
+@media (pointer:coarse){
+  .touch{display:flex}
+  .keys{display:none}
+}
+/* тесен портрет: бутоните се свиват до --u, действията са в две колони (с E — в три) */
+@media (max-width:540px){
+  .touch{--u:min(56px,calc((100vw - 68px)/5))}
+  body.has-e .touch{--u:min(56px,calc((100vw - 76px)/6))}
+  .pad{grid-template-columns:repeat(3,var(--u));grid-template-rows:repeat(2,var(--u))}
+  .acts,body.has-e .acts{grid-template-columns:repeat(2,var(--u));grid-template-rows:auto repeat(2,var(--u))}
+  body.has-e .acts{grid-template-columns:repeat(3,var(--u))}
+  .acts button{height:var(--u)}
+  .acts [data-k=swap]{grid-area:2/1}
+  .acts [data-k=crouch]{grid-area:2/2}
+  .acts [data-k=jump]{grid-area:3/1}
+  .acts [data-k=fire]{grid-area:3/2}
+  body.has-e .acts [data-k=era]{grid-area:2/3}
+  body.has-e .acts [data-k=jump]{grid-area:3/2}
+  body.has-e .acts [data-k=fire]{grid-area:3/3}
+}
+/* тъч, широк landscape (≥ 8:5): екранът е на цялата височина, бутоните — полупрозрачни, отстрани върху него */
+@media (pointer:coarse) and (orientation:landscape) and (min-aspect-ratio:8/5){
+  .wrap{padding:4px;gap:0;height:100%}
+  .screen{width:min(100%,calc((100vh - 8px)*1.7647));width:min(100%,calc((100dvh - 8px)*1.7647))}
+  .touch{display:block;position:fixed;inset:0;z-index:2;max-width:none;pointer-events:none;--u:clamp(44px,14vh,60px);--w:clamp(40px,calc((100vw - (100vh - 8px)*1.7647)/4 - 6px),var(--u));--b:max(8px,12vh);--sl:max(6px,env(safe-area-inset-left));--sr:max(6px,env(safe-area-inset-right))}
+  .touch button{pointer-events:auto;opacity:.78;font-size:12px}
+  .touch button.on,.touch button:active{opacity:1}
+  .pad,.acts,body.has-e .acts{position:absolute;bottom:var(--b);gap:6px;grid-template-columns:repeat(2,var(--w))}
+  .pad{left:var(--sl);grid-template-rows:calc(var(--u)*.8) var(--u) calc(var(--u)*.8)}
+  .pad .u{grid-area:1/1/2/3}
+  .pad .l{grid-area:2/1}
+  .pad .r{grid-area:2/2}
+  .pad .d{grid-area:3/1/4/3}
+  .pad .am,.pad .as{position:fixed;top:6px;width:calc(var(--w)*.9);height:calc(var(--u)*.6)}
+  .pad .am,.pad .as{left:var(--sl)}
+  .pad .as{top:calc(12px + var(--u)*.6)}
+  .acts,body.has-e .acts{right:var(--sr);grid-template-rows:repeat(2,var(--u))}
+  body.has-e .acts{grid-template-rows:repeat(3,var(--u))}
+  .acts button{height:auto;border-radius:14px}
+  .acts .esc{position:fixed;top:6px;right:var(--sr);width:calc(var(--w)*1.4);height:calc(var(--u)*.6);padding:0}
+  .acts .eh{display:none}
+  .acts [data-k=crouch]{grid-area:1/1}
+  .acts [data-k=swap]{grid-area:1/2}
+  .acts [data-k=jump]{grid-area:2/1}
+  .acts [data-k=fire]{grid-area:2/2}
+  body.has-e .acts [data-k=era]{grid-area:1/1/2/3}
+  body.has-e .acts [data-k=crouch]{grid-area:2/1}
+  body.has-e .acts [data-k=swap]{grid-area:2/2}
+  body.has-e .acts [data-k=jump]{grid-area:3/1}
+  body.has-e .acts [data-k=fire]{grid-area:3/2}
+}
 </style>
 <style>html,body{margin:0}</style>
 </head>
@@ -89,6 +146,10 @@ const sgn=v=>v<0?-1:1;
 function hash(x,y){let h=(x*374761393+y*668265263)|0;h=Math.imul(h^(h>>>13),1274126177);return ((h^(h>>>16))>>>0)/4294967295;}
 const angDiff=(a,b)=>{let d=a-b;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;return d;};
 const ov=(a,b)=>a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
+/* записите (localStorage) — договорът с играчите: ключовете не се преименуват. Общи: rz.diff (трудност), rz.audio (музика и
+   ефекти), rz.selftest (самопроверките на Mac/Windows). На частта — KEY(име) = GAME.key+'.'+име (r1: rz, после rz2 …): unlocked,
+   mem, best/bestK/svSave + трудността (0–2), ending/done (r3–r7 ги пишат с пълното име). build.py спира при ключ извън списъка. */
+const STORE_KEYS=['rz.diff','rz.audio','rz.selftest'], STORE_PART=['unlocked','mem','best','bestK','svSave','ending','done'];
 const store={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:v;}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,String(v));}catch(e){}},del(k){try{localStorage.removeItem(k);}catch(e){}}};
 
 /* ================= РЕГИСТРИ НА СЪДЪРЖАНИЕТО =================
@@ -1799,7 +1860,8 @@ function drawMsgBox(y){
    останалите регистрирани игри. Коя игра е включена в сборката решава games/series.json. */
 const GAMES=[], GHIST=[];
 let GAME=null, gSel=2;
-function registerGame(g){ GAMES.push(g); GAMES.sort((a,b)=>a.order-b.order); }
+function registerGame(g){ if(GAMES.some(o=>o.id===g.id||o.order===g.order)) throw new Error('registerGame: „'+g.id+'“ — id или order вече е зает');
+  GAMES.push(g); GAMES.sort((a,b)=>a.order-b.order); }
 const gameById=id=>GAMES.find(g=>g.id===id||g.order===id);
 const ACC=()=>GAME.accent, ACCA=a=>`rgba(${GAME.accentRgb},${a})`, DFONT=()=>GAME.font;
 const KEY=k=>GAME.key+'.'+k;
@@ -2337,6 +2399,7 @@ defMech('shifters',{
    LVL.ghosts: брой; addGhost() добавя още — летят до играча и стрелят по враговете. */
 let ALLIES=[];
 /* ---------- ghosts (allies) ---------- */
+function ghostShrine(tx,fy){ const x=tx*T; R(x,fy-20,16,20,'#2a3238'); R(x+4,fy-16,8,10,'#0a1a14'); lightDot(x+8,fy-11,'#7affb0',1); }   // светилището, при което духът се присъединява (нивата и секторите)
 function addGhost(silent){ const p=player; ALLIES.push({x:p?p.x:0,y:p?p.y-30:0,i:ALLIES.length,cd:1.2+ALLIES.length*0.4,t:rnd(6)}); if(!silent&&p) for(let i=0;i<20;i++) part(p.x+rnd(-20,20),p.y+rnd(-30,10),rnd(-20,20),rnd(-40,-10),0.9,'#bfe8ff',2,-20); }
 function updAllies(dt){
   const p=player;
@@ -3394,6 +3457,7 @@ document.querySelectorAll('#touch button[data-a]').forEach(b=>b.addEventListener
 audApply();
 
 /* ================= ИГРА: r1 ================= */
+{
 /* ================= РЕЗОНАНС 1 · ГЛАВИТЕ ================= */
 // глава IV завършва с финален екран (fin), след него идва бонус главата със свои надписи и цвят
 const CH_R1=[{t:'СЕКТОР 7',a:0,b:4},{t:'ДЪЛБИНИТЕ',a:5,b:9},{t:'ПРОБИВЪТ',a:10,b:14},{t:'ЧУЖДИЯТ СВЯТ',a:15,b:19,fin:true},
@@ -5569,6 +5633,7 @@ registerGame({
   debug:{enterR1:()=>enterGame('r1'), TRAIN_LVL, startTraining, startTram, updTram, get TR(){return TR}, get unlocked(){return gUnl}},
 });
 
+}
 if(!GAMES.length) throw new Error('Няма регистрирани игри'); setGame(GAMES[0].id);
 /* ================= LOOP ================= */
 function clearPressed(){ for(const k in pressed) pressed[k]=false; }

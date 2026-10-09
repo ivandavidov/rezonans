@@ -21,7 +21,8 @@
    останалите регистрирани игри. Коя игра е включена в сборката решава games/series.json. */
 const GAMES=[], GHIST=[];
 let GAME=null, gSel=2;
-function registerGame(g){ GAMES.push(g); GAMES.sort((a,b)=>a.order-b.order); }
+function registerGame(g){ if(GAMES.some(o=>o.id===g.id||o.order===g.order)) throw new Error('registerGame: „'+g.id+'“ — id или order вече е зает');
+  GAMES.push(g); GAMES.sort((a,b)=>a.order-b.order); }
 const gameById=id=>GAMES.find(g=>g.id===id||g.order===id);
 const ACC=()=>GAME.accent, ACCA=a=>`rgba(${GAME.accentRgb},${a})`, DFONT=()=>GAME.font;
 const KEY=k=>GAME.key+'.'+k;

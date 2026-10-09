@@ -7,7 +7,8 @@ src/
   fonts/                шрифтовете за офлайн сборката (fetch.py ги тегли веднъж от Google Fonts; SIL OFL в licenses/)
   mac/                  Mac приложение: main.swift (WKWebView) + make_app.py → dist/Резонанс.app
   win/                  Windows приложение: main.go (WebView2) + make_exe.py → dist/Rezonans-windows/ (x64 + arm64 .exe)
-  shell/index.html      разметката и CSS (маркерите за шрифтовете и CSS на частите се попълват при сборката)
+  shell/index.html      разметката (маркерите за шрифтовете се попълват при сборката)
+  shell/style.css       целият CSS, вкл. тъч подредбите (портрет, тесен портрет, широк landscape); CSS на частите — от game.json
   engine/legacy/        двигателят — бившата база по раздели (core, synth, map, state … render, training);
                         loop.js — цикълът и window.__rz
   engine/defs.js        регистрите: defFoe, defBoss, defItem, defTile, defBack (+ addUnique за общите речници)

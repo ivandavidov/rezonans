@@ -2,6 +2,7 @@
    LVL.ghosts: брой; addGhost() добавя още — летят до играча и стрелят по враговете. */
 let ALLIES=[];
 /* ---------- ghosts (allies) ---------- */
+function ghostShrine(tx,fy){ const x=tx*T; R(x,fy-20,16,20,'#2a3238'); R(x+4,fy-16,8,10,'#0a1a14'); lightDot(x+8,fy-11,'#7affb0',1); }   // светилището, при което духът се присъединява (нивата и секторите)
 function addGhost(silent){ const p=player; ALLIES.push({x:p?p.x:0,y:p?p.y-30:0,i:ALLIES.length,cd:1.2+ALLIES.length*0.4,t:rnd(6)}); if(!silent&&p) for(let i=0;i<20;i++) part(p.x+rnd(-20,20),p.y+rnd(-30,10),rnd(-20,20),rnd(-40,-10),0.9,'#bfe8ff',2,-20); }
 function updAllies(dt){
   const p=player;
