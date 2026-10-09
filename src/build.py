@@ -13,14 +13,15 @@
 
 Части (обикновен код — сборката само ги сглобява, без замени по кода):
   shell/index.html        разметката; /*@@STYLE@@*/ ← shell/style.css (целият CSS); @@FONT_FAMILIES@@ и /*@@GAME_CSS@@*/ — от game.json
-  engine/legacy/*.js      двигателят (бившата база) по раздели — до цикъла; engine/lib/ — общи теми и небета
-  engine/*.js             общият код: регистър на игрите, меню, механики, плочки, оцеляване
+  engine/*.js             двигателят: основата по раздели (BASE; engine/lib/ — общи теми и небета), после регистърът на
+                          игрите, кампанията, плочките, механиките (engine/mech/), оцеляването и звукът
   games/<id>/game.json    манифест: файлове, шрифтове, CSS на играта
   games/<id>/*.js         съдържанието на играта; последният файл вика registerGame({...})
-  engine/legacy/loop.js   главният цикъл и window.__rz; /*@@FONT_LOADS@@*/ — шрифтовете на частите
-Всичко е в едно IIFE ('use strict'): LEGACY (по реда долу) → engine/*.js → игрите (по games/series.json, всяка в свой блок) → loop.js.
+  engine/loop.js          главният цикъл и window.__rz; /*@@FONT_LOADS@@*/ — шрифтовете на частите
+Всичко е в едно IIFE ('use strict'): BASE (по реда долу) → останалият двигател → игрите (по games/series.json, всяка в свой
+блок) → loop.js.
 Проверки: маркерите, повтарящи се части и липсващи файлове, остатъци от старата архитектура, ключовете на записите
-(списъкът в engine/legacy/core.js), уникални глобални имена.
+(списъкът в engine/core.js), уникални глобални имена.
 Първата част е обикновена част (games/r1/) — сборката не я третира по-специално.
 
 Добавяне на нова част: нова папка games/<id>/ с game.json и game.js (registerGame с order),
@@ -62,37 +63,36 @@ shell=fill(shell,'/*@@GAME_CSS@@*/','\n'.join(l for _,g in games for l in g.get(
 loads=''.join(",document.fonts.load('"+f+"')" for _,g in games for f in g.get('fontLoad',[]))
 
 # ---------- код: двигател + игрите от поредицата ----------
-# разделите на бившата база (engine/legacy/), регистрите (engine/defs.js) и споделеното съдържание (engine/lib/)
-LEGACY=['legacy/core.js','defs.js','legacy/difficulty.js','legacy/synth.js','lib/themes.js','legacy/map.js','legacy/prerender.js','legacy/sky.js',
-        'legacy/input.js','legacy/state.js','legacy/fx.js','legacy/combat.js','legacy/player.js','legacy/enemies.js','legacy/lifts.js',
-        'legacy/crushers.js','legacy/trains.js','legacy/bosses.js','legacy/missiles.js','legacy/survgen.js','legacy/flow.js','legacy/update.js',
-        'legacy/render.js','legacy/training.js']
+# основата на двигателя по раздели (бившата база), регистрите (defs.js) и споделеното съдържание (lib/) — в този ред
+BASE=['core.js','defs.js','difficulty.js','synth.js','lib/themes.js','map.js','prerender.js','sky.js','input.js','state.js','fx.js',
+      'combat.js','player.js','enemies.js','lifts.js','crushers.js','trains.js','bosses.js','missiles.js','survgen.js','flow.js',
+      'update.js','render.js','training.js']
 # механиките (engine/mech/) — core.js първи; редът на куките е в MECH_ORDER (core.js), не тук
 MECH=['core','water','levers','escort','flips','shifters','allies','eras','gens','chase','sun','winds','echo','plates','cams','terms','snow',
       'freqsonar','trance','tone','cursors']
-code=['/* ================= ДВИГАТЕЛ ================= */']+[rd('engine',f) for f in ['series.js','sequel.js','world.js']+['mech/'+m+'.js' for m in MECH]+['survival.js','svsave.js','audio.js']]
+code=['/* ================= ДВИГАТЕЛ ================= */']+[rd('engine',f) for f in ['series.js','campaign.js','world.js']+['mech/'+m+'.js' for m in MECH]+['survival.js','svsave.js','audio.js']]
 for gid,g in games:   # всяка част — в свой блок: имената ѝ не се виждат от другите части (с двигателя говори само през регистрите)
     code+=[f'/* ================= ИГРА: {gid} ================= */','{']+[rd('games',gid,f) for f in g['files']]+['}']
 code.append("if(!GAMES.length) throw new Error('Няма регистрирани игри'); setGame(GAMES[0].id);")
-s=(shell+"<script>\n(()=>{\n'use strict';\n"+''.join(rd('engine',f) for f in LEGACY)+'\n'.join(code)+'\n'
-   +fill(rd('engine','legacy','loop.js'),'/*@@FONT_LOADS@@*/',loads)+'})();\n</script>\n')
+s=(shell+"<script>\n(()=>{\n'use strict';\n"+''.join(rd('engine',f) for f in BASE)+'\n'.join(code)+'\n'
+   +fill(rd('engine','loop.js'),'/*@@FONT_LOADS@@*/',loads)+'})();\n</script>\n')
 
-allcode=''.join(rd('engine',f) for f in LEGACY)+'\n'.join(code)+rd('engine','legacy','loop.js')
+allcode=''.join(rd('engine',f) for f in BASE)+'\n'.join(code)+rd('engine','loop.js')
 left=[w for w in ['R3','R2','r2title',"state='mode'","'r2intro'",'LEVELS2','unlocked2','MO','SEQ','R2B','R2UPD','R2DRAW','R2_TAKE','R2_PDRAW','R2B_TONE','R2B_CMD','R2BAR',
                     'TILE_HOOKS','BACK_HOOKS','BOSS_NORM','drawHUD2','renderEps2','r2EpsInput','r2Tile','r2BackDeco','r2SkyLayer',
                     'r2T','r2Load','r2SetCp','r2PreRespawn','r2Respawn','r2ExitOk','r2Move','r2Wind','r2BuildEras','r2Update','r2DrawBack',
                     'r2DrawWorld','r2Lights','r2PostFx','mechLoad','mechRespawn','mechUpdate','mechDrawBack','mechDrawWorld','mechLights','mechChips',
                     'svTry2','genSector','r1GenSector','r1SvPlan','SV_TG','THEME_MUSIC','r2Sel','r2ToTitle','leaveR2'] if re.search(r'(?<![\w])'+re.escape(w)+r'(?![\w])',allcode)]
 if left: raise SystemExit('остатъци от старата архитектура: '+', '.join(left))
-# записите: ключове само от списъка в engine/legacy/core.js (STORE_KEYS — общите, STORE_PART — на частта); localStorage — само през store
+# записите: ключове само от списъка в engine/core.js (STORE_KEYS — общите, STORE_PART — на частта); localStorage — само през store
 full=allcode
 sk=re.search(r"const STORE_KEYS=\[([^\]]*)\], STORE_PART=\[([^\]]*)\];",full)
-if not sk: raise SystemExit('няма STORE_KEYS/STORE_PART в engine/legacy/core.js')
+if not sk: raise SystemExit('няма STORE_KEYS/STORE_PART в engine/core.js')
 SK,SP=[re.findall(r"'([^']+)'",x) for x in sk.groups()]
 bad=[k for k in re.findall(r"\bKEY\('([^']+)'\)",full) if k not in SP]
 bad+=[k for k in re.findall(r"\bstore\.(?:get|set|del)\('([^']+)'",full) if k not in SK and not re.fullmatch(r'rz\d*\.(?:'+'|'.join(SP)+r')\d?',k)]
-if bad: raise SystemExit('ключове на записи извън списъка (engine/legacy/core.js · STORE_KEYS/STORE_PART): '+', '.join(sorted(set(bad))))
-if re.search(r'\blocalStorage\b',full.replace(rd('engine','legacy','core.js'),'')): raise SystemExit('localStorage — само през store (engine/legacy/core.js)')
+if bad: raise SystemExit('ключове на записи извън списъка (engine/core.js · STORE_KEYS/STORE_PART): '+', '.join(sorted(set(bad))))
+if re.search(r'\blocalStorage\b',full.replace(rd('engine','core.js'),'')): raise SystemExit('localStorage — само през store (engine/core.js)')
 # всяко глобално име трябва да е уникално — иначе една игра тихо подменя функция на друга
 tops=collections.Counter(a or b for a,b in re.findall(r'^(?:function\s+(\w+)|(?:const|let)\s+(\w+)\s*=)',s,re.M))
 dup=[k for k,v in tops.items() if v>1]

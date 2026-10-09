@@ -9,13 +9,12 @@ src/
   win/                  Windows приложение: main.go (WebView2) + make_exe.py → dist/Rezonans-windows/ (x64 + arm64 .exe)
   shell/index.html      разметката (маркерите за шрифтовете се попълват при сборката)
   shell/style.css       целият CSS, вкл. тъч подредбите (портрет, тесен портрет, широк landscape); CSS на частите — от game.json
-  engine/legacy/        двигателят — бившата база по раздели (core, synth, map, state … render, training);
-                        loop.js — цикълът и window.__rz
-  engine/defs.js        регистрите: defFoe, defBoss, defItem, defTile, defBack (+ addUnique за общите речници)
-  engine/lib/           общо съдържание на поредицата: themes.js (класическите теми TH и именуваните небета SKIES)
-  engine/               общ код за всички части
+  engine/               двигателят — общ за всички части (не знае за конкретни игри)
+    core.js…training.js основата по раздели — бившата база (core, synth, map, state … render, training; редът — BASE в build.py)
+    defs.js             регистрите: defFoe, defBoss, defItem, defTile, defBack (+ addUnique за общите речници)
+    lib/                общо съдържание на поредицата: themes.js (класическите теми TH и именуваните небета SKIES)
     series.js           регистър на игрите, еднаквото меню, навигация с Esc
-    sequel.js           главите и отключените епизоди, менюто на епизодите, HUD-ът, общите врагове
+    campaign.js         главите и отключените епизоди, менюто на епизодите, HUD-ът, общите врагове
     world.js            плочки, небе, фон (нови стилове — с defTile / defBack)
     mech/               механиките, по една на файл (defMech); core.js — регистърът, редът на куките (MECH_ORDER),
                         клавишът E (eAction); water, levers, escort, flips, shifters, allies, eras, gens, chase, sun,
@@ -25,6 +24,7 @@ src/
     survival.js         „Оцеляване“: един генератор на сектори за всички части (план svPlanBy, svTry, svZero, арени)
     svsave.js           „Оцеляване“: запазен напредък по трудност (продължи · ново начало · изчисти)
     audio.js            звук: музика и ефекти поотделно (M всичко · N музика · B ефекти), изборът се пази
+    loop.js             главният цикъл и window.__rz (последен в сборката)
   games/
     series.json         кои части влизат в сборката и в какъв ред
     r1/ … r7/           по една папка за всяка част (r1: глави, нивата по глави, босове, тренировка, влакче, финал, оцеляване)
@@ -59,7 +59,7 @@ src/
   теми, босове и мутации по сектори — е `svSpec` на частта (виж `svPlanBy`). Сектор с бос копира арена от кампанията
   (`svBoss: {бос: [епизод, тема]}`; тригерите в нивото с бос носят `cp:N` и `boss:1`) или я строи `svArena` (r1); без `boss` в
   `svSpec` секторите с бос няма. Секторите зависят само от семето (`r()`), не от браузъра.
-- **Нов вид запис** — първо в списъка на ключовете (`STORE_KEYS` / `STORE_PART` в `engine/legacy/core.js`), после
+- **Нов вид запис** — първо в списъка на ключовете (`STORE_KEYS` / `STORE_PART` в `engine/core.js`), после
   `store.get/set(KEY('име'))`. Съществуващите ключове не се преименуват — в тях е напредъкът на играчите.
 
 ## Какво се публикува
