@@ -12,7 +12,8 @@ defBosses('col',{deep:'#4fe3d6',breach:'#ff6ad5',stone:'#e0c08a',swarm:'#ffd36b'
 /* ---------- 1. ДЪЛБИННИЯТ ---------- */
 defBoss('deep',{make:()=>{ const a=LVL.arena, cx=AX()+15*T; if(!FLOOD) FLOOD={y:11*T,y0:11*T,rate:0,top:11*T,on:false,x0:AX()+T,x1:AX()+29*T}; FLOOD.y=FLOOD.y0;
   return {type:'deep',cx,x:cx-24,y:H+100,w:48,h:36,hp:700*D.bhp,max:700*D.bhp,state:'intro',t:2,phase:1,wave:0,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,rise:0,st:0,surgeT:12,surge:0}; }});
-function deepWave(b){ const a=LVL.arena, n=b.phase===1?(DI===0?2:3):(DI===0?3:4), hs=a.hatches.slice().sort(()=>Math.random()-0.5).slice(0,n);
+function deepWave(b){ const a=LVL.arena, n=b.phase===1?(DI===0?2:3):(DI===0?3:4), hs=a.hatches.slice();
+  for(let i=hs.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)), c=hs[i]; hs[i]=hs[j]; hs[j]=c; } hs.length=Math.min(n,hs.length);   // Fisher–Yates — еднакво във всеки JS двигател
   b.wave++; for(const hx of hs){ const e=makeEnemy('tent',hx*T+8,15*T); e.hp=(DI===0?45:70)*D.ehp; e.summoned=true; e.tag='tent'; e.baseY=15*T; e.topY=(a.tentTop||6)*T+Math.round(rnd(0,2))*T; e.y=15*T-4; e.h=4; e.grow=0; e.cd=rnd(1.5,3); e.slam=0; enemies.push(e); }
   sfxAt('roar',{x:b.cx,y:12*T,w:0}); shake=6; }
 defBoss('deep',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state!=='head') return; b.hp-=d; b.hitT=0.08; blood(b.cx+rnd(-14,14),b.y+rnd(6,24),true,blast?10:3);

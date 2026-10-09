@@ -1,6 +1,6 @@
 /* Проверки на „Резонанс“ без браузър: сглобеният HTML се пуска в Node с минимален заместител на DOM (канвата не рисува).
    Само за разработка, без npm. Секторите не зависят от JS двигателя, затова baseline, placement, reach и acidSim дават
-   същите числа като браузърният панел (tools/checks.js); smoke — също, освен епизод 5 на r2 (виж notes/handoff.md).
+   същите числа като браузърният панел (tools/checks.js); smoke — също.
 
      node tools/run.js <файл.html> <проверка> [опции като JSON]   проверка от tools/checks.js: baseline, placement, reach, acidSim, smoke
      node tools/run.js <файл.html> suite                          отпечатъците за A/B: baseline на всяка част + smoke (по сценарии)
