@@ -85,8 +85,8 @@ function svValidate(g,cols,sky,lowg,lifts,startX,exitX){
   return {kind,virt,R,Q,RO,traps,path,pathList,gyEq,cols,adj};
 }
 
-/* ---------- генераторът: на частта (GAME.genSector — r1) или общият (engine/survival.js · svGen) ---------- */
-function genLevel(k){ return (GAME.genSector||svGen)(k); }
+/* ---------- генераторът: общият (engine/survival.js · svGen) ---------- */
+function genLevel(k){ return svGen(k); }
 function startSurv(k,carry){
   const sv=carry&&carry!==true?carry:null; if(sv) carry=false; const prev=carry?player:null;
   SURV=true; survK=k; bossMul=0.75+0.2*Math.floor(k/5); ehpMul=1+0.03*k;

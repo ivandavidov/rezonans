@@ -90,7 +90,8 @@ python3 src/win/make_exe.py            # dist/Rezonans-windows/ (Rezonans-x64.ex
      хваща грешки и дава „златен образец“), `pixels` (отпечатък на картината — само върху пробите от `ab.py --pixels`). Сървър от корена (`python3 -m http.server 8766` или „repo“ от
      `.claude/launch.json`) → `/docs/index.html`, после `await import('/tools/checks.js')`.
    - `node tools/run.js <сборка.html> <проверка|suite|storage>` — същите проверки без браузър (само за разработка,
-     без npm) + договорът на записите (`storage`). Числата от Node се сравняват само с числа от Node.
+     без npm) + договорът на записите (`storage`). Секторите не зависят от JS двигателя — Node и браузърът дават същите
+     отпечатъци (`smoke` — освен епизод 5 на r2, виж `notes/handoff.md`).
    - `python3 tools/ab.py [ref] [--suite] [--pixels]` — A/B: сглобява ref и работното копие (публикуваните, 7-те части,
      `--offline`), сравнява байт по байт и (с `--suite`) отпечатъците в Node; `--pixels` пише пробите `docs/_ab_old.html` и
      `docs/_ab_new.html` за `pixels` (картината на менютата, екраните, HUD-а и нивата) в браузъра.

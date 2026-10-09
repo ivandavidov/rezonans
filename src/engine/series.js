@@ -12,8 +12,8 @@
      drawLogo()  фон и лого в горната част на менюто (до y≈135)
      renderWin(), postFx()        финалният екран и цветовата обработка
      svSpec     планът на секторите (виж svPlanBy в engine/survival.js)
-     svBoss, svFallback, bossMulOne     арените (копия от кампанията) и резервната тема на общия генератор
-     genSector(k)  собствен генератор на секторите (r1)
+     svBoss / svArena   арените: копия от кампанията {бос:[епизод,тема]} или строител svArena(тип,x,o) (r1)
+     svFallback, bossMulOne     резервната тема на генератора; босовете с еднаква сила в оцеляването
      accent, accentRgb, accent2, font, suit, glitch, hintCols, prog, menuMusic, menuCam, controls
      eKey / eBtn   надпис за клавиш E (легенда / бутон на тъч екран), echo, flashlight
      debug        допълнителни полета за window.__rz (тестове)

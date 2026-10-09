@@ -26,8 +26,14 @@ const TH={
   ice:{wall:'#1a2331',panel:'#1f2b3c',line:'#131a22',hi:'#2a3c4e',s:'#415974',sh:'#709dc8',sd:'#263344',top:'#e8ffff',moss:'#e8f8ff',amb:0.86,rock:1,organic:1,vein:'#1e3a5a',dot:'#8fd0ff',snow:1,ice:1},
 };
 
-// „Проходът“ и „Лифтът“ от бонус главата на r1 — ползва ги и r2
+// небета от нивата на r1: „Проходът“ и „Лифтът“ ползва и r2; всички — секторите на r1
 const SKIES={pass:{grad:[[0,'#10162a'],[0.45,'#2c3456'],[0.75,'#7a6a8a'],[1,'#d89a86']],sun:[400,206,11,'#ffd9b0'],
    layers:[{kind:'mount',col:'#5a6480',sp:0.12,base:96,cap:'#dfe8f2',capAt:118,waves:[[3,26,0],[7,12,1],[13,5,2]]},{kind:'mount',col:'#2e3448',sp:0.32,base:52,cap:'#c8d4e2',capAt:70,waves:[[2,16,1],[5,10,3],[11,5,0.5]]}]},
   lift:{grad:[[0,'#02040a'],[0.55,'#0b1226'],[1,'#1e2c46']],stars:true,moon:[110,46,8],
-   layers:[{kind:'mount',col:'#3a4660',sp:0.12,base:110,cap:'#c8d6e8',capAt:130,waves:[[2,24,0],[5,12,1],[11,5,2]]},{kind:'mount',col:'#141a28',sp:0.3,base:60,cap:'#7a8aa0',capAt:78,waves:[[3,16,1],[7,9,3],[13,4,0.5]]}]}};
+   layers:[{kind:'mount',col:'#3a4660',sp:0.12,base:110,cap:'#c8d6e8',capAt:130,waves:[[2,24,0],[5,12,1],[11,5,2]]},{kind:'mount',col:'#141a28',sp:0.3,base:60,cap:'#7a8aa0',capAt:78,waves:[[3,16,1],[7,9,3],[13,4,0.5]]}]},
+  canyon:{grad:[[0,'#1f1730'],[0.45,'#6e3440'],[0.75,'#c9703a'],[1,'#e8a25a']],sun:[330,196,15,'#ffe0a0'],
+   layers:[{kind:'mount',col:'#4a2a35',sp:0.15,base:74,waves:[[3,18,0],[7,9,1],[13,4,2]]},{kind:'mount',col:'#2b1a20',sp:0.35,base:46,waves:[[2,14,1],[5,10,3],[11,5,0.5]]}]},
+  antenna:{grad:[[0,'#03050c'],[0.55,'#0d1530'],[0.85,'#2a1a28'],[1,'#4a2020']],stars:true,moon:[90,48,9],
+   layers:[{kind:'mount',col:'#10131f',sp:0.15,base:80,waves:[[2,20,0],[5,9,1],[11,4,2]]},{kind:'mount',col:'#080a12',sp:0.35,base:48,waves:[[3,12,1],[7,8,3],[13,4,0.5]]}]},
+  beyond:{grad:[[0,'#07040f'],[0.5,'#1d0d33'],[1,'#0b2a2c']],stars:true,vortex:[330,70],
+   layers:[{kind:'isles',col:'#24143f',sp:0.12,n:9,y:50,dy:100,w:46,seed:3},{kind:'isles',col:'#150b26',sp:0.3,n:6,y:120,dy:80,w:66,seed:7}]}};

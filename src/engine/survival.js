@@ -1,21 +1,22 @@
-addUnique(MUT_NAME,{bats:'Рояци прилепи'},'MUT_NAME');   // мутацията е в двигателя (mech3) — ползват я Р5 и Р6
+addUnique(MUT_NAME,{bats:'Рояци прилепи'},'MUT_NAME');   // мутацията е в двигателя (генераторът + mech/trance.js)
 /* ================= ДВИГАТЕЛ · ОЦЕЛЯВАНЕ (процедурни сектори) =================
-   Темите се регистрират от игрите в SV_THEMES (ключовете трябва да са уникални за поредицата),
-   небетата — в SKIES (engine/lib/themes.js). Планът на секторите (кои теми и босове) — svPlanBy(GAME.svSpec,k),
-   а сектор с бос копира арената на епизод GLV[GAME.svBoss[boss][0]] — от тригерите му само маркираните с cp:N и boss:1. */
+   Един генератор за всички части (svTry; при нулева гравитация — svZero); частите дават данни. Темите се регистрират
+   в SV_THEMES (ключовете — уникални за поредицата), небетата — в SKIES (engine/lib/themes.js). Планът на секторите
+   (кои теми и босове) — svPlanBy(GAME.svSpec,k). Сектор с бос копира арената на епизод GLV[GAME.svBoss[boss][0]]
+   (от тригерите му — само маркираните с cp:N и boss:1) или я строи GAME.svArena (r1). */
 const SV_THEMES={};
 const SV_LOAD={w:['wrench','pistol'],ammo:{pistol:[17,51]},armor:0,cur:'pistol'};
 const svSky=key=>key&&SKIES[key]||null;
 /* ---------- план на секторите: една функция, данните са на частта (GAME.svSpec) ----------
    salt — множители на семето; early/mid/late — темите по етапи; recent — без повторение в последните N теми;
    boss: {map:{бос:[епизод,тема]}, early, recent} — първо бос, после неговата тема (продълженията)
-         или {pool:tg=>[босове], recent} — първо тема, после подходящ за нея бос (r1);
+         или {pool:tg=>[босове], recent} — първо тема, после подходящ за нея бос (r1); без boss — без сектори с бос;
    mut: {base, max, opts(tg,j), special(тема,r), second} — мутация с вероятност base+0.03·j (до max); special — правило на темата. */
 function svPlanBy(P,k){
   if(P.seedNow!==survSeed){ P.list=[]; P.seedNow=survSeed; }
   const L=P.list, B=P.boss, M=P.mut;
   while(L.length<=k){
-    const j=L.length, r=mkRng(survSeed*P.salt[0]+j*P.salt[1]+P.salt[2]), pick=a=>a[Math.floor(r()*a.length)], isBoss=j%5===4;
+    const j=L.length, r=mkRng(survSeed*P.salt[0]+j*P.salt[1]+P.salt[2]), pick=a=>a[Math.floor(r()*a.length)], isBoss=!!B&&j%5===4;
     if(isBoss&&B.map){ const pool=j<10?B.early:Object.keys(B.map), rb=L.filter(q=>q.boss).slice(-B.recent).map(q=>q.boss), c=pool.filter(b=>!rb.includes(b)), boss=pick(c.length?c:pool);
       L.push({theme:B.map[boss][1],muts:[],boss}); continue; }
     const pool=j<5?P.early:j<10?P.early.concat(P.mid):P.early.concat(P.mid,P.late,P.late);
@@ -30,10 +31,10 @@ function svPlanBy(P,k){
 }
 function svGen(k){
   const plan=svPlan(k);
-  if(plan.boss) return svBoss(k,plan);
+  if(plan.boss&&GAME.svBoss) return svBoss(k,plan);   // арена — копие от кампанията; иначе я строи GAME.svArena в svTry
   const zg=plan.muts.includes('zerog');
-  for(let a=0;a<20;a++){ const L=zg?svZero(k,plan,a):svTry2(k,plan,a,false); if(L){ genLevel.att=a; return L; } }
-  genLevel.att=99; return svTry2(k,{theme:plan.theme,muts:[],boss:null},99,true)||svTry2(k,{theme:GAME.svFallback,muts:[],boss:null},98,true);
+  for(let a=0;a<20;a++){ const L=zg?svZero(k,plan,a):svTry(k,plan,a,false); if(L){ genLevel.att=a; return L; } }
+  genLevel.att=99; return svTry(k,{theme:plan.theme,muts:[],boss:plan.boss},99,true)||svTry(k,{theme:GAME.svFallback,muts:[],boss:plan.boss},98,true);
 }
 function svBoss(k,plan){
   const L=GLV[GAME.svBoss[plan.boss][0]], portal=L.arena.px!=null;
@@ -43,70 +44,90 @@ function svBoss(k,plan){
     themeName:THEME_NAME[plan.theme],isBoss:true,muts:[],attempt:0});
 }
 
-/* ---------- normal sectors ---------- */
-function svTry2(k,plan,att,simple){
-  const r=mkRng(survSeed*7919+k*104729+att*31337+71), ri=(a,b)=>a+Math.floor(r()*(b-a+1)), pick=a=>a[Math.floor(r()*a.length)], ch=p=>r()<p;
-  const theme=plan.theme, tg=SV_THEMES[theme], sky=!!tg.sky, era=!!tg.era;
-  const swarm=plan.muts.includes('swarm'), scarce=plan.muts.includes('scarce');
+/* ---------- обикновен сектор: един генератор за всички части ----------
+   Темата (SV_THEMES) дава етикети — sky, lowg, alien, cave, dark, human, turret, acid, elec, laser, vent, crush, conv, track, lift ('float'),
+   pad, nest, tower, islands, zfloor, wind, water, lever, era, shift, ghost, stealth, term, plate, rhythm, freq, sun, still, sonar, flares,
+   sleepers, tone, snow, gusts, noGuard, noPipes — и данни: name, th, thB, sky (ключ или списък от ключове в SKIES), skyB, mus, foes, foesB,
+   foesK ([[от сектор, враг]]; без него — пазачи от сектор 7), air (летящ враг над веригите), deco/decoB(x,y,h,py), sign, eraNames, alarmFoe.
+   Теглата на сегментите се изчисляват от етикетите. Сектор с бос: GAME.svArena строи арената (r1); копията от кампанията — svBoss. */
+function svTry(k,plan,att,simple){
+  const r=mkRng(survSeed*7919+k*104729+att*31337+13), ri=(a,b)=>a+Math.floor(r()*(b-a+1)), pick=a=>a[Math.floor(r()*a.length)], ch=p=>r()<p;
+  const theme=plan.theme, tg=SV_THEMES[theme], sky=!!tg.sky, era=!!tg.era, lowg=!!tg.lowg||plan.muts.includes('lowg'), isBoss=!!plan.boss;
+  const swarm=plan.muts.includes('swarm'), scarce=plan.muts.includes('scarce'), air=tg.air!==undefined?tg.air:tg.foes.includes('flyer')?'flyer':null;
   const MAXC=460, g=[]; for(let y=0;y<ROWS;y++) g.push(new Array(MAXC).fill('.'));
   const set=(x,y,c)=>{ if(x>=0&&x<MAXC&&y>=0&&y<ROWS) g[y][x]=c; };
   const fill=(x0,y0,x1,y1,c)=>{ for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++) set(x,y,c); };
   const gtop=new Int16Array(MAXC).fill(99);
   const colG=(x,top,c='#')=>{ fill(x,top,x,16,c); gtop[x]=top; };
   const GMIN=sky?6:8, b={x:2,gy:ri(sky?11:12,15)};
-  const env=dy=>svMD(dy,sky?99:5,false);
-  const noCeil=new Set(), noSpawn=new Set(), fixed=[], triggers=[], lifts=[], lasers=[], crushers=[], decos=[], decosB=[], segs=[], levers=[], winds=[], shifters=[], eraR=[], gvOps=[], lights3=[], terms3=[], plates3=[];
-  let gate=null, encDone=false, nestDone=false, usedFreq=false; const hint={};
+  const env=dy=>svMD(dy,sky?99:5,lowg);
+  const noCeil=new Set(), noSpawn=new Set(), fixed=[], triggers=[], lifts=[], lasers=[], vents=[], crushers=[], tracks=[], decos=[], decosB=[], segs=[], levers=[], winds=[], shifters=[], eraR=[], gvOps=[], lights3=[], terms3=[], plates3=[];
+  let gate=null, encDone=false, nestDone=false, trainDone=false, usedFreq=false; const hint={};
   const once=(key,x,txt,d=3.2)=>{ if(hint[key]) return; hint[key]=1; triggers.push({x,fn:()=>showMsg(txt,d)}); };
-  const mat=()=>pick(['-','-','=','#']);
+  const mat=()=>tg.alien||tg.cave?'#':pick(['-','-','=','#']);
   const ground=n=>{ for(let i=0;i<n;i++){ colG(b.x,b.gy); b.x++; } };
   const stepTo=ty=>{ let guard=0; while(b.gy!==ty&&guard++<20){ const d=ty-b.gy; b.gy+=d<0?-Math.min(-d,ri(1,2)):Math.min(d,ri(1,3)); ground(ri(2,4)); } };
   const loot=(x,y,good)=>{ const roll=r(); let t; if(good) t=roll<0.35?'battery':roll<0.6&&k>=2?'grenade':roll<0.8&&k>=6?'rockets':'health'; else t=roll<0.4?'health':roll<0.8?'ammo':'battery'; fixed.push([t,x,y-1]); };
-  const foeT=(onGround,B)=>{ let pool=((B&&tg.foesB)||tg.foes).slice(); if(onGround) pool=pool.filter(t=>t!=='flyer'); if(k>=6&&!tg.noGuard) pool.push('guard'); if(k>=4&&tg.turret&&!onGround) pool.push('soldier'); return pick(pool.length?pool:['crab']); };
+  const foeT=(onGround,B)=>{ let pool=((B&&tg.foesB)||tg.foes).slice(); if(onGround) pool=pool.filter(t=>t!=='flyer');
+    for(const [kk,t] of (tg.foesK||[[6,'guard']])) if(k>=kk&&!(onGround&&t==='flyer')&&!(t==='guard'&&tg.noGuard)) pool.push(t);
+    if(k>=4&&tg.turret&&!onGround) pool.push('soldier'); return pick(pool.length?pool:['crab']); };
   const F={
     terrain(){ const n=ri(8,16), x0=b.x; for(let i=0;i<n;i++){ if(i>1&&ch(0.22)){ b.gy=clamp(b.gy+(ch(0.5)?-ri(1,2):ri(1,2)),GMIN,15); } colG(b.x,b.gy); b.x++; }
-      for(let j=ri(0,2);j>0;j--){ const x=x0+ri(1,n-3), w=ri(1,2), h=ri(1,3); if(gtop[x]===gtop[x+w-1]&&gtop[x]-h>GMIN-2) fill(x,gtop[x]-h,x+w-1,gtop[x]-1,'B'); } },
-    stairs(){ const up=b.gy>GMIN+2&&ch(0.55); for(let n=ri(2,4);n>0;n--){ b.gy=clamp(b.gy+(up?-ri(1,2):ri(1,3)),GMIN,15); ground(ri(2,5)); }
-      if(ch(0.35)){ const x=b.x-ri(3,6), y=Math.min(gtop[x],gtop[x+1],gtop[x+2])-ri(3,4); if(y>GMIN-3){ fill(x,y,x+2,y,'-'); loot(x+1,y,true); } } },
-    gaps(){ ground(ri(2,3));
-      for(let n=ri(1,3);n>0;n--){ const ty=clamp(b.gy-ri(-2,2),GMIN,15), dy=b.gy-ty, w=ri(2,Math.max(2,env(dy)-1)); b.x+=w; b.gy=ty; ground(ri(2,6)); } },
-    chain(big){ ground(2);
-      const W=ri(10,18)+Math.min(8,k>>1), x0=b.x, x1=b.x+W-1;
+      for(let j=ri(0,2);j>0;j--){ const x=x0+ri(1,n-3), w=ri(1,2), h=ri(1,3), top=gtop[x]-h;   // сандък — до 3 реда над съседите (не на ръба на стъпало); в резервния опит — без
+        if(!simple&&gtop[x]===gtop[x+w-1]&&top>GMIN-2&&gtop[x-1]-top<=3&&gtop[x+w]-top<=3) fill(x,top,x+w-1,gtop[x]-1,'B'); } },
+    stairs(){ const up=b.gy>GMIN+2&&ch(0.55); for(let n=ri(2,4);n>0;n--){ b.gy=clamp(b.gy+(up?-ri(1,lowg?3:2):ri(1,3)),GMIN,15); ground(ri(2,5)); }
+      if(ch(0.35)){ const x=b.x-ri(3,6), y=Math.min(gtop[x],gtop[x+1],gtop[x+2])-3; if(y>GMIN-3){ fill(x,y,x+2,y,'-'); loot(x+1,y,true); } } },   // стъпалото — на 3 реда (стига се)
+    gaps(){ const pit=sky?'void':tg.acid&&ch(0.6)?'acid':tg.elec&&ch(0.5)?'elec':'void'; ground(ri(2,3));
+      for(let n=ri(1,3);n>0;n--){ const ty=clamp(b.gy-ri(-2,lowg?3:2),GMIN,15), dy=b.gy-ty, w=ri(2,Math.max(2,env(dy)-1)), lo=Math.max(b.gy,ty);
+        for(let j=0;j<w;j++){ const x=b.x+j; if(pit==='acid'&&lo<=12){ colG(x,15); fill(x,lo+1,x,14,'~'); if(j===w-1) fill(x,ty,x,14,'H'); } else if(pit==='elec'&&lo<=13){ colG(x,15); set(x,15,'Z'); if(j===w-1) fill(x,ty,x,14,'H'); } }
+        b.x+=w; b.gy=ty; ground(ri(2,6)); } },
+    chain(big){ let haz=sky||big?'void':pick([tg.acid?'acid':'void',tg.elec?'elec':'void','void']);
+      if(haz==='acid'&&b.gy>12) stepTo(ri(10,12)); if(haz==='elec'&&b.gy>13) stepTo(ri(10,13)); ground(2);
+      const W=ri(10,18)+Math.min(8,k>>1), x0=b.x, x1=b.x+W-1, maxRow=haz==='acid'?11:haz==='elec'?13:15;
+      for(let x=x0;x<=x1;x++){ if(haz==='acid'){ colG(x,15); fill(x,13,x,14,'~'); } else if(haz==='elec'){ colG(x,15); set(x,15,'Z'); } }
       let cx=x0-1, cy=b.gy, bank=cy, guard=0;
-      while(guard++<40){ const ty=clamp(cy+ri(-2,2),GMIN,15); if(x1+1-cx<=env(cy-ty)){ bank=ty; break; }
-        const ny=clamp(cy-ri(-2,2),GMIN,15), dy=cy-ny, px=cx+ri(2,Math.max(2,env(dy))); if(px>x1){ bank=cy; break; }
+      while(guard++<40){ const ty=clamp(cy+ri(-2,2),GMIN,Math.min(maxRow,15)); if(x1+1-cx<=env(cy-ty)){ bank=ty; break; }
+        const ny=clamp(cy-ri(-2,lowg?3:2),GMIN,maxRow), dy=cy-ny, px=cx+ri(2,Math.max(2,env(dy))); if(px>x1){ bank=cy; break; }
         const pw=Math.min(big?ri(3,6):ri(1,3)+(ch(0.3)?1:0),x1-px+1), m=big?'#':mat();
         if(big) fill(px,ny,px+pw-1,Math.min(16,ny+ri(1,3)),'#'); else fill(px,ny,px+pw-1,ny,m);
-        if(ch(0.25)) loot(px+(pw>>1),ny,ch(0.3)); if(ch(0.3)&&tg.foes.includes('flyer')) fixed.push(['flyer',px,Math.max(2,ny-4)]);
+        if(ch(0.25)) loot(px+(pw>>1),ny,ch(0.3)); if(air&&ch(0.3)) fixed.push([air,px,Math.max(2,ny-4)]);
         cx=px+pw-1; cy=ny; }
+      if(haz==='elec'||haz==='acid'){ fill(x1,bank,x1,14,'H'); fill(x1,Math.max(2,bank-2),x1,bank-1,'.'); }
       b.x=x1+1; b.gy=bank; ground(ri(3,6)); },
     tower(){ const lim=sky?3:6; if(b.gy-4<lim) return F.terrain(); const h=ri(4,Math.min(8,b.gy-lim)), top=b.gy-h; ground(ri(1,2));
       fill(b.x,top,b.x,b.gy-1,'H'); colG(b.x,b.gy); noCeil.add(b.x); b.x++; const ww=ri(3,9); for(let i=0;i<ww;i++){ colG(b.x,top); noCeil.add(b.x); b.x++; }
       fixed.push([foeT(true),b.x-2,top-1]); b.gy=top; if(ch(0.65)) b.gy=clamp(top+ri(2,6),GMIN,15); },
-    liftH(){ ground(2); const W=ri(8,13), x0=b.x; lifts.push({x0,y0:b.gy,x1:x0+W-3,y1:b.gy,w:3,per:5+r()*2,off:r()}); for(let x=x0;x<x0+W;x++){ noCeil.add(x); noSpawn.add(x); } b.x+=W; ground(ri(3,5)); },
+    liftH(){ ground(2); const W=ri(8,13), x0=b.x; lifts.push({x0,y0:b.gy,x1:x0+W-3,y1:b.gy,w:3,per:5+r()*2,off:r()}); for(let x=x0;x<x0+W;x++){ noCeil.add(x); noSpawn.add(x); }
+      if(air&&ch(0.4)) fixed.push([air,x0+(W>>1),Math.max(2,b.gy-6)]); b.x+=W; ground(ri(3,5)); },
     liftV(){ const lim=sky?3:6, maxH=b.gy-lim; if(maxH<5) return F.liftH(); const h=ri(5,Math.min(9,maxH)), top=b.gy-h; ground(2); const x0=b.x;
       for(let i=0;i<3;i++){ colG(b.x,b.gy); noCeil.add(b.x); b.x++; } lifts.push({x0,y0:b.gy,x1:x0,y1:top,w:3,per:6,off:r()}); for(let i=ri(4,9);i>0;i--){ colG(b.x,top); noCeil.add(b.x); b.x++; } b.gy=top; },
+    pad(){ if(!sky&&b.gy<14) stepTo(15); ground(ri(2,3)); const h=ri(5,Math.min(9,b.gy-(sky?2:5))), top=b.gy-h; set(b.x,b.gy,'^'); colG(b.x,b.gy); set(b.x,b.gy,'^'); noCeil.add(b.x); b.x++;
+      for(let i=ri(2,3);i>0;i--){ colG(b.x,b.gy); noCeil.add(b.x); b.x++; } const ww=ri(3,7); for(let i=0;i<ww;i++){ colG(b.x,top); noCeil.add(b.x); b.x++; } loot(b.x-2,top,true); b.gy=clamp(top+ri(2,7),GMIN,15); },
     crawl(){ ground(2); const n=ri(3,8); for(let i=0;i<n;i++){ colG(b.x,b.gy); if(sky) fill(b.x,b.gy-5,b.x,b.gy-2,'#'); else fill(b.x,2,b.x,b.gy-2,'#'); b.x++; } ground(2); },
     lasers(){ ground(2); for(let n=ri(1,2+Math.min(2,k>>2));n>0;n--){ ground(ri(1,2)); lasers.push({tx:b.x,r0:sky?0:2,r1:b.gy-1,off:r()}); noCeil.add(b.x); noCeil.add(b.x-1); noCeil.add(b.x+1); ground(1); ground(ri(2,4)); } },
     crushers(){ stepTo(15); ground(2); for(let n=ri(1,3);n>0;n--){ crushers.push({tx:b.x,off:r()}); for(let i=0;i<2;i++){ noCeil.add(b.x); ground(1); } ground(ri(3,5)); } },
+    vents(){ stepTo(15); ground(2); for(let n=ri(2,4);n>0;n--){ vents.push({tx:b.x,off:r()}); noCeil.add(b.x); ground(ri(3,5)); } },
     conveyor(){ ground(1); for(let n=ri(1,3);n>0;n--){ const c=ch(0.5)?'>':'<'; for(let i=ri(4,8);i>0;i--){ colG(b.x,b.gy); set(b.x,b.gy,c); b.x++; } if(ch(0.5)) fill(b.x-2,b.gy-ri(1,2),b.x-2,b.gy-1,'B'); ground(ri(1,3)); } },
+    train(){ if(trainDone) return F.terrain(); trainDone=true; stepTo(15); ground(2); const L=ri(26,38), x0=b.x;
+      for(let i=0;i<L;i++){ colG(b.x,15); noCeil.add(b.x); b.x++; } fill(x0,13,x0,14,'#'); fill(x0+L-1,13,x0+L-1,14,'#');
+      let px=x0+ri(3,5); while(px<x0+L-6){ const w=ri(3,4); fill(px,12,px+w-1,12,'='); if(ch(0.3)) loot(px+1,12,false); px+=w+ri(4,7); }
+      tracks.push({x0:x0+1,x1:x0+L-2,dir:ch(0.5)?1:-1,off:2.5+r()*2}); decos.push(()=>rails(x0+1,x0+L-2)); b.gy=15; },
     encounter(){ if(encDone||k<1||era) return F.terrain(); encDone=true; ground(2); const W=ri(18,24), x0=b.x; ground(W);
-      for(let n=ri(1,3);n>0;n--){ const px=x0+ri(2,W-6), py=b.gy-pick([3,3,6]); if(py>GMIN-2) fill(px,py,px+ri(2,4),py,'-'); }
+      for(let n=ri(1,3);n>0;n--){ const px=x0+ri(2,W-6), py=b.gy-pick([3,3,6]); if(py>GMIN-2){ fill(px,py,px+ri(2,4),py,'-'); if(b.gy-py>3) fill(px-3,b.gy-3,px-1,b.gy-3,'-'); } }   // до високата платформа — стъпало
       const dxc=b.x; colG(dxc,b.gy); fill(dxc,sky?0:2,dxc,b.gy-1,'D'); noCeil.add(dxc); noSpawn.add(dxc); b.x++; ground(2);
       const waves=[], nw=2+(k>=8?1:0), per=2+Math.floor(k/6);
-      for(let w=0;w<nw;w++){ const wv=[]; for(let i=0;i<per;i++){ const t=foeT(false); wv.push(t==='flyer'||t==='drone'?[t,x0+ri(3,W-3),'portal',null,b.gy-ri(4,6)]:[t,x0+ri(3,W-3),(t==='soldier'&&!sky)?'drop':'portal']); } wv.push([foeT(true),x0+ri(3,W-3),'portal','H']); waves.push(wv); }
+      for(let w=0;w<nw;w++){ const wv=[]; for(let i=0;i<per;i++){ const t=foeT(false); wv.push(FOES[t].fly?[t,x0+ri(3,W-3),'portal',null,b.gy-ri(4,6)]:[t,x0+ri(3,W-3),(t==='soldier'&&!sky)?'drop':'portal']); } wv.push([foeT(true),x0+ri(3,W-3),'portal','H']); waves.push(wv); }
       const door=[dxc,sky?0:2,b.gy-1];
       triggers.push({x:x0+3,fn:()=>startEncounter({msg:'Засада!',doorOut:door,waves,done:()=>showMsg('Чисто е. Продължавай.',1.8)})}); },
     nests(){ if(nestDone||era) return F.terrain(); nestDone=true; ground(2); const W=ri(14,20), x0=b.x; ground(W);
       for(let n=ri(2,3),i=0;i<n;i++) fixed.push(['nestG',x0+2+Math.floor((W-4)*(i+0.5)/n),b.gy-1]);
       const dxc=b.x; colG(dxc,b.gy); fill(dxc,sky?0:2,dxc,b.gy-1,'D'); noCeil.add(dxc); noSpawn.add(dxc); b.x++; gate={door:[dxc,sky?0:2,b.gy-1],msg:'Гнездата са унищожени — проходът е свободен.'}; ground(2); },
-    perch(){ ground(2); const w=ri(3,5), h=ri(2,3); for(let i=0;i<w;i++) colG(b.x+i,b.gy-h); fixed.push([tg.turret&&ch(0.6)?'turret':'shocker',b.x+(w>>1),b.gy-h-1]); b.x+=w; ground(ri(3,6)); },
+    perch(){ ground(2); const w=ri(3,5), h=ri(2,3); for(let i=0;i<w;i++) colG(b.x+i,b.gy-h); fixed.push([(tg.turret||tg.human)&&ch(0.6)?'turret':'shocker',b.x+(w>>1),b.gy-h-1]); b.x+=w; ground(ri(3,6)); },
     islands(){ F.chain(true); },
     drop(){ if(b.gy>11) return F.stairs(); ground(2); b.gy=ri(b.gy+3,15); ground(ri(3,6)); },
     zfloor(){ if(b.gy<GMIN+3) stepTo(GMIN+4); ground(2); const n=ri(6,11), x0=b.x; for(let i=0;i<n;i++){ colG(b.x,b.gy); set(b.x,b.gy,'Z'); b.x++; }
       let px=x0+ri(1,2); while(px<x0+n-2){ const w=ri(2,3); fill(px,b.gy-3,px+w-1,b.gy-3,'-'); px+=w+ri(2,3); } ground(2); },
-    secret(){ ground(3); const x=b.x; ground(ri(7,10)); const y1=b.gy-3, y2=b.gy-6; if(y2<(sky?2:4)) return; fill(x,y1,x+2,y1,'-'); fill(x+4,y2,x+6,y2,'-'); loot(x+5,y2,true); if(ch(0.5)) loot(x+1,y1,false); },
-    /* --- РЕЗОНАНС 2 --- */
+    secret(){ ground(3); const x=b.x; ground(ri(7,10)); const y1=b.gy-3, y2=b.gy-6; if(y2<(sky?2:5)) return; fill(x,y1,x+2,y1,'-'); fill(x+4,y2,x+6,y2,'-'); loot(x+5,y2,true); if(ch(0.5)) loot(x+1,y1,false); },   // таван над тайника
     pool(){ const dive=ch(0.65); if(dive){ if(b.gy>10||b.gy<8) stepTo(ri(8,10)); } else if(b.gy>12||b.gy<8) stepTo(ri(9,12)); ground(2);
       const W=ri(dive?8:6,dive?13:11), x0=b.x, x1=x0+W-1, gy=b.gy;
       once('swim',x0-4,'Във водата плуваш с ← → ↑ ↓, а X дава тласък. Следи въздуха!',4);
@@ -167,14 +188,15 @@ function svTry2(k,plan,att,simple){
     shrine(){ ground(3); const x=b.x; ground(ri(5,8)); const fy=gtop[x]*T;
       decos.push(()=>ghostShrine(x,fy)); triggers.push({x:x+1,fn:()=>{ if(ALLIES.length<3){ addGhost(); showMsg(ALLIES.length===1?'Дух на жител от града се присъедини към теб. Духовете стрелят по враговете.':'Още един дух те последва.',2.6); } }}); },
   };
-  const W_={terrain:3,stairs:2,gaps:2.2,chain:2,tower:tg.tower?1.4:0.5,liftH:tg.lift?1:0,liftV:tg.lift?0.9:0,crawl:sky?0.4:0.9,
-    lasers:tg.laser?1.3:0,crushers:tg.crush?1.4:0,conveyor:tg.conv?1.4:0,encounter:k>=1&&!era?1:0,nests:tg.nest?1.2:0,perch:0.8,islands:tg.wind?1.2:0,drop:0.7,zfloor:tg.zfloor?1:0,secret:0.7,
+  const W_={terrain:3,stairs:2,gaps:2.3,chain:2.1,tower:tg.tower?1.4:0.45,liftH:tg.lift?1.1:0,liftV:tg.lift?0.95:0,pad:tg.pad?1.6:0,crawl:sky?0.45:0.95,
+    lasers:tg.laser?1.35:0,crushers:tg.crush?1.4:0,vents:tg.vent?1.2:0,conveyor:tg.conv?1.35:0,train:tg.track?1.6:0,encounter:k>=1&&!era?1:0,nests:tg.nest?1.2:0,
+    perch:tg.turret||tg.human?1:0.7,islands:tg.islands?1.4:tg.wind?1.2:0,drop:0.75,zfloor:tg.zfloor?1:0,secret:0.75,
     pool:tg.water?2.6:0,sluice:tg.lever?1.3:0,updraft:tg.wind?2.4:0,eraWall:era?2.6:0,eraBridge:era?1.8:0,shift:tg.shift?2:0,shrine:tg.ghost?1.5:0,stealth:tg.stealth?2.2:0,term:tg.term?1.5:0,plate:tg.plate?2.2:0,rhythm:tg.rhythm?2.2:0,freq:tg.freq?2.4:0};
-  const PRIMARY=tg.freq?'freq':tg.stealth?'stealth':tg.plate?'plate':tg.rhythm?'rhythm':tg.water?'pool':era?'eraWall':tg.wind?'updraft':tg.shift?'shift':tg.ghost?'shrine':tg.conv?'conveyor':null;
+  const PRIMARY=tg.freq?'freq':tg.stealth?'stealth':tg.plate?'plate':tg.rhythm?'rhythm':tg.water?'pool':era?'eraWall':tg.wind?'updraft':tg.shift?'shift':tg.ghost?'shrine':tg.conv&&!tg.human?'conveyor':null;
   // ----- build -----
   ground(10); segs.push({id:'start',x:2});
   if(tg.ghost) triggers.push({x:6,fn:()=>{ if(!ALLIES.length){ addGhost(); showMsg('Дух на жител от града се присъедини към теб. Духовете стрелят по враговете.',3.2); } }});
-  const runLen=ri(135,165)+Math.min(60,k*3), stop=2+runLen;
+  const runLen=isBoss?ri(80,110)+Math.min(30,k*2):ri(135,165)+Math.min(60,k*3), stop=2+runLen;
   const used={}; let last=null, guard=0;
   if(PRIMARY&&!simple){ ground(2); segs.push({id:PRIMARY,x:b.x}); F[PRIMARY](); used[PRIMARY]=1; last=PRIMARY; }
   while(b.x<stop&&guard++<80){
@@ -183,55 +205,66 @@ function svTry2(k,plan,att,simple){
     else { const cand=Object.keys(W_).filter(f=>W_[f]>0&&f!==last); let tot=0; const w=cand.map(f=>{ const v=W_[f]/(1+(used[f]||0)*0.8); tot+=v; return v; }); let x=r()*tot; id=cand[cand.length-1]; for(let i=0;i<cand.length;i++){ x-=w[i]; if(x<=0){ id=cand[i]; break; } } }
     segs.push({id,x:b.x}); F[id](); used[id]=(used[id]||0)+1; last=id;
   }
-  ground(12); const cols=b.x+2, exit=cols-5; segs.push({id:'end',x:cols-14});
+  let arena=null, exit, cols;
+  if(isBoss){ stepTo(15); ground(3); const d=b.x; segs.push({id:'boss-'+plan.boss,x:d}); arena=GAME.svArena(plan.boss,d,{g,fill,colG,ri,r,pick,ch,sky,lowg,fixed,k}); cols=d+34; exit=d+30; triggers.push({x:d-2,fn:()=>setCp(d-2)},{x:d+3,fn:()=>startBoss()}); }
+  else { ground(12); cols=b.x+2; exit=cols-5; segs.push({id:'end',x:cols-14}); }
   fill(0,0,1,16,'#'); fill(cols-2,0,cols-1,16,'#');
   // ceiling
   if(!sky){ fill(0,0,cols-1,1,'#'); let cb=1, hold=0;
     const topmost=x=>{ for(let y=2;y<ROWS;y++) if(g[y][x]!=='.') return y; return 99; };
-    for(let x=2;x<cols-2;x++){ if(noCeil.has(x)||x<12){ cb=1; continue; }
+    for(let x=2;x<cols-2;x++){ if(noCeil.has(x)||x<12||(arena&&x>=arena.door-2)){ cb=1; continue; }
       let hi=99; for(let xx=Math.max(2,x-3);xx<=Math.min(cols-3,x+3);xx++) hi=Math.min(hi,topmost(xx)); const allowed=hi-6;
-      if(--hold<=0){ cb=ch(0.55)?1:ri(2,5); hold=ri(6,14); } const c=Math.min(cb,allowed); if(c>=2) fill(x,2,x,c,'#'); } }
-  // sun shade
+      if(tg.cave){ if(ch(0.3)) cb+=ri(-1,1); let c=cb+(ch(0.15)?ri(1,2):0); c=clamp(c,1,allowed); if(c>=2) fill(x,2,x,c,'#'); cb=clamp(cb,1,Math.max(1,allowed)); }
+      else { if(--hold<=0){ cb=ch(0.55)?1:ri(2,5); hold=ri(6,14); } const c=Math.min(cb,allowed); if(c>=2) fill(x,2,x,c,'#'); } } }
+  // sun shade — над равна празна земя; съседните колони — земя до ред по-горе/долу, без нищо отгоре и без забрана за таван,
+  //   иначе сенникът снижава скока към ръба, стъпалото, сандъка или от батута
   if(tg.sun){ let lastS=2;
+    const shadeOk=(xx,t,y,edge)=>{ const gt=gtop[xx]; if(gt>=99||noCeil.has(xx)||g[gt][xx]!=='#'||(edge?Math.abs(gt-t)>1:gt!==t)) return false; for(let yy=y-1;yy<gt;yy++) if(g[yy][xx]!=='.') return false; return true; };
     for(let x=4;x<cols-6;x++){ const t=gtop[x]; if(t>=99) continue; let sh=false; for(let y=t-3;y>=0;y--) if(g[y][x]!=='.'){ sh=true; break; }
       if(sh){ lastS=x; continue; }
-      if(x-lastS>=10){ for(const dy of [5,4]){ const y=t-dy; if(y>=1&&[0,1,2,3].every(i=>gtop[x+i]===t&&g[y][x+i]==='.'&&g[y+1][x+i]==='.'&&g[y-1][x+i]==='.')){ fill(x,y,x+3,y,'#'); lastS=x+3; x+=3; break; } } } } }
+      if(x-lastS>=8) shade: for(const w of [4,3]) for(const dy of [5,4]){ const y=t-dy; let ok=y>=1; for(let i=-1;i<=w&&ok;i++) ok=shadeOk(x+i,t,y,i<0||i>=w); if(ok){ fill(x,y,x+w-1,y,'#'); lastS=x+w-1; x+=w-1; break shade; } } } }
   // trim grid
   for(let y=0;y<ROWS;y++) g[y].length=cols;
   // validation grid: water/updrafts bridged, era walls ignored, era bridges solid
   const gv=g.map(row=>row.slice()); for(const [x0,y0,x1,y1,c] of gvOps) for(let y=Math.max(0,y0);y<=Math.min(16,y1);y++) for(let x=x0;x<=x1;x++) gv[y][x]=c;
-  const V=svValidate(gv,cols,sky,false,lifts,4,exit); if(window.__svdbg) window.__svdbg(gv,V,cols);
+  const V=svValidate(gv,cols,sky,lowg,lifts,4,exit); if(window.__svdbg) window.__svdbg(gv,V,cols);
   if(!V) return null;
-  const {kind,Q,path,gyEq}=V, RR=V.R, safe=(x,y)=>{ const id=y*cols+x; return kind[id]===1&&!V.virt[id]&&RR[id]&&Q[id]&&!noSpawn.has(x)&&!noSpawn.has(x-1)&&!noSpawn.has(x+1); };
+  // безопасно място: стига се, не е в колона с врата, нито до дъното на яма с киселина, нито в забранена колона
+  const {kind,Q,path,gyEq}=V, RR=V.R, safe=(x,y)=>{ const id=y*cols+x; return kind[id]===1&&!V.virt[id]&&RR[id]&&Q[id]&&!noSpawn.has(x)&&!noSpawn.has(x-1)&&!noSpawn.has(x+1)
+    &&!(y>0&&g[y-1][x]==='D')&&![x-1,x+1].some(xx=>g[y-1][xx]==='~'||(y>1&&g[y-2][xx]==='~')); };
   // checkpoints
   const cps=[];
   for(const s of segs){ for(let x=s.x;x<s.x+6&&x<cols-3;x++){ const y=gyEq(x); if(y<16&&safe(x,y)&&g[y][x]!=='Z'&&g[y][x]===gv[y][x]){ triggers.push({x:x,fn:()=>setCp(x)}); cps.push(x); break; } } }
-  // enemies
-  const spawns=fixed.slice(), spawnsB=[];
-  const cells=[]; for(let x=14;x<exit-2;x++) for(let y=1;y<ROWS;y++) if(safe(x,y)&&g[y][x]!=='Z'&&!cps.some(c=>Math.abs(c-x)<3)) cells.push([x,y]);
-  const nE=Math.min(26,Math.round((exit-14)/15*(0.7+0.05*k)*(swarm?1.5:1)));
-  const shuffled=cells.sort(()=>r()-0.5), placed=[];
-  for(const [x,y] of shuffled){ if(placed.length>=nE*1.35) break; if(placed.some(p=>Math.abs(p[0]-x)<4)) continue; placed.push([x,y]); }
-  const put=(arr,B)=>(([x,y],i)=>{ const hard=i>=nE; let t=foeT(true,B);
-    const fl=((B&&tg.foesB)||tg.foes).includes('flyer');
-    if(fl&&ch(0.22)){ const fy=y-ri(3,5); if(fy>1&&g[fy][x]==='.'&&g[fy+1][x]==='.'){ arr.push(['flyer',x,fy].concat(hard?['H']:[])); return; } }
+  // enemies (разбъркването е Fisher–Yates с r() — еднакво във всеки JS двигател)
+  const spawns=fixed.slice(), spawnsB=[], end=arena?Math.min(arena.door-1,exit):exit;
+  const cells=[]; for(let x=14;x<end-2;x++) for(let y=1;y<ROWS;y++) if(safe(x,y)&&g[y][x]!=='Z'&&g[y][x]!=='^'&&!cps.some(c=>Math.abs(c-x)<3)) cells.push([x,y]);
+  const nE=Math.min(26,Math.round((end-14)/15*(0.7+0.05*k)*(swarm?1.5:1)));
+  for(let i=cells.length-1;i>0;i--){ const j=Math.floor(r()*(i+1)), c=cells[i]; cells[i]=cells[j]; cells[j]=c; }
+  const placed=[];
+  for(const [x,y] of cells){ if(placed.length>=nE*1.35) break; if(placed.some(p=>Math.abs(p[0]-x)<4)) continue; placed.push([x,y]); }
+  const put=(arr,B)=>(([x,y],i)=>{ const hard=i>=nE, elev=y<gtop[x]-1; let t=foeT(true,B);
+    if(tg.human&&elev&&k>=3&&ch(0.5)) t=ch(0.3)?'turret':'soldier';
+    if(((B&&tg.foesB)||tg.foes).includes('flyer')&&ch(0.22)){ const fy=y-ri(3,5); if(fy>1&&g[fy][x]==='.'&&g[fy+1][x]==='.'){ arr.push(['flyer',x,fy].concat(hard?['H']:[])); return; } }
     if(t==='drone'){ const fy=y-ri(2,4); if(fy>1&&g[fy][x]==='.'&&g[fy+1][x]==='.'){ arr.push(['drone',x,fy].concat(hard?['H']:[])); return; } }
     arr.push([t,x,y-1].concat(hard?['H']:[])); });
   placed.forEach(put(spawns,false));
   if(era) placed.forEach(put(spawnsB,true));
   // loot
-  let lx_=14; while(lx_<exit-4){ lx_+=ri(12,20)*(scarce?1.6:1);
+  let lx_=14; while(lx_<end-4){ lx_+=ri(12,20)*(scarce?1.6:1);
     let best=null; for(let x=Math.floor(lx_);x<lx_+6&&x<cols-3;x++) for(let y=1;y<ROWS;y++) if(safe(x,y)&&g[y][x]!=='Z'){ const off=!path[y*cols+x]; if(!best||(off&&!best[2])) best=[x,y,off]; }
     if(best) loot(best[0],best[1],best[2]); }
-  for(let x=20;x<exit;x+=ri(24,32)){ for(let xx=x;xx<x+5;xx++){ const y=gyEq(xx); if(y<16&&safe(xx,y)){ spawns.push(['health',xx,y-1,'E']); break; } } }
-  for(const f of fixed) if(!spawns.includes(f)) spawns.push(f);
-  for(let i=spawns.length-1;i>=0;i--) if(spawns[i]===undefined) spawns.splice(i,1);
+  for(let x=20;x<end;x+=ri(24,32)){ for(let xx=x;xx<x+5;xx++){ const y=gyEq(xx); if(y<16&&safe(xx,y)){ spawns.push(['health',xx,y-1,'E']); break; } } }
+  for(const f of fixed) if(!spawns.includes(f)) spawns.push(f);   // плячката, добавена след разстановката на враговете
   const WEAP={1:'shotgun',2:'grenade',6:'pulse',10:'rocket'}; const sy=gyEq(8);
   if(WEAP[k]) spawns.push([WEAP[k],8,sy-1]); if(k>=10&&k%5===0) spawns.push(['rockets',9,sy-1]); spawns.push(['health',10,sy-1,'E']);
+  // предмет на недостижимо място — до най-близкото безопасно (до 8 колони) или отпада; предметите под вода остават
+  for(let i=spawns.length-1;i>=0;i--){ const [t,x,y]=spawns[i]; if(DIMS[t]||t==='barrel'||t.startsWith('nest')||V.R[(y+1)*cols+x]||g[y]&&g[y][x]==='w') continue;
+    let to=null; for(let d=0;d<=8&&!to;d++) for(const xx of d?[x-d,x+d]:[x]){ if(xx<2||xx>=cols-2) continue; for(let yy=1;yy<ROWS&&!to;yy++) if(safe(xx,yy)&&g[yy][xx]!=='Z'&&g[yy][xx]!=='^') to=[xx,yy]; if(to) break; }
+    if(to) spawns[i]=[t,to[0],to[1]-1].concat(spawns[i].slice(3)); else spawns.splice(i,1); }
   // decorations
-  const signY=sky?Math.max(2,gyEq(3)-5):Math.max(3,gyEq(3)-4), signT='СЕКТОР '+(k+1)+' · '+tg.name.toUpperCase();
+  const signY=sky?Math.max(2,gyEq(3)-5):Math.max(3,gyEq(3)-4), signT='СЕКТОР '+(k+1)+' · '+tg.name.toUpperCase(), ex=GAME.svSpec.exitCol||['#06201e','#4fe3d6'];
   const dsp=[]; for(let x=4;x<cols-4;x+=ri(4,9)){ const y=gyEq(x); if(y<16&&g[y][x]==='#'&&g[y-1][x]==='.'&&!noSpawn.has(x)) dsp.push([x,y]); }
-  const exitDeco=()=>{ const y=gyEq(cols-6); drawSign(cols-10,Math.max(sky?2:3,y-4),'ИЗХОД →','#06201e','#4fe3d6'); lightDot((cols-4)*T,(y-2)*T,'#4fe3d6',0); };
+  const exitDeco=()=>{ if(isBoss) return; const y=gyEq(cols-6); drawSign(cols-10,Math.max(sky?2:3,y-4),'ИЗХОД →',ex[0],ex[1]); lightDot((cols-4)*T,(y-2)*T,ex[1],0); };
   decos.push(()=>{ (tg.sign||drawSign)(3,signY,signT); exitDeco();
     if(!sky&&!tg.noPipes) pipeH(3*T+4,2,cols-2);
     if(tg.deco) for(const [x,y] of dsp) tg.deco(x,y,hash(x,y),y*T); });
@@ -241,10 +274,11 @@ function svTry2(k,plan,att,simple){
   const gA=g.map(row=>row.slice()), gB=g.map(row=>row.slice());
   for(const q of eraR){ const tgt=q.era?gB:gA, [x0,y0,x1,y1,c]=q.r; for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++) tgt[y][x]=c; }
   const copyTo=(src,F_)=>{ for(let y=0;y<ROWS;y++) for(let xx=0;xx<cols;xx++) if(src[y][xx]!=='.') F_(xx,y,xx,y,src[y][xx]); };
-  const L={n:100+k,title:'СЕКТОР '+(k+1),surv:true,cols,grav:900,music:Object.assign({},tg.mus),start:4,dark:plan.muts.includes('dark'),alarm:false,
-    theme:()=>tg.th, sky:svSky(tg.sky), liftStyle:tg.lift==='float'?'float':'cable', loadout:SV_LOAD, story:[], end:[],
+  const skyKey=Array.isArray(tg.sky)?pick(tg.sky):tg.sky;
+  const L={n:100+k,title:'СЕКТОР '+(k+1),surv:true,cols,grav:lowg?600:900,music:Object.assign({},tg.mus),start:4,dark:!!tg.dark||plan.muts.includes('dark'),alarm:plan.muts.includes('alarm'),
+    theme:()=>tg.th, sky:svSky(skyKey), liftStyle:tg.lift==='float'||tg.alien?'float':'cable', loadout:SV_LOAD, story:[], end:[],
     build(F_){ copyTo(gA,F_); }, deco(){ decos.forEach(fn=>fn()); },
-    spawns, triggers, lifts, lasers, vents:[], crushers, tracks:[], exit, arena:null, gate, chunkLog:segs, themeName:tg.name, isBoss:false, muts:plan.muts.slice(), attempt:att};
+    spawns, triggers, lifts, lasers, vents, crushers, tracks, exit, arena, gate, chunkLog:segs, themeName:tg.name, isBoss, muts:plan.muts.slice(), attempt:att};
   if(levers.length) L.levers=levers;
   if(lights3.length) L.lights=lights3; if(terms3.length) L.terms=terms3; if(plates3.length){ L.plates=plates3; L.echo=1; } if(tg.alarmFoe) L.alarmFoe=tg.alarmFoe; if(tg.snow) L.snow=tg.snow; if(tg.gusts) L.gusts={per:10,dur:3,force:-200};
   if(usedFreq) L.freq=true;

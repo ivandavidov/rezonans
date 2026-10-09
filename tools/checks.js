@@ -11,7 +11,7 @@
 
    Проверки (оцеляването: 20 семена × сектори 1–40, трудност лесно и трудно):
      baseline  — отпечатък на генерирането: семе → тема, ширина, брой врагове/предмети; отделно хеш на терена (картите)
-                 и на населението (spawns). Населението зависи от JS двигателя (sort със случаен компаратор) — A/B в една среда.
+                 и на населението (spawns). Не зависят от JS двигателя (разбъркването е Fisher–Yates с r()) — Node дава същото.
      placement — врагове/предмети в стена или врата; на дъното на яма до киселина (очаквано: 0 / 0)
      reach     — недостижими платформи и предмети по валидатора на генератора (0 / 0). Арените, копирани от кампанията
                  (продълженията), нямат данни от валидатора и се прескачат; предметите под вода — също (стигат се с плуване).
@@ -27,7 +27,8 @@
                  на процесора посред проверката и преливките се закръглят с ±1–3). Също на току-що заредена страница. */
 const T = 16, z = () => window.__rz;
 const tile = (x, y) => { const r = z().map[y]; return r ? r[x] : '#'; };
-const pause = () => new Promise(r => setTimeout(r, 0));
+const pause = () => new Promise(r => { if (typeof MessageChannel !== 'function') return setTimeout(r, 0);   // в скрит раздел setTimeout се буди веднъж в минута, съобщенията — не
+  const c = new MessageChannel(); c.port1.onmessage = () => r(); c.port2.postMessage(0); });
 const hstr = t => { let h = 0; for (const c of t) h = (h * 31 + c.charCodeAt(0)) | 0; return (h >>> 0).toString(36); };
 const hnum = t => { let h = 0; for (const c of t) h = (h * 31 + c.charCodeAt(0)) | 0; return h >>> 0; };
 function mkRng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
@@ -103,6 +104,7 @@ const C = {
     const Z = z(), res = { части: {}, грешки: [] }, saved = lsSnap(), raf = window.requestAnimationFrame, rnd0 = Math.random, di0 = Z.DI;
     let t = -1048576, ty = performance.now(), samples = [];   // синтетичен часовник: точни стъпки по 1/64 s — dt не зависи от предишните сценарии
     window.requestAnimationFrame = () => 0;           // истинският цикъл спира; кадрите се движат от проверката
+    const mus0 = Z.musOn; if (mus0) Z.toggleMus();  // музиката тегли Math.random по истинско време (setInterval) — спира за проверката
     await new Promise(r => setTimeout(r, 100));       // висящ кадър на истинския цикъл (в браузъра) минава преди сценариите
     const snap = () => { const p = Z.player, b = Z.boss, E = Z.enemies || [];
       return [Z.state, Z.LI, p ? Math.round(p.x) : -1, p ? Math.round(p.y) : -1, p ? Math.round(p.hp) : -1, p ? Math.round(p.armor || 0) : -1, p ? p.cur : '',
@@ -132,6 +134,7 @@ const C = {
         res.части[g] = { сценарии: out.length, грешки: res.грешки.filter(q => q.част === g).length, отпечатък: hstr(out.join('\n')), подробно: out };
       }
     } finally {
+      if (mus0 && !Z.musOn) Z.toggleMus();
       Math.random = rnd0; lsRestore(saved); window.requestAnimationFrame = raf;
       try { Z.setDiff(di0); Z.toMenu(2); } catch (e) {}
       if (raf) raf(tt => Z.frame(tt));               // пуска отново истинския цикъл
