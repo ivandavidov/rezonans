@@ -150,7 +150,7 @@ const ov=(a,b)=>a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
    ефекти), rz.selftest (самопроверките на Mac/Windows). На частта — KEY(име) = GAME.key+'.'+име (r1: rz, после rz2 …): unlocked,
    mem, best/bestK/svSave + трудността (0–2), ending/done (r3–r7 ги пишат с пълното име). build.py спира при ключ извън списъка. */
 const STORE_KEYS=['rz.diff','rz.audio','rz.selftest'], STORE_PART=['unlocked','mem','best','bestK','svSave','ending','done'];
-const store={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:v;}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,String(v));}catch(e){}},del(k){try{localStorage.removeItem(k);}catch(e){}}};
+const store={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:v;}catch(e){return d;}},set(k,v){if(store.lock&&store.lock(k))return;try{localStorage.setItem(k,String(v));}catch(e){}},del(k){try{localStorage.removeItem(k);}catch(e){}}};   // lock — от чийтовете
 
 /* ================= РЕГИСТРИ НА СЪДЪРЖАНИЕТО =================
    Двигателят вика съдържанието по тип; частите (и двигателят — за общото) го описват с def*():
@@ -641,7 +641,7 @@ function loadLevel(i,obj){
   mechRun('load'); if(LVL.onLoad) LVL.onLoad();
 }
 function startEpisode(i,carry){
-  const prev=carry?player:null; SURV=false; bossMul=1; ehpMul=1;
+  const prev=carry?player:null; SURV=false; bossMul=1; ehpMul=1; chtStart(carry);
   loadLevel(i);
   if(prev&&!prev.dead){
     const p=player;
@@ -705,7 +705,7 @@ function explode(x,y,r=70,dmg=80,selfMul=1,fromBoss=false){
 /* ================= COMBAT ================= */
 function die(){ const p=player; p.hp=0; p.dead=true; p.deadT=0; p.crouch=false; stats.deaths++; SFX.beep(); osc({type:'sine',f:1650,t:1.6,v:0.12,when:0.3}); }
 function hurtPlayer(d,kx=0,hazard){
-  const p=player; if(p.dead||state!=='play') return;
+  const p=player; if(p.dead||state!=='play'||chtOn('god')) return;
   if(!hazard){ if(p.inv>0) return; p.inv=0.22; }
   d*=hazard?D.haz:D.dmg;
   const ab=Math.min(p.armor,d*0.6); p.armor-=ab; p.hp-=d-ab; p.vx+=kx; p.hurtT=0.15; p.hurtAgo=0;
@@ -714,7 +714,7 @@ function hurtPlayer(d,kx=0,hazard){
   if(p.hp<=0) die();
 }
 function hurtEnemy(e,d,kx=0,quiet){
-  if(e.dead) return; if(e.fq!=null&&LVL.freq&&e.fq!==FREQ){ e.hitT=0.04; sparks(e.x+e.w/2,e.y+e.h/2,2,'#a8a8b8'); return; } e.hp-=d; e.hitT=0.08; if(e.type!=='turret') e.vx+=kx; e.alert=true;
+  if(e.dead) return; if(e.fq!=null&&LVL.freq&&e.fq!==FREQ){ e.hitT=0.04; sparks(e.x+e.w/2,e.y+e.h/2,2,'#a8a8b8'); return; } e.hp-=chtOn('onehit')?Math.max(d,e.hp+1):d; e.hitT=0.08; if(e.type!=='turret') e.vx+=kx; e.alert=true;
   const cx=e.x+e.w/2, cy=e.y+e.h/2, mech=!!FOES[e.type].mech||!!e.mech, alien=!FOES[e.type].human;
   if(!quiet){ if(mech) sparks(cx,cy,4); else blood(cx,cy,alien,5); }
   if(e.type==='shocker'&&e.state==='charge'&&Math.random()<0.35){ e.state='stagger'; e.t=0.45; }
@@ -763,9 +763,9 @@ function fire(){
     if(hit){ SFX.clang(); shake=Math.max(shake,2); } else if(solidAt(ox+p.face*10,oy)){ SFX.clang(); sparks(ox+p.face*10,oy,4); }
     return;
   }
-  const a=p.ammo[w];
+  const a=p.ammo[w]; if(chtOn('ammo')) a.mag=Math.max(a.mag,1);
   if(a.mag<=0){ if(a.res>0){ startReload(); } else { SFX.empty(); p.cool=0.3; autoSwitch(); } return; }
-  a.mag--;
+  if(!chtOn('ammo')) a.mag--;
   if(w==='grenade'){
     p.cool=0.75; SFX.throwG(); p.swingT=0.2;
     const up=p.aimUp; grenades.push({x:p.x+p.w/2+p.face*6,y:p.y+(p.crouch?2:6),vx:p.face*(up?150:230)+p.vx*0.4,vy:up?-330:-190,t:1.6,own:true});
@@ -798,21 +798,21 @@ function fire(){
 }
 function startReload(){ const p=player, w=p.cur; if(w==='wrench'||w==='grenade'||w==='rocket'||p.reload>0) return; const a=p.ammo[w]; if(a.res<=0||a.mag>=CAP[w]) return; p.reload=w==='pistol'?1.1:w==='pulse'?1.3:1.6; SFX.reload(); }
 function finishReload(){ const p=player,w=p.cur; if(w==='wrench'||w==='grenade'||w==='rocket') return; const a=p.ammo[w], n=Math.min(CAP[w]-a.mag,a.res); a.mag+=n; a.res-=n; }
-function hasAmmo(w){ return w==='wrench'||(player.weapons[w]&&(player.ammo[w].mag+player.ammo[w].res)>0); }
+function hasAmmo(w){ return w==='wrench'||(player.weapons[w]&&(chtOn('ammo')||(player.ammo[w].mag+player.ammo[w].res)>0)); }
 function autoSwitch(){ for(const w of ['pulse','shotgun','pistol','wrench']) if(player.weapons[w]&&hasAmmo(w)){ if(player.cur!==w){ player.cur=w; player.reload=0; } return; } }
 function selectWeapon(w){ const p=player; if(!p.weapons[w]||p.cur===w) return; p.cur=w; p.reload=0; p.cool=0.25; SFX.reload(); if(w!=='wrench'&&w!=='grenade'&&w!=='rocket'&&p.ammo[w].mag===0) startReload(); }
 
 /* ================= PLAYER ================= */
 const ladderAt=(x,y)=>tileP(x,y)==='H';
 function onOneWay(e){ const ty=Math.floor((e.y+e.h+1)/T); for(let tx=Math.floor(e.x/T);tx<=Math.floor((e.x+e.w-0.01)/T);tx++){ const c=tileAt(tx,ty); if(c==='-'||c==='H') return true; } return false; }
-const elecOn=()=>{ const cyc=DI===0?3.8:DI===2?3.0:3.4, on=DI===0?1.0:DI===2?1.6:1.3; return (lvT%cyc)<on; };
+const elecOn=()=>{ if(chtOn('traps')) return false; const cyc=DI===0?3.8:DI===2?3.0:3.4, on=DI===0?1.0:DI===2?1.6:1.3; return (lvT%cyc)<on; };
 const elecWarn=()=>{ const cyc=DI===0?3.8:DI===2?3.0:3.4; return (lvT%cyc)>cyc-0.6; };
 function updPlayer(dt){
   const p=player;
   p.cool-=dt; p.flashT-=dt; p.swingT-=dt; p.inv-=dt; p.hurtT-=dt; p.hurtAgo+=dt;
   if(p.dead){ p.deadT+=dt; p.vx*=0.9; p.vy=Math.min(p.vy+G*dt,520); moveX(p,p.vx*dt); moveY(p,p.vy*dt); return; }
   if(p.y>ROWS*T+30){
-    SFX.fall(); p.hp-=D.fall; dmgFlash=0.6; p.hurtAgo=0;
+    SFX.fall(); if(!chtOn('god')) p.hp-=D.fall; dmgFlash=0.6; p.hurtAgo=0;
     if(p.hp<=0) die();
     else { p.x=cp*T+3; if(p.crouch){ p.crouch=false; p.h=26; } p.y=groundY(cp)-p.h; p.vx=p.vy=0; p.inv=1.2; p.climb=false; }
     return;
@@ -827,7 +827,8 @@ function updPlayer(dt){
   const inSlime=rectHas(p.x,p.y+p.h-6,p.w,6,'~');
   const cx=p.x+p.w/2, bot=p.y+p.h;
   if(!p.climb&&!p.crouch&&((U&&ladderAt(cx,bot-2))||(Dn&&ladderAt(cx,bot+3)&&p.onGround))){ p.climb=true; p.x=Math.floor(cx/T)*T+T/2-p.w/2; p.vx=0; p.vy=0; }
-  if(mechMove(p,dt,dir,U,Dn)){}
+  if(chtFly(p,dt,dir,U,Dn)){}
+  else if(mechMove(p,dt,dir,U,Dn)){}
   else if(p.climb){
     p.aimUp=false; p.vy=U?-90:Dn?90:0; p.vx=0; p.dropThrough=Dn?0.1:0;
     const ltx=Math.floor((p.x+p.w/2)/T); let tty=Math.floor((p.y+p.h-1)/T); while(tty>0&&tileAt(ltx,tty-1)==='H') tty--; const topY=tty*T;
@@ -1055,9 +1056,9 @@ function drawLifts(){ for(const l of lifts){ const x=Math.round(l.x-cam), y=Math
   if(LVL.liftStyle==='cable'){ px(x+4,2*T,1,y-2*T,'#3a3f45'); px(x+l.w-5,2*T,1,y-2*T,'#3a3f45'); px(x,y,l.w,6,'#4a4f56'); px(x,y,l.w,1,'#9aa2a7'); for(let i=0;i<l.w;i+=8) px(x+i,y+3,4,3,'#c99a1c'); }
   else { px(x,y,l.w,5,'#5c4878'); px(x,y,l.w,1,'#4dffc3'); px(x+4,y+5,l.w-8,3,'#3d2e52'); px(x+l.w/2-3,y+8,6,2,'#2c2238'); } } }
 const lzPer=()=>DI===0?3.6:DI===2?2.6:3.0;
-function lzState(l){ const per=lzPer(), t=((lvT+(l.off||0)*per)%per+per)%per; if(t<per*0.5) return 2; if(t>per-0.45) return 1; return 0; }
+function lzState(l){ if(chtOn('traps')) return 0; const per=lzPer(), t=((lvT+(l.off||0)*per)%per+per)%per; if(t<per*0.5) return 2; if(t>per-0.45) return 1; return 0; }
 const vtPer=()=>DI===0?3.8:DI===2?2.6:3.2;
-function vtState(v){ const per=vtPer(), t=((lvT+(v.off||0)*per)%per+per)%per; if(t<1.2) return 2; if(t>per-0.5) return 1; return 0; }
+function vtState(v){ if(chtOn('traps')) return 0; const per=vtPer(), t=((lvT+(v.off||0)*per)%per+per)%per; if(t<1.2) return 2; if(t>per-0.5) return 1; return 0; }
 function updHazards(dt){
   const p=player;
   for(const l of lasers){ l.hitCd-=dt; const st=lzState(l); if(st===2&&!l.was&&Math.abs(l.tx*T-p.x)<300) sfxAt('laser',{x:l.tx*T,y:l.r0*T,w:0}); l.was=st===2;
@@ -1076,7 +1077,7 @@ function drawVents(){ for(const v of vents){ const x=Math.round(v.tx*T-cam); if(
 
 /* ================= CRUSHERS ================= */
 const crPer=()=>DI===0?3.8:DI===2?2.6:3.2;
-function crPos(c){ const per=crPer(), t=((lvT+c.off*per)%per+per)%per; if(t<per-1.2) return 0; if(t<per-0.8) return 0.03+0.02*Math.sin(t*70); if(t<per-0.65) return (t-(per-0.8))/0.15; if(t<per-0.4) return 1; return 1-(t-(per-0.4))/0.4; }
+function crPos(c){ if(chtOn('traps')) return 0; const per=crPer(), t=((lvT+c.off*per)%per+per)%per; if(t<per-1.2) return 0; if(t<per-0.8) return 0.03+0.02*Math.sin(t*70); if(t<per-0.65) return (t-(per-0.8))/0.15; if(t<per-0.4) return 1; return 1-(t-(per-0.4))/0.4; }
 function crRect(c){ const pos=crPos(c), y0=2*T+4, h=22; return {x:c.tx*T,y:y0+pos*(15*T-h-y0),w:c.w*T,h,pos}; }
 function updCrushers(dt){
   const p=player;
@@ -1102,6 +1103,7 @@ function updTrains(dt){
   const p=player;
   for(const tr of tracks){
     const near=p.x>(tr.x0-16)*T&&p.x<(tr.x1+16)*T;
+    if(chtOn('traps')){ tr.warned=false; continue; }   // чийт: влакът не тръгва
     tr.t-=dt;
     if(tr.t<trainWarn()&&!tr.warned&&near){ tr.warned=true; SFX.horn(); }
     if(tr.t<=0){ if(near) trains.push({tr,dir:tr.dir,x:tr.dir>0?tr.x0*T-TL:(tr.x1+1)*T,hitP:false}); tr.t=trainPer()*(tr.fast?0.8:1); tr.warned=false; }
@@ -1144,7 +1146,7 @@ function startBoss(){
   SFX.alarm(3); sfxAt(bossSfx(boss.type),boss); bossMusic=true;
   showMsg(BOSSES[a.type].intro,4.5);
 }
-function hurtBoss(d,blast){ BOSSES[boss.type].hurt(d,blast); }
+function hurtBoss(d,blast){ BOSSES[boss.type].hurt(chtOn('onehit')?d*10:d,blast); }
 function bossDie(){ const b=boss; b.hp=0; b.dead=true; b.deathT=0; b.vx=0; b.vy=0; stats.kills++; sfxAt(BOSSES[b.type].dieSfx||(b.mech?'boom':'roar'),b); for(const e of enemies) if(e.summoned&&!e.dead) hurtEnemy(e,999,0); }
 function bossDeathFx(b,dt){
   b.deathT+=dt; b.boomT-=dt;
@@ -1279,7 +1281,7 @@ function svValidate(g,cols,sky,lowg,lifts,startX,exitX,o={}){
 /* ---------- генераторът: общият (engine/survival.js · svGen) ---------- */
 function genLevel(k){ return svGen(k); }
 function startSurv(k,carry){
-  const sv=carry&&carry!==true?carry:null; if(sv) carry=false; const prev=carry?player:null;
+  const sv=carry&&carry!==true?carry:null; if(sv) carry=false; const prev=carry?player:null; chtStart(carry);
   SURV=true; survK=k; bossMul=0.75+0.2*Math.floor(k/5); ehpMul=1+0.03*k;
   if(!carry){ survScore=0; survLives=[3,2,1][DI]; survSeed=(Date.now()%90000)+10000; survNewBest=false; survStartBest=survBest(); if(sv){ survSeed=sv.seed; survScore=sv.score|0; } }
   loadLevel(-1,genLevel(k)); if(LVL.arena) bossMul*=bossNorm(LVL.arena.type); if(LVL.arena&&(GAME.bossMulOne||[]).includes(LVL.arena.type)) bossMul=1;
@@ -1293,7 +1295,7 @@ function startSurv(k,carry){
 }
 function endSurv(){
   survScore+=stats.kills*10; saveSurv(survScore,survK+1);
-  survNewBest=survScore>survStartBest; survBestShown=survBest(); state='survOver'; winT=0; mInt=0; bossMusic=false;
+  survNewBest=!CHT.used&&survScore>survStartBest; survBestShown=survBest(); state='survOver'; winT=0; mInt=0; bossMusic=false;
 }
 
 /* ================= LEVEL FLOW ================= */
@@ -1302,7 +1304,7 @@ function completeLevel(){
   state='levelEnd'; endT=0; mInt=0; bossMusic=false; SFX.win();
   if(SURV){ survScore+=100+stats.kills*10+(LVL.arena?500:0); saveSurv(survScore,survK+1); return; }
   for(const k in totals) totals[k]+=stats[k];
-  if(LI+2>gUnl&&LI<GLV.length-1){ gUnl=LI+2; store.set(KEY('unlocked'),gUnl); }
+  if(!CHT.used&&LI+2>gUnl&&LI<GLV.length-1){ gUnl=LI+2; store.set(KEY('unlocked'),gUnl); }
 }
 function respawn(){
   mechRun('preRespawn'); const p=player; p.x=cp*T+3; p.h=26; p.crouch=false; p.y=groundY(cp)-26; p.vx=p.vy=0; p.hp=100; p.dead=false; p.inv=1.5; p.climb=false; p.hurtAgo=9;
@@ -1349,21 +1351,23 @@ function update(dt){
     if(Math.abs(e.x-ccx)>440) continue;
     e.hitT-=dt; e.flashT=(e.flashT||0)-dt;
     if(e.stunT>0){ e.stunT-=dt; continue; }
-    FOES[e.type].upd(e,edt);
+    if(chtOn('freeze')) continue;
+    if(chtOn('inv')){ const qx=p.x, qy=p.y; e.alert=false; p.x=p.y=-1e5; FOES[e.type].upd(e,edt); p.x=qx; p.y=qy; }   // чийт: невидимост — врагът не те вижда
+    else FOES[e.type].upd(e,edt);
     if(!e.dead&&ACID_DIE[e.type]&&rectHas(e.x,e.y+e.h-6,e.w,6,'~')){ hurtEnemy(e,e.hp+1,0,true); for(let i=0;i<10;i++) part(e.x+rnd(e.w),e.y+e.h-4,rnd(-30,30),rnd(-90,-30),rnd(0.3,0.6),'#9dff6a',2,200); }
     if(!FOES[e.type].fixed&&!FOES[e.type].fly&&e.onGround&&elecOn()&&onTile(e,'Z')){ e.elecT-=dt; if(e.elecT<=0){ e.elecT=0.25; hurtEnemy(e,10,0,true); sparks(e.x+e.w/2,e.y+e.h,3,'#bfe8ff'); } }
     if(e.y>ROWS*T+40){ e.dead=true; e.deadT=99; }
     if(e.alert&&Math.abs(e.x-p.x)<380) threat=true;
   }
   for(const s of scientists) updScientist(s,dt);
-  if(boss) BOSSES[boss.type].upd(edt);
-  if(bmiss.length) updMissiles(dt);
+  if(boss&&!(chtOn('freeze')&&!boss.dead)) BOSSES[boss.type].upd(edt);
+  if(bmiss.length&&!chtOn('freeze')) updMissiles(dt);
   combatHold=threat?4:combatHold-dt;
   mInt=bossActive&&boss&&!boss.dead?2:combatHold>0?1:0;
   // electricity sound
   const eo=elecOn(); if(eo&&!elecWas&&zTiles.some(([tx])=>Math.abs(tx*T-p.x)<300)) SFX.elec(); elecWas=eo;
   for(const b of barrels) if(!b.dead&&b.fuse>=0){ b.fuse-=dt; if(b.fuse<0){ b.dead=true; explode(b.x+6,b.y+8,74,90); } }
-  for(const b of ebullets){
+  for(const b of chtOn('freeze')?[]:ebullets){
     if(b.grav) b.vy+=G*edt;
     if(b.hornet&&!p.dead){ const sp=Math.hypot(b.vx,b.vy), cur=Math.atan2(b.vy,b.vx), tg=Math.atan2(p.y+p.h/2-b.y,p.x+p.w/2-b.x), turn=(DI===0?0.9:DI===2?2.2:1.5)*dt, na=cur+clamp(angDiff(tg,cur),-turn,turn); b.vx=Math.cos(na)*sp; b.vy=Math.sin(na)*sp; }
     b.x+=b.vx*edt; b.y+=b.vy*edt; b.life-=edt;
@@ -1375,7 +1379,7 @@ function update(dt){
     const ny=g.y+g.vy*dt; if(g.impact&&solidAt(g.x,ny)){ g.t=0; g.y=ny-4; } else if(solidAt(g.x,ny)){ if(Math.abs(g.vy)>60) sfxAt('bounce',g); g.vy*=-0.4; g.vx*=0.7; } else g.y=ny;
     g.t-=dt; if(g.y>ROWS*T+40) g.t=-1; else if(g.t<=0) explode(g.x,g.y,g.impact?56:66,g.impact?55:g.own?100:70,1,!!g.impact||!!g.bossG); }
   grenades=grenades.filter(g=>g.t>0);
-  for(const o of orbs){ o.x+=o.vx*edt; o.life-=edt; if(Math.random()<0.7) part(o.x,o.y+rnd(-4,4),-o.vx*0.1,rnd(-40,-10),0.35,'#9dff5a',1.5,0);
+  for(const o of chtOn('freeze')?[]:orbs){ o.x+=o.vx*edt; o.life-=edt; if(Math.random()<0.7) part(o.x,o.y+rnd(-4,4),-o.vx*0.1,rnd(-40,-10),0.35,'#9dff5a',1.5,0);
     if(solidAt(o.x+sgn(o.vx)*o.r,o.y)){ o.life=0; sparks(o.x,o.y,10,'#c8ff9a'); }
     if(!p.dead){ const nx=clamp(o.x,p.x,p.x+p.w), ny=clamp(o.y,p.y,p.y+p.h); if(Math.hypot(nx-o.x,ny-o.y)<o.r){ o.life=0; hurtPlayer(12,sgn(o.vx)*200); p.vy=-160; sparks(o.x,o.y,10,'#c8ff9a'); } } }
   orbs=orbs.filter(o=>o.life>0);
@@ -1635,7 +1639,7 @@ function drawLights(){
   if(LVL.fires) for(const [fx,fy] of LVL.fires) L.push([fx,fy-10,80+Math.sin(titleT*13+fx)*8,0.8]);
   if(LVL.sw) L.push([LVL.sw[0]*T+8,LVL.sw[1]*T,40,0.6]);
   mechRun('lights',L);
-  lc.globalCompositeOperation='source-over'; lc.clearRect(0,0,240,136); lc.fillStyle=`rgba(3,5,9,${torch?Math.min(amb,0.7):Math.min(amb*0.65,0.36)})`; lc.fillRect(0,0,240,136);
+  lc.globalCompositeOperation='source-over'; lc.clearRect(0,0,240,136); lc.fillStyle=`rgba(3,5,9,${chtOn('light')?0:torch?Math.min(amb,0.7):Math.min(amb*0.65,0.36)})`; lc.fillRect(0,0,240,136);
   lc.globalCompositeOperation='destination-out';
   for(const [x0,y0,r0,a] of L){ const x=(x0-cam)/2, y=y0/2, r=r0/2; if(x<-r||x>240+r) continue; const g=lc.createRadialGradient(x,y,0,x,y,r); g.addColorStop(0,`rgba(0,0,0,${clamp(a,0,1)})`); g.addColorStop(1,'rgba(0,0,0,0)'); lc.fillStyle=g; lc.fillRect(x-r,y-r,r*2,r*2); }
   if(torch&&!p.dead){ const x=(p.x+p.w/2-cam)/2, y=(p.y+(p.crouch?6:8))/2, ang=p.aimUp?(p.face>0?-0.7:Math.PI+0.7):(p.face>0?0:Math.PI), r=145;
@@ -1693,7 +1697,7 @@ function renderSurvOver(){
   overlay(0.88); glitchTitle('КРАЙ НА ОЦЕЛЯВАНЕТО',W/2,70,22);
   centerText('Стигна до сектор '+(survK+1)+' на трудност „'+D.name+'“',96,'600 9px "IBM Plex Mono",monospace','#cfd8dc');
   glitchTitle(String(survScore),W/2,140,34); centerText('ТОЧКИ',156,'600 8px "IBM Plex Mono",monospace','#7f8e97');
-  centerText(survNewBest?'НОВ РЕКОРД!':'Рекорд: '+bestTxt(DI),180,'600 10px "IBM Plex Mono",monospace',survNewBest?'#94ff57':'#ffa62b');
+  centerText(CHT.used?'С ЧИЙТОВЕ — НЕ СЕ ЗАПИСВА · рекорд: '+bestTxt(DI):survNewBest?'НОВ РЕКОРД!':'Рекорд: '+bestTxt(DI),180,'600 10px "IBM Plex Mono",monospace',survNewBest?'#94ff57':'#ffa62b');
   if(winT>1.5&&blink()) centerText('Z — главно меню',240,'600 10px "IBM Plex Mono",monospace','#f3e6cf');
 }
 function wrap(text,maxW){ const words=text.split(' '), lines=[]; let line=''; for(const w of words){ const t=line?line+' '+w:w; if(ctx.measureText(t).width>maxW&&line){ lines.push(line); line=w; } else line=t; } if(line) lines.push(line); return lines; }
@@ -1720,7 +1724,7 @@ function drawHUD(){ if(!GAME.classic) return drawHudStd();
     let ly=y+11; if(who){ ctx.font='600 7px "IBM Plex Mono",monospace'; ctx.fillStyle=wcol; ctx.fillText('◉ '+who,x+10,ly-1); ly+=10; ctx.font='600 9px "IBM Plex Mono",monospace'; }
     ctx.fillStyle='#f3e6cf'; for(const l of lines){ ctx.fillText(l,x+10,ly); ly+=12; }
     ctx.globalAlpha=1; }
-  ctx.font='600 6px "IBM Plex Mono",monospace'; ctx.fillStyle='rgba(200,210,215,0.5)'; ctx.textAlign='right'; ctx.fillText(SURV?('ОЦЕЛЯВАНЕ · СЕКТОР '+(survK+1)+' · '+D.name):LVL.training?('ТРЕНИРОВКА · '+D.name):(chShort(gChOf(LI))+' · ЕП. '+LVL.n+' · '+D.name),472,9); ctx.textAlign='left';
+  ctx.font='600 6px "IBM Plex Mono",monospace'; ctx.fillStyle='rgba(200,210,215,0.5)'; ctx.textAlign='right'; ctx.fillText((SURV?('ОЦЕЛЯВАНЕ · СЕКТОР '+(survK+1)+' · '+D.name):LVL.training?('ТРЕНИРОВКА · '+D.name):(chShort(gChOf(LI))+' · ЕП. '+LVL.n+' · '+D.name))+chtTag(),472,9); ctx.textAlign='left';
   if(SURV){ ctx.font='600 7px "IBM Plex Mono",monospace'; ctx.fillStyle='#ff6a5a'; ctx.fillText('♥'.repeat(Math.max(0,survLives)),8,10); ctx.fillStyle='#ffa62b'; ctx.fillText('ТОЧКИ '+(survScore+stats.kills*10),8+survLives*9+6,10); ctx.font='600 6px "IBM Plex Mono",monospace'; }
   if(muted){ ctx.fillStyle='#7f8e97'; ctx.fillText('БЕЗ ЗВУК (M)',8,SURV?20:9); }
   if(LVL.training&&TRN){ ctx.font='600 6px "IBM Plex Mono",monospace'; ctx.fillStyle=TRN.skip>0?'#ffd36b':'rgba(200,210,215,0.5)'; ctx.fillText(TRN.skip>0?'НАТИСНИ ENTER ОТНОВО, ЗА ДА ПРОПУСНЕШ':'ENTER — ПРОПУСНИ КУРСА',8,muted?19:9); }
@@ -1763,6 +1767,7 @@ function render(){
   renderWorld();
   if(state==='title'){ renderSplash(); return; }
   if(state==='gmenu'){ renderGMenu(); return; }
+  if(state==='cheats'){ chtRender(); return; }
   if(state==='svmenu'){ renderSvMenu(); return; }
   if(state==='survOver'){ renderSurvOver(); return; }
   if(state==='diff'){
@@ -1801,7 +1806,8 @@ function render(){
   if(state==='dead'){ overlay(Math.min(0.7,deadT*0.8)); ctx.fillStyle=`rgba(120,0,0,${Math.min(0.25,deadT*0.3)})`; ctx.fillRect(0,0,W,H);
     centerText('ЗАГИНА',122,'30px '+DFONT(),'#ff5a45');
     if(deadT>1) centerText(SURV?(survLives>1?'Z — продължи ('+(survLives-1===1?'остава 1 живот':'остават '+(survLives-1)+' живота')+')':'Z — край на оцеляването'):'Z — опитай отново от последната контролна точка',148,'600 10px "IBM Plex Mono",monospace','#f3e6cf'); }
-  if(state==='paused'){ overlay(0.6); centerText('ПАУЗА',124,'28px '+DFONT(),ACC()); centerText('Z или P — продължи · Esc — изход в менюто',148,'600 9px "IBM Plex Mono",monospace','#cfd8dc'); audPauseLine(); }
+  if(state==='paused'){ overlay(0.6); centerText('ПАУЗА',124,'28px '+DFONT(),ACC()); centerText('Z или P — продължи · Esc — изход в менюто',148,'600 9px "IBM Plex Mono",monospace','#cfd8dc'); audPauseLine();
+    if(CHT.open) centerText('↓ — чийтове',182,'600 8px "IBM Plex Mono",monospace',ACC()); }
   if(state==='levelEnd'&&SURV){ overlay(Math.min(0.85,endT*0.8)); if(endT>0.5){ centerText((LVL.isBoss?'БОСЪТ Е ПОВАЛЕН · ':'')+'СЕКТОР '+(survK+1)+' ПРЕМИНАТ',60,'600 9px "IBM Plex Mono",monospace','#94ff57'); glitchTitle('ТОЧКИ '+survScore,W/2,100,26); drawStats(stats,150);
       centerText('Следва: сектор '+(survK+2)+' · '+THEME_NAME[svPlan(survK+1).theme]+(svPlan(survK+1).boss?' · БОС':''),204,'600 8px "IBM Plex Mono",monospace','#cfd8dc');
       if(endT>1.2&&blink()) centerText('Z — напред',240,'600 10px "IBM Plex Mono",monospace','#f3e6cf'); } }
@@ -1809,6 +1815,7 @@ function render(){
     if(endT>0.5){ centerText((LVL.training?'ТРЕНИРОВКАТА Е ЗАВЪРШЕНА':LI===GCH[gChOf(LI)].b?(GCH[gChOf(LI)].done||chName(gChOf(LI))+' ЗАВЪРШЕНА'):'ЕПИЗОД '+LVL.n+' ПРЕМИНАТ'),46,'600 9px "IBM Plex Mono",monospace','#94ff57'); glitchTitle(LVL.title,W/2,74,24);
       const y=drawParagraphs(LVL.end,104,(endT-0.5)*45); drawStats(stats,Math.max(y+8,200));
       if(endT>1.2&&(endT-0.5)*45>=parasLen(LVL.end)&&blink()) centerText(LVL.training?(TRN&&TRN.fromMenu?'Z — към менюто':(LVL.hdrN||'Z — към Сектор 7')):!epFinal(LI)?'Z — към следващия епизод':'Z — продължи',262,'600 9px "IBM Plex Mono",monospace','#f3e6cf'); } }
+  if(state==='levelEnd'&&CHT.used&&endT>0.5) centerText('С ЧИЙТОВЕ — НЕ СЕ ЗАПИСВА',24,'600 7px "IBM Plex Mono",monospace','#ff8a5a');
   if(state==='win') GAME.renderWin();
 }
 
@@ -1879,14 +1886,16 @@ function setGame(id){
   const g=gameById(id)||GAMES[0]; GAME=g;
   for(const o of GAMES) document.body.classList.toggle('g-'+o.id,o===g);
   document.body.classList.toggle('has-e',!!g.eBtn);
-  GLV=g.levels; GCH=g.chapters; gUnl=clamp(parseInt(store.get(KEY('unlocked'),'1'),10)||1,1,GLV.length); if(g.unlFix) gUnl=g.unlFix(gUnl);
+  GLV=g.levels; GCH=g.chapters; gUnl=unlRead();
   const ek=document.getElementById('ekey'), eb=document.getElementById('ebtn');
   if(ek){ ek.style.display=g.eKey?'':'none'; ek.innerHTML='<kbd>E</kbd>'+(g.eKey||''); }
   if(eb){ eb.style.display=g.eBtn?'':'none'; eb.innerHTML=g.eBtn||'E'; }
 }
+// отключените епизоди: записът (r1 — и бонус главата); с чийта „Отключени нива“ — всички, без да се пипа записът
+function unlRead(){ let u=clamp(parseInt(store.get(KEY('unlocked'),'1'),10)||1,1,GLV.length); if(GAME.unlFix) u=GAME.unlFix(u); return chtOn('unl')?GLV.length:u; }
 /* ---------- менюто ---------- */
 const MENU_FIX=[{t:'ИНТРО',k:'intro'},{t:'ТРЕНИРОВКА',k:'training'},{t:'КАМПАНИЯ',k:'campaign'},{t:'ОЦЕЛЯВАНЕ',k:'survival'}];
-function menuItems(g=GAME){ return MENU_FIX.concat(GAMES.filter(o=>o!==g).map(o=>({t:o.order<g.order?'◂  '+o.title:o.title+'  ▸',k:'game',id:o.id}))); }
+function menuItems(g=GAME){ return MENU_FIX.concat(CHT.open?[CHT_ITEM]:[],GAMES.filter(o=>o!==g).map(o=>({t:o.order<g.order?'◂  '+o.title:o.title+'  ▸',k:'game',id:o.id}))); }
 function toMenu(sel){ SURV=false; bossMul=1; ehpMul=1; TRN=null; msg=null; loadLevel(0); state='gmenu'; gSel=sel==null?2:sel; mInt=0; bossMusic=false; cam=0;
   setMusic(GAME.menuMusic||LVL.music); if(AC&&AC.state==='suspended') AC.resume(); }
 function enterGame(id,sel){ setGame(id); toMenu(sel); }
@@ -1900,15 +1909,16 @@ function gmenuInput(){
   if(m.k==='game') followLink(m.id);
   else if(m.k==='intro') GAME.intro(true);
   else if(m.k==='training') GAME.training(true);
+  else if(m.k==='cheats') chtOpen('gmenu');
   else { modeSel=m.k==='survival'?1:0; state='diff'; menuSel=DI; }
 }
 function renderGMenu(){
   const g=GAME, it=menuItems(g), n=it.length;
   g.drawLogo(); ctx.textAlign='left';
-  const y0=n>7?140:146, gap=Math.max(8,Math.min(13,Math.floor((214-y0)/(n-1)))), fs=gap>=11?10:9, split=4;   // всичко се събира над описанието, колкото и части да има
+  const y0=n>7?140:146, gap=Math.max(8,Math.min(13,Math.floor((214-y0)/(n-1)))), fs=gap>=11?10:9, split=it.filter(m=>m.k!=='game').length;   // всичко се събира над описанието, колкото и части да има
   menuList(it.slice(0,split),gSel<split?gSel:-1,y0,gap,fs);
   const y1=y0+split*gap+4; menuList(it.slice(split),gSel-split,y1,gap,fs);
-  const yEnd=y1+(n-split-1)*gap, m=it[gSel], d=m.k==='game'?gameById(m.id).blurb:g.desc[m.k];
+  const yEnd=y1+(n-split-1)*gap, m=it[gSel], d=m.d||(m.k==='game'?gameById(m.id).blurb:g.desc[m.k]);
   centerText(d,yEnd+14,'600 7px "IBM Plex Mono",monospace',g.textCol||'#cfd8dc');
   if(m.k==='survival') centerText('Рекорди: '+DIFFS.map((q,i)=>q.name.toLowerCase()+' '+survBest(i)).join(' · '),yEnd+24,'600 7px "IBM Plex Mono",monospace',g.accent2);
   centerText('↑ ↓ избор · Z потвърди · Esc / X назад',H-19,'600 7px "IBM Plex Mono",monospace',g.dimCol||'#7f8e97');
@@ -1979,7 +1989,7 @@ function drawHudStd(){
     const wcol=who==='Д-Р ИЛИЕВА'?'#94ff57':'#7fd8ff'; ctx.fillStyle='rgba(4,14,18,0.82)'; ctx.fillRect(x,y,w,h); ctx.fillStyle=who?wcol:A; ctx.fillRect(x,y,2,h); ctx.fillRect(x+w-2,y,2,h);
     let ly=y+11; if(who){ ctx.font='600 7px "IBM Plex Mono",monospace'; ctx.fillStyle=wcol; ctx.fillText('◉ '+who,x+10,ly-1); ly+=10; ctx.font='600 9px "IBM Plex Mono",monospace'; }
     ctx.fillStyle='#eaf6f6'; for(const l of lines){ ctx.fillText(l,x+10,ly); ly+=12; } ctx.globalAlpha=1; }
-  ctx.font='600 6px "IBM Plex Mono",monospace'; ctx.fillStyle='rgba(200,240,240,0.5)'; ctx.textAlign='right'; ctx.fillText(SURV?(GAME.name+' · ОЦЕЛЯВАНЕ · СЕКТОР '+(survK+1)+' · '+D.name):LVL.training?(GAME.name+' · ТРЕНИРОВКА · '+D.name):(GAME.name+' · '+chShort(gChOf(LI))+' · ЕП. '+LVL.n+' · '+D.name),W-6,9); ctx.textAlign='left';
+  ctx.font='600 6px "IBM Plex Mono",monospace'; ctx.fillStyle='rgba(200,240,240,0.5)'; ctx.textAlign='right'; ctx.fillText((SURV?(GAME.name+' · ОЦЕЛЯВАНЕ · СЕКТОР '+(survK+1)+' · '+D.name):LVL.training?(GAME.name+' · ТРЕНИРОВКА · '+D.name):(GAME.name+' · '+chShort(gChOf(LI))+' · ЕП. '+LVL.n+' · '+D.name))+chtTag(),W-6,9); ctx.textAlign='left';
   if(SURV){ ctx.font='600 7px "IBM Plex Mono",monospace'; ctx.textAlign='right'; ctx.fillStyle='#ff6a8a'; ctx.fillText('♥'.repeat(Math.max(0,survLives)),W-6,19); ctx.fillStyle=A; ctx.fillText('ТОЧКИ '+(survScore+stats.kills*10),W-6-survLives*8-6,19); ctx.textAlign='left'; }
   ctx.restore();
 }
@@ -2303,7 +2313,7 @@ function updEscort(s,dt){
   for(const e of enemies){ if(e.dead||e.type==='target'||e.type==='crab') continue; if(ov(e,s)){ e.escBite=(e.escBite||0)-dt; if(e.escBite<=0){ e.escBite=0.9; escHurt(8); } } }
   if(s.bt<=0&&!want&&LVL.escort.lines){ s.bt=rnd(9,15); bark(s,LVL.escort.lines[Math.floor(rnd(LVL.escort.lines.length))],2.6); }
 }
-function escHurt(d){ const s=ESC; if(!s||s.state==='dead'||player.dead) return; s.hp-=d*[0.45,1,1.35][DI]; s.hurtT=0.15; if(s.hp<=0){ s.hp=0; s.state='dead'; blood(s.x+5,s.y+8,false,16); showMsg(LVL.escort.name+' загина! Опитай отново.',3); die(); } }
+function escHurt(d){ const s=ESC; if(!s||s.state==='dead'||player.dead||chtOn('god')) return; s.hp-=d*[0.45,1,1.35][DI]; s.hurtT=0.15; if(s.hp<=0){ s.hp=0; s.state='dead'; blood(s.x+5,s.y+8,false,16); showMsg(LVL.escort.name+' загина! Опитай отново.',3); die(); } }
 function drawEscort(s){
   begin(s); if(s.hurtT>0) tint='#ffffff';
   if(s.state==='dead'){ ctx.rotate(-Math.PI/2); }
@@ -2522,6 +2532,7 @@ defMech('chase',{
   if(C&&!CHASE&&p.x>C.start*T){ CHASE={x:p.x-C.lead*T,done:false}; shake=10; showMsg(C.msg||'Лавина! Бягай!',2.5); SFX.cascade&&SFX.cascade(); }
   if(CHASE&&!CHASE.done){ CHASE.x+=C.speed*[0.82,1,1.12][DI]*dt; if(p.x-CHASE.x>C.lead*T+6*T) CHASE.x=p.x-(C.lead+6)*T;
     shake=Math.max(shake,clamp(6-(p.x-CHASE.x)/(3*T),0,5));
+    if(chtOn('god')&&p.x<CHASE.x+4*T) CHASE.x=p.x-4*T;   // чийт: безсмъртие — не те стига
     if(!p.dead&&p.x<CHASE.x+4){ die(); showMsg(C.die||'Лавината те затрупа!',2.5); }
     for(const e of enemies) if(!e.dead&&e.x<CHASE.x) hurtEnemy(e,999,0,true);
     if(p.x>C.end*T){ CHASE.done=true; shake=12; showMsg(C.safe||'Спаси се!',2); } }
@@ -2659,7 +2670,7 @@ defMech('cams',{
   for(const l of LIGHTS){ const mid=(l.a0+l.a1)/2, amp=(l.a1-l.a0)/2; l.a=mid+amp*Math.sin(lvT*l.spd+l.ph);
     const lx=l.x*T+8, ly=l.y*T+8, cx=p.x+p.w/2, cy=p.y+p.h/2, d=Math.hypot(cx-lx,cy-ly), ang=Math.atan2(cy-ly,cx-lx), half=l.cam?0.17:0.22;
     let diff=Math.abs(((ang-l.a+Math.PI*3)%(Math.PI*2))-Math.PI);
-    const seen=!p.dead&&d<l.len*T&&diff<half&&los(lx,ly,cx,cy);
+    const seen=!p.dead&&!chtOn('inv')&&d<l.len*T&&diff<half&&los(lx,ly,cx,cy);
     if(seen){ l.seen+=dt; if(l.seen>0.32) mechAlarm(l); } else l.seen=Math.max(0,l.seen-dt*0.8); }
   if(ALARM>0){ ALARM-=dt; if(Math.random()<dt*1.5&&AC) osc({type:'square',f:Math.floor(lvT*2)%2?660:520,t:0.25,v:0.05}); }
   },
@@ -2894,7 +2905,7 @@ function tranceDrawWorld(){
   for(const s of SLEEPERS) drawSleeper(s);
   // скрити стени
   const c0=Math.max(0,Math.floor(cam/T)), c1=Math.min(COLS-1,c0+31);
-  for(let tx=c0;tx<=c1;tx++) for(let ty=0;ty<ROWS;ty++){ if(map[ty][tx]!=='h') continue; const P=TP(tx), x=tx*T-cam, y=ty*T, rv=HREV[tx+','+ty];
+  for(let tx=c0;tx<=c1;tx++) for(let ty=0;ty<ROWS;ty++){ if(map[ty][tx]!=='h') continue; const P=TP(tx), x=tx*T-cam, y=ty*T, rv=HREV[tx+','+ty]||(chtOn('secret')?-9:0);
     const a=rv?Math.max(0.18,1-(lvT-rv)*1.5):1; ctx.globalAlpha=a; ctx.fillStyle=P.s||'#5a5a5a'; ctx.fillRect(x,y,T,T); ctx.fillStyle=P.sd||'#333'; ctx.fillRect(x,y+15,T,1); ctx.fillRect(x+15,y,1,T); ctx.fillStyle=P.sh||'#888'; ctx.fillRect(x,y,T,1); ctx.globalAlpha=1;
     if(rv){ ctx.strokeStyle='rgba(140,220,255,0.6)'; ctx.setLineDash([2,2]); ctx.strokeRect(x+0.5,y+0.5,T-1,T-1); ctx.setLineDash([]); } }
   // ракети
@@ -3428,14 +3439,14 @@ function svItems(){
   const o=svLoad(); return (o?[{t:'ПРОДЪЛЖИ · СЕКТОР '+(o.k+1),k:'cont'}]:[]).concat([{t:'НОВО НАЧАЛО',k:'new'},{t:'ИЗЧИСТИ ПРОГРЕСА',k:'clr'}]);
 }
 /* след избор на трудност: без запис и рекорд — направо в сектор 1 */
-function svEnter(){ if(!svLoad()&&!survBest()) return startSurv(0,false); state='svmenu'; svSel=0; svConf=false; }
+function svEnter(){ if(!svLoad()&&!survBest()) return startSurv(chtSector(),false); state='svmenu'; svSel=0; svConf=false; }
 function svMenuInput(){
   const it=svItems(), n=it.length;
   if(pressed.up){ svSel=(svSel+n-1)%n; SFX.menu(); } if(pressed.down){ svSel=(svSel+1)%n; SFX.menu(); }
   if(pressed.jump||pressed.esc){ SFX.menu(); if(svConf){ svConf=false; svSel=svItems().length-1; } else { state='diff'; menuSel=DI; } return; }
   if(!ok()) return; SFX.menuOk(); const k=it[svSel].k;
   if(k==='cont') startSurv(svLoad().k,svLoad());
-  else if(k==='new') startSurv(0,false);
+  else if(k==='new') startSurv(chtSector(),false);
   else if(k==='clr'){ svConf=true; svSel=0; }
   else if(k==='no'){ svConf=false; svSel=svItems().length-1; }
   else { svClear(); svConf=false; state='diff'; menuSel=DI; }
@@ -3488,6 +3499,108 @@ function audDraw(){
 function audPauseLine(){ centerText(audTxt(),166,'600 7px "IBM Plex Mono",monospace','#7f8e97'); }
 document.querySelectorAll('#touch button[data-a]').forEach(b=>b.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); initAudio(); b.dataset.a==='mus'?toggleMus():toggleSfx(); }));
 audApply();
+
+/* ================= ДВИГАТЕЛ · ЧИЙТОВЕ =================
+   Отключват се за сесията (нищо не се помни след презареждане) с думата kokoloko — написана на началния екран или в менюто
+   (чете се физическият клавиш, затова работи и на българска подредба) — или със 7 докосвания на екрана в менюто. Тогава в
+   менюто има ред „ЧИЙТОВЕ“, а в паузата ↓ отваря същия екран. Режимите важат до изключване; действията — веднъж, от паузата.
+   Записите: ако в нивото (в оцеляването — в цялата игра) е бил включен режим или е ползвано действие, CHT.used пречи на всеки
+   запис освен настройките (store.lock): няма отключен епизод, рекорд, „продължи“, спомени и финали. CHT.used тръгва отначало
+   при ниво от менюто или нова игра в оцеляването; продълженията го пазят.
+   Частите могат да добавят свои с defCheat(id,{name,desc,kind:'mode'|'num'|'act',set(v),run(),ok(),min,max}). */
+const CHT={open:false,on:{},used:false,from:'gmenu',sel:1,top:0,keys:'',taps:[],rep:0}, CHT_LIST=[];
+const CHT_ITEM={t:'ЧИЙТОВЕ',k:'cheats',d:'Безсмъртие, летене, муниции, отключени нива… С тях в нивото нищо не се записва.'};
+function defCheat(id,o){ if(CHT_LIST.some(c=>c.id===id)) throw new Error('Чийтът „'+id+'“ вече е зададен'); CHT_LIST.push({id,kind:'mode',...o}); }
+function chtOn(id){ return CHT.on[id]; }
+const chtVal=c=>CHT.on[c.id]||c.min;
+const chtAny=()=>CHT_LIST.some(c=>c.kind==='num'?chtVal(c)>c.min:c.kind==='mode'&&CHT.on[c.id]);
+function chtStart(carry){ CHT.used=!!(carry&&CHT.used)||chtAny(); }   // ниво от менюто или нова игра — отначало; продължение — пази
+const chtTag=()=>CHT.used?' · ЧИЙТ':'';
+const chtSector=()=>chtVal(CHT_LIST.find(c=>c.id==='start'))-1;   // оцеляване: откъде започва новата игра
+store.lock=k=>CHT.used&&!STORE_KEYS.includes(k);
+function chtSet(id,v){ const c=CHT_LIST.find(q=>q.id===id); if(!c||c.kind==='act') return;
+  CHT.on[id]=c.kind==='num'?clamp(Math.round(v)||c.min,c.min,c.max):!!v; if(c.set) c.set(CHT.on[id]); if(chtAny()) CHT.used=true; }
+function chtDo(id){ const c=CHT_LIST.find(q=>q.id===id&&q.kind==='act'); if(!c||c.ok&&!c.ok()) return false; CHT.used=true; c.run(); return true; }
+function chtUnlock(){ if(CHT.open) return; CHT.open=true; SFX.menuOk(); const i=menuItems().indexOf(CHT_ITEM); if(state==='title') toMenu(i); else gSel=i; }
+addEventListener('keydown',e=>{ if(e.repeat||!/^Key[A-Z]$/.test(e.code)) return; CHT.keys=(CHT.keys+e.code[3].toLowerCase()).slice(-8);
+  if(CHT.keys==='kokoloko'&&(state==='title'||state==='gmenu')) chtUnlock(); });
+cv.addEventListener('pointerdown',()=>{ if(state!=='gmenu') return; CHT.taps=CHT.taps.filter(t=>titleT-t<3).concat(titleT); if(CHT.taps.length>=7){ CHT.taps=[]; chtUnlock(); } });
+
+/* ---------- помощници ---------- */
+// летене: без гравитация, стрелките — във всички посоки; през стени — и без сблъсъци (в рамките на нивото)
+function chtFly(p,dt,dir,U,Dn){ const clip=CHT.on.clip; if(!CHT.on.fly&&!clip) return false;
+  p.climb=false; p.aimUp=false; p.onLift=null; const v=clip?200:150; p.vx=dir*v; p.vy=((Dn?1:0)-(U?1:0))*v;
+  if(clip){ p.x+=p.vx*dt; p.y+=p.vy*dt; p.onGround=false; } else { moveX(p,p.vx*dt); moveY(p,p.vy*dt); }
+  p.x=clamp(p.x,0,COLS*T-p.w); p.y=clamp(p.y,0,ROWS*T-p.h); if(dir||U||Dn) p.anim+=dt*8; return true; }
+// след летене през стени героят може да е в стена — до най-близкото свободно място
+function chtFree(){ const p=player; if(!p||!rectSolid(p.x,p.y,p.w,p.h)) return; const cx=Math.floor((p.x+p.w/2)/T), cy=Math.floor((p.y+p.h)/T);
+  for(let r=1;r<24;r++) for(let dy=-r;dy<=r;dy++) for(let dx=-r;dx<=r;dx++){ if(Math.max(Math.abs(dx),Math.abs(dy))!==r) continue;
+    const x=(cx+dx)*T+3, y=(cy+dy)*T-p.h; if(x>=0&&x+p.w<=COLS*T&&y>=0&&y+p.h<=ROWS*T&&!rectSolid(x,y,p.w,p.h)){ p.x=x; p.y=y; p.vx=p.vy=0; return; } } }
+// на земята в колона tx (или най-близо до нея) — там е и контролната точка
+function chtTo(tx){ const p=player, ok=c=>c>1&&c<COLS-2&&groundY(c)<16*T&&!rectSolid(c*T+3,groundY(c)-26,10,26);
+  let c=-1; for(let d=0;d<24&&c<0;d++) c=ok(tx+d)?tx+d:ok(tx-d)?tx-d:-1; if(c<0) return;
+  if(p.crouch){ p.crouch=false; p.h=26; } p.x=c*T+3; p.y=groundY(c)-p.h; p.vx=p.vy=0; p.climb=false; p.onLift=null; setCp(c); cam=clamp(p.x-W/2,0,COLS*T-W); }
+const chtArena=()=>{ const a=LVL.arena; return a.door!=null?a.door:a.x0!=null?a.x0:a.minX!=null?a.minX:COLS; };   // входът на арената
+
+/* ---------- режими ---------- */
+defCheat('god',{name:'БЕЗСМЪРТИЕ',desc:'Нищо не те наранява; ямата те връща на контролната точка. Лавината не те стига, спътникът не загива.'});
+defCheat('ammo',{name:'БЕЗКРАЙНИ МУНИЦИИ',desc:'Пълнителят не свършва — без презареждане.',set(v){ if(v&&player) for(const w in player.ammo) if(player.weapons[w]) player.ammo[w].mag=CAP[w]; }});
+defCheat('fly',{name:'ЛЕТЕНЕ',desc:'Без гравитация: стрелките движат във всички посоки, стените спират.',set(){ if(!CHT.on.clip) chtFree(); }});
+defCheat('clip',{name:'ПРЕЗ СТЕНИ',desc:'Летене през стени и врати.',set(){ if(!CHT.on.clip) chtFree(); }});
+defCheat('unl',{name:'ОТКЛЮЧЕНИ НИВА',desc:'Всички епизоди са достъпни; истинският напредък не се пипа.',set(){ gUnl=unlRead(); }});
+defCheat('inv',{name:'НЕВИДИМОСТ',desc:'Враговете (без босовете), камерите и прожекторите не те забелязват.'});
+defCheat('onehit',{name:'ЕДИН УДАР',desc:'Всеки удар убива; босовете поемат десетократна щета.'});
+defCheat('light',{name:'СВЕТЛИНА',desc:'Тъмните нива са осветени.'});
+defCheat('slow',{name:'БАВНО ВРЕМЕ',desc:'Играта върви два пъти по-бавно.'});
+defCheat('secret',{name:'ТАЙНИТЕ ПРОХОДИ',desc:'Скритите проходи се виждат.'});
+defCheat('freeze',{name:'ЗАМРАЗЕНИ ВРАГОВЕ',desc:'Враговете, босовете и изстрелите им стоят на място.'});
+defCheat('traps',{name:'БЕЗ КАПАНИ',desc:'Лазерите, пресите, парата, токът по пода и влаковете спират.'});
+defCheat('start',{kind:'num',name:'НАЧАЛЕН СЕКТОР',desc:'Оцеляване: новата игра започва от този сектор (← → или Z).',min:1,max:99});
+/* ---------- действия (само по време на игра) ---------- */
+defCheat('end',{kind:'act',name:'КРАЙ НА НИВОТО',desc:'Нивото свършва веднага, като на изхода; в оцеляването — следващият сектор.',run(){ state='play'; completeLevel(); }});
+defCheat('boss',{kind:'act',name:'КЪМ БОСА',desc:'Пред входа на арената — влез и битката започва.',ok:()=>!!LVL.arena&&!bossActive&&!(boss&&boss.dead)&&player.x<chtArena()*T,run(){ chtTo(chtArena()-3); }});
+defCheat('fwd',{kind:'act',name:'НАПРЕД С ЕДИН ЕКРАН',desc:'Около 30 колони напред, на земята; там е и контролната точка.',ok:()=>!bossActive,run(){ chtTo(Math.min(COLS-3,Math.floor(player.x/T)+30)); }});
+defCheat('heal',{kind:'act',name:'ПЪЛНО ЗДРАВЕ И БРОНЯ',desc:'Здраве и броня — по 100.',run(){ player.hp=100; player.armor=100; }});
+defCheat('arms',{kind:'act',name:'ВСИЧКИ ОРЪЖИЯ',desc:'Всички оръжия с пълни муниции.',run(){ const p=player; for(const w of ORDER){ p.weapons[w]=true; if(p.ammo[w]){ p.ammo[w].mag=CAP[w]; p.ammo[w].res=RES_MAX[w]; } } }});
+defCheat('kill',{kind:'act',name:'УБИЙ ВРАГОВЕТЕ',desc:'Всички врагове в нивото, без боса.',run(){ for(const e of enemies) if(!e.dead){ hurtEnemy(e,e.hp+999,0); if(!e.dead){ e.hp=0; e.dead=true; e.deadT=0; stats.kills++; } } }});
+defCheat('life',{kind:'act',name:'+1 ЖИВОТ',desc:'Оцеляване: още един живот.',ok:()=>SURV,run(){ survLives++; }});
+
+/* ---------- екранът „ЧИЙТОВЕ“ (от менюто — режимите; от паузата — и действията) ---------- */
+function chtRows(){ const R=[{h:'РЕЖИМИ'}]; for(const c of CHT_LIST) if(c.kind!=='act') R.push(c);
+  if(CHT.from==='paused'){ R.push({h:'ДЕЙСТВИЯ'}); for(const c of CHT_LIST) if(c.kind==='act'&&(!c.ok||c.ok())) R.push(c); }
+  return R; }
+function chtOpen(from){ CHT.from=from; CHT.sel=1; CHT.top=0; state='cheats'; }
+function chtBack(){ state=CHT.from; if(state==='gmenu') gSel=Math.max(0,menuItems().indexOf(CHT_ITEM)); }
+function chtInput(){
+  const R=chtRows(), n=R.length; let s=Math.min(CHT.sel,n-1); if(R[s].h) s=1;
+  const step=d=>{ do s=(s+d+n)%n; while(R[s].h); SFX.menu(); };
+  if(pressed.up) step(-1); if(pressed.down) step(1); CHT.sel=s;
+  if(pressed.esc||pressed.jump){ SFX.menu(); chtBack(); return; }
+  const c=R[s];
+  if(c.kind==='num'){ const d0=(pressed.right?1:0)-(pressed.left?1:0), d=(keys.right?1:0)-(keys.left?1:0);   // задържането превърта
+    if(d0){ CHT.rep=titleT+0.4; chtSet(c.id,chtVal(c)+d0); SFX.menu(); } else if(d&&titleT>CHT.rep){ CHT.rep=titleT+0.06; chtSet(c.id,chtVal(c)+d); } }
+  if(!ok()) return; SFX.menuOk();
+  if(c.kind==='mode') chtSet(c.id,!CHT.on[c.id]);
+  else if(c.kind==='num') chtSet(c.id,chtVal(c)>=c.max?c.min:chtVal(c)+1);
+  else { state='play'; if(AC) AC.resume(); if(chtDo(c.id)&&state==='play') showMsg('Чийт: '+c.name.toLowerCase(),1.6); }
+}
+function chtRender(){
+  const R=chtRows(), A=ACC(), f='600 8px "IBM Plex Mono",monospace', vis=13, gap=12, y0=64;
+  overlay(0.84); centerText('ЧИЙТОВЕ',34,'16px '+DFONT(),A);
+  centerText(CHT.used?'Тук има чийтове — нищо не се записва':'Ниво с чийтове не се записва — нито напредък, нито рекорд',47,'600 7px "IBM Plex Mono",monospace',CHT.used?'#ff8a5a':'#7f8e97');
+  CHT.top=clamp(CHT.top,Math.max(0,CHT.sel-vis+1),Math.max(0,CHT.sel-1));
+  ctx.font=f;
+  for(let i=CHT.top;i<Math.min(R.length,CHT.top+vis);i++){ const r=R[i], y=y0+(i-CHT.top)*gap, on=i===CHT.sel;
+    ctx.textAlign='left'; if(r.h){ ctx.fillStyle='#5f6e77'; ctx.fillText(r.h,W/2-130,y); continue; }
+    if(on){ ctx.fillStyle=ACCA(0.12); ctx.fillRect(W/2-132,y-9,264,12); ctx.fillStyle=A; ctx.fillRect(W/2-132,y-9,2,12); }
+    ctx.fillStyle=on?A:'#b9c4ca'; ctx.fillText(r.name,W/2-122,y);
+    const set=r.kind==='mode'?!!CHT.on[r.id]:r.kind==='num'&&chtVal(r)>r.min;
+    ctx.textAlign='right'; ctx.fillStyle=set?'#94ff57':on?A:'#7f8e97'; ctx.fillText(r.kind==='act'?'▶':r.kind==='num'?'◀ '+chtVal(r)+' ▶':set?'ВКЛ':'изкл',W/2+126,y); }
+  ctx.textAlign='left';
+  if(CHT.top>0) centerText('▲',y0-11,f,'#5f6e77'); if(CHT.top+vis<R.length) centerText('▼',y0+vis*gap-3,f,'#5f6e77');
+  const c=R[CHT.sel]; if(c&&!c.h) centerText(c.desc,226,'600 7px "IBM Plex Mono",monospace','#cfd8dc');
+  centerText('↑ ↓ избор · Z вкл./изкл. или изпълни · Esc / X назад',250,'600 7px "IBM Plex Mono",monospace','#7f8e97');
+}
 
 /* ================= ИГРА: r1 ================= */
 {
@@ -5702,11 +5815,12 @@ function frame(now){
   else if(state==='play'){
     if(pressed.pause||pressed.esc){ state='paused'; if(AC) AC.suspend(); clearPressed(); }
     else if(LVL.training&&TRN&&pressed.enter){ if(TRN.skip>0){ clearPressed(); SFX.menuOk(); finishTraining(); } else { TRN.skip=2.5; clearPressed(); } }
-    else { acc+=dt; let n=0; while(acc>=1/60&&n<4&&state==='play'){ update(1/60); clearPressed(); acc-=1/60; n++; } if(n===4) acc=0; }
+    else { acc+=chtOn('slow')?dt/2:dt; let n=0; while(acc>=1/60&&n<4&&state==='play'){ update(1/60); clearPressed(); acc-=1/60; n++; } if(n===4) acc=0; }
   }
   else if(state==='dead'&&pressed.esc){ clearPressed(); toTitle(); }
   else if(state==='dead'){ deadT+=dt; acc+=dt; while(acc>=1/60){ update(1/60); acc-=1/60; } if(deadT>1&&ok()){ if(SURV){ survLives--; if(survLives<=0) endSurv(); else respawn(); } else respawn(); } clearPressed(); }
-  else if(state==='paused'){ if(pressed.esc||pressed.crouch){ clearPressed(); toTitle(); } else if(pressed.pause||ok()){ state='play'; if(AC) AC.resume(); } clearPressed(); }
+  else if(state==='paused'){ if(pressed.esc||pressed.crouch){ clearPressed(); toTitle(); } else if(pressed.pause||ok()){ state='play'; if(AC) AC.resume(); } else if(pressed.down&&CHT.open) chtOpen('paused'); clearPressed(); }
+  else if(state==='cheats'){ chtInput(); clearPressed(); }
   else if(state==='levelEnd'&&pressed.esc){ clearPressed(); toTitle(); }
   else if(state==='levelEnd'){ endT+=dt; acc+=dt; while(acc>=1/60){ for(const q of particles) q.life-=1/60; acc-=1/60; }
     if(ok()){ if((endT-0.5)*45<parasLen(LVL.end)) endT=0.5+parasLen(LVL.end)/45; else if(endT>1.2){ SFX.menuOk(); if(LVL.training) finishTraining(); else if(SURV) startSurv(survK+1,true); else if(!epFinal(LI)) startEpisode(LI+1,true); else { state='win'; winT=0; } } }
@@ -5719,7 +5833,7 @@ function frame(now){
 loadLevel(0); totals={time:0,shots:0,hits:0,kills:0,deaths:0};
 if(document.fonts&&document.fonts.load){ Promise.all([document.fonts.load('10px "Russo One"'),document.fonts.load('600 10px "IBM Plex Mono"')]).then(()=>{ prerender(); }).catch(()=>{}); }
 document.addEventListener('visibilitychange',()=>{ if(document.hidden&&state==='play'){ state='paused'; if(AC) AC.suspend(); } });
-window.__rz={get GAME(){return GAME},GAMES,GHIST,setGame,enterGame,toMenu,menuItems,get gSel(){return gSel},hurtEnemy,get ECHO(){return ECHO},get PLATES(){return PLATES},get LIGHTS(){return LIGHTS},get TERMS(){return TERMS},get ALARM(){return ALARM},get NOISE(){return NOISE},get MST(){return MST},get FLOOD(){return FLOOD},get ESC(){return ESC},get CHASE(){return CHASE},get ERA(){return ERA},get FLIP(){return FLIP},get GENS(){return GENS},get LEVERS(){return LEVERS},get SHIFT(){return SHIFT},get ALLIES(){return ALLIES},switchEra,flipWorld,isWater,get pickups(){return pickups},get scientists(){return scientists},get barks(){return barks},solidAt,startBoss,respawn,get cp(){return cp},hurtBoss,get musOn(){return musOn},get AC(){return AC},get musBus(){return musBus},get sfxBus(){return sfxBus},get sfxOn(){return sfxOn},toggleMute,toggleMus,toggleSfx,svLoad,svSave,svClear,svEnter,svItems,get svSel(){return svSel},get svConf(){return svConf},get DI(){return DI},get survLives(){return survLives},get survSeed(){return survSeed},get keys(){return keys},get pressed(){return pressed},frame,get levels(){return GLV},get unl(){return gUnl},resetClock(){titleT=0;acc=0;},svValidate,elecOn,finishTraining,get TRN(){return TRN},get msg(){return msg},get grav(){return G},completeLevel,get bmiss(){return bmiss},get LI(){return LI},startSurv,genLevel,svPlan,get survK(){return survK},get survScore(){return survScore},set survSeed(v){survSeed=v},get LVL(){return LVL},get lifts(){return lifts},get tracks(){return tracks},get trains(){return trains},get gateOpen(){return gateOpen},get rockets(){return rockets},clearPressed,loadLevel,get map(){return map},get LV(){return LV},get player(){return player},get state(){return state},set state(v){state=v},get boss(){return boss},get enemies(){return enemies},get exitPortal(){return exitPortal},get enc(){return enc},update,setDiff(i){DI=i;D=DIFFS[i];},startEpisode,get cam(){return cam},set cam(v){cam=v},render,groundY};
+window.__rz={get GAME(){return GAME},GAMES,GHIST,setGame,enterGame,toMenu,menuItems,get gSel(){return gSel},hurtEnemy,get ECHO(){return ECHO},get PLATES(){return PLATES},get LIGHTS(){return LIGHTS},get TERMS(){return TERMS},get ALARM(){return ALARM},get NOISE(){return NOISE},get MST(){return MST},get FLOOD(){return FLOOD},get ESC(){return ESC},get CHASE(){return CHASE},get ERA(){return ERA},get FLIP(){return FLIP},get GENS(){return GENS},get LEVERS(){return LEVERS},get SHIFT(){return SHIFT},get ALLIES(){return ALLIES},switchEra,flipWorld,isWater,get pickups(){return pickups},get scientists(){return scientists},get barks(){return barks},solidAt,startBoss,respawn,get cp(){return cp},hurtBoss,get musOn(){return musOn},get AC(){return AC},get musBus(){return musBus},get sfxBus(){return sfxBus},get sfxOn(){return sfxOn},toggleMute,toggleMus,toggleSfx,svLoad,svSave,svClear,svEnter,svItems,get svSel(){return svSel},get svConf(){return svConf},get DI(){return DI},get survLives(){return survLives},get survSeed(){return survSeed},get keys(){return keys},get pressed(){return pressed},frame,get levels(){return GLV},get unl(){return gUnl},resetClock(){titleT=0;acc=0;},svValidate,elecOn,CHT,chtSet,chtDo,chtUnlock,hurtPlayer,finishTraining,get TRN(){return TRN},get msg(){return msg},get grav(){return G},completeLevel,get bmiss(){return bmiss},get LI(){return LI},startSurv,genLevel,svPlan,get survK(){return survK},get survScore(){return survScore},set survSeed(v){survSeed=v},get LVL(){return LVL},get lifts(){return lifts},get tracks(){return tracks},get trains(){return trains},get gateOpen(){return gateOpen},get rockets(){return rockets},clearPressed,loadLevel,get map(){return map},get LV(){return LV},get player(){return player},get state(){return state},set state(v){state=v},get boss(){return boss},get enemies(){return enemies},get exitPortal(){return exitPortal},get enc(){return enc},update,setDiff(i){DI=i;D=DIFFS[i];},startEpisode,get cam(){return cam},set cam(v){cam=v},render,groundY};
 for(const g of GAMES) if(g.debug) Object.defineProperties(window.__rz,Object.getOwnPropertyDescriptors(g.debug));
 requestAnimationFrame(frame);
 })();

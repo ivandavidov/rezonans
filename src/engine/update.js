@@ -18,21 +18,23 @@ function update(dt){
     if(Math.abs(e.x-ccx)>440) continue;
     e.hitT-=dt; e.flashT=(e.flashT||0)-dt;
     if(e.stunT>0){ e.stunT-=dt; continue; }
-    FOES[e.type].upd(e,edt);
+    if(chtOn('freeze')) continue;
+    if(chtOn('inv')){ const qx=p.x, qy=p.y; e.alert=false; p.x=p.y=-1e5; FOES[e.type].upd(e,edt); p.x=qx; p.y=qy; }   // чийт: невидимост — врагът не те вижда
+    else FOES[e.type].upd(e,edt);
     if(!e.dead&&ACID_DIE[e.type]&&rectHas(e.x,e.y+e.h-6,e.w,6,'~')){ hurtEnemy(e,e.hp+1,0,true); for(let i=0;i<10;i++) part(e.x+rnd(e.w),e.y+e.h-4,rnd(-30,30),rnd(-90,-30),rnd(0.3,0.6),'#9dff6a',2,200); }
     if(!FOES[e.type].fixed&&!FOES[e.type].fly&&e.onGround&&elecOn()&&onTile(e,'Z')){ e.elecT-=dt; if(e.elecT<=0){ e.elecT=0.25; hurtEnemy(e,10,0,true); sparks(e.x+e.w/2,e.y+e.h,3,'#bfe8ff'); } }
     if(e.y>ROWS*T+40){ e.dead=true; e.deadT=99; }
     if(e.alert&&Math.abs(e.x-p.x)<380) threat=true;
   }
   for(const s of scientists) updScientist(s,dt);
-  if(boss) BOSSES[boss.type].upd(edt);
-  if(bmiss.length) updMissiles(dt);
+  if(boss&&!(chtOn('freeze')&&!boss.dead)) BOSSES[boss.type].upd(edt);
+  if(bmiss.length&&!chtOn('freeze')) updMissiles(dt);
   combatHold=threat?4:combatHold-dt;
   mInt=bossActive&&boss&&!boss.dead?2:combatHold>0?1:0;
   // electricity sound
   const eo=elecOn(); if(eo&&!elecWas&&zTiles.some(([tx])=>Math.abs(tx*T-p.x)<300)) SFX.elec(); elecWas=eo;
   for(const b of barrels) if(!b.dead&&b.fuse>=0){ b.fuse-=dt; if(b.fuse<0){ b.dead=true; explode(b.x+6,b.y+8,74,90); } }
-  for(const b of ebullets){
+  for(const b of chtOn('freeze')?[]:ebullets){
     if(b.grav) b.vy+=G*edt;
     if(b.hornet&&!p.dead){ const sp=Math.hypot(b.vx,b.vy), cur=Math.atan2(b.vy,b.vx), tg=Math.atan2(p.y+p.h/2-b.y,p.x+p.w/2-b.x), turn=(DI===0?0.9:DI===2?2.2:1.5)*dt, na=cur+clamp(angDiff(tg,cur),-turn,turn); b.vx=Math.cos(na)*sp; b.vy=Math.sin(na)*sp; }
     b.x+=b.vx*edt; b.y+=b.vy*edt; b.life-=edt;
@@ -44,7 +46,7 @@ function update(dt){
     const ny=g.y+g.vy*dt; if(g.impact&&solidAt(g.x,ny)){ g.t=0; g.y=ny-4; } else if(solidAt(g.x,ny)){ if(Math.abs(g.vy)>60) sfxAt('bounce',g); g.vy*=-0.4; g.vx*=0.7; } else g.y=ny;
     g.t-=dt; if(g.y>ROWS*T+40) g.t=-1; else if(g.t<=0) explode(g.x,g.y,g.impact?56:66,g.impact?55:g.own?100:70,1,!!g.impact||!!g.bossG); }
   grenades=grenades.filter(g=>g.t>0);
-  for(const o of orbs){ o.x+=o.vx*edt; o.life-=edt; if(Math.random()<0.7) part(o.x,o.y+rnd(-4,4),-o.vx*0.1,rnd(-40,-10),0.35,'#9dff5a',1.5,0);
+  for(const o of chtOn('freeze')?[]:orbs){ o.x+=o.vx*edt; o.life-=edt; if(Math.random()<0.7) part(o.x,o.y+rnd(-4,4),-o.vx*0.1,rnd(-40,-10),0.35,'#9dff5a',1.5,0);
     if(solidAt(o.x+sgn(o.vx)*o.r,o.y)){ o.life=0; sparks(o.x,o.y,10,'#c8ff9a'); }
     if(!p.dead){ const nx=clamp(o.x,p.x,p.x+p.w), ny=clamp(o.y,p.y,p.y+p.h); if(Math.hypot(nx-o.x,ny-o.y)<o.r){ o.life=0; hurtPlayer(12,sgn(o.vx)*200); p.vy=-160; sparks(o.x,o.y,10,'#c8ff9a'); } } }
   orbs=orbs.filter(o=>o.life>0);

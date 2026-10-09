@@ -231,7 +231,7 @@ function drawLights(){
   if(LVL.fires) for(const [fx,fy] of LVL.fires) L.push([fx,fy-10,80+Math.sin(titleT*13+fx)*8,0.8]);
   if(LVL.sw) L.push([LVL.sw[0]*T+8,LVL.sw[1]*T,40,0.6]);
   mechRun('lights',L);
-  lc.globalCompositeOperation='source-over'; lc.clearRect(0,0,240,136); lc.fillStyle=`rgba(3,5,9,${torch?Math.min(amb,0.7):Math.min(amb*0.65,0.36)})`; lc.fillRect(0,0,240,136);
+  lc.globalCompositeOperation='source-over'; lc.clearRect(0,0,240,136); lc.fillStyle=`rgba(3,5,9,${chtOn('light')?0:torch?Math.min(amb,0.7):Math.min(amb*0.65,0.36)})`; lc.fillRect(0,0,240,136);
   lc.globalCompositeOperation='destination-out';
   for(const [x0,y0,r0,a] of L){ const x=(x0-cam)/2, y=y0/2, r=r0/2; if(x<-r||x>240+r) continue; const g=lc.createRadialGradient(x,y,0,x,y,r); g.addColorStop(0,`rgba(0,0,0,${clamp(a,0,1)})`); g.addColorStop(1,'rgba(0,0,0,0)'); lc.fillStyle=g; lc.fillRect(x-r,y-r,r*2,r*2); }
   if(torch&&!p.dead){ const x=(p.x+p.w/2-cam)/2, y=(p.y+(p.crouch?6:8))/2, ang=p.aimUp?(p.face>0?-0.7:Math.PI+0.7):(p.face>0?0:Math.PI), r=145;
@@ -289,7 +289,7 @@ function renderSurvOver(){
   overlay(0.88); glitchTitle('КРАЙ НА ОЦЕЛЯВАНЕТО',W/2,70,22);
   centerText('Стигна до сектор '+(survK+1)+' на трудност „'+D.name+'“',96,'600 9px "IBM Plex Mono",monospace','#cfd8dc');
   glitchTitle(String(survScore),W/2,140,34); centerText('ТОЧКИ',156,'600 8px "IBM Plex Mono",monospace','#7f8e97');
-  centerText(survNewBest?'НОВ РЕКОРД!':'Рекорд: '+bestTxt(DI),180,'600 10px "IBM Plex Mono",monospace',survNewBest?'#94ff57':'#ffa62b');
+  centerText(CHT.used?'С ЧИЙТОВЕ — НЕ СЕ ЗАПИСВА · рекорд: '+bestTxt(DI):survNewBest?'НОВ РЕКОРД!':'Рекорд: '+bestTxt(DI),180,'600 10px "IBM Plex Mono",monospace',survNewBest?'#94ff57':'#ffa62b');
   if(winT>1.5&&blink()) centerText('Z — главно меню',240,'600 10px "IBM Plex Mono",monospace','#f3e6cf');
 }
 function wrap(text,maxW){ const words=text.split(' '), lines=[]; let line=''; for(const w of words){ const t=line?line+' '+w:w; if(ctx.measureText(t).width>maxW&&line){ lines.push(line); line=w; } else line=t; } if(line) lines.push(line); return lines; }
@@ -316,7 +316,7 @@ function drawHUD(){ if(!GAME.classic) return drawHudStd();
     let ly=y+11; if(who){ ctx.font='600 7px "IBM Plex Mono",monospace'; ctx.fillStyle=wcol; ctx.fillText('◉ '+who,x+10,ly-1); ly+=10; ctx.font='600 9px "IBM Plex Mono",monospace'; }
     ctx.fillStyle='#f3e6cf'; for(const l of lines){ ctx.fillText(l,x+10,ly); ly+=12; }
     ctx.globalAlpha=1; }
-  ctx.font='600 6px "IBM Plex Mono",monospace'; ctx.fillStyle='rgba(200,210,215,0.5)'; ctx.textAlign='right'; ctx.fillText(SURV?('ОЦЕЛЯВАНЕ · СЕКТОР '+(survK+1)+' · '+D.name):LVL.training?('ТРЕНИРОВКА · '+D.name):(chShort(gChOf(LI))+' · ЕП. '+LVL.n+' · '+D.name),472,9); ctx.textAlign='left';
+  ctx.font='600 6px "IBM Plex Mono",monospace'; ctx.fillStyle='rgba(200,210,215,0.5)'; ctx.textAlign='right'; ctx.fillText((SURV?('ОЦЕЛЯВАНЕ · СЕКТОР '+(survK+1)+' · '+D.name):LVL.training?('ТРЕНИРОВКА · '+D.name):(chShort(gChOf(LI))+' · ЕП. '+LVL.n+' · '+D.name))+chtTag(),472,9); ctx.textAlign='left';
   if(SURV){ ctx.font='600 7px "IBM Plex Mono",monospace'; ctx.fillStyle='#ff6a5a'; ctx.fillText('♥'.repeat(Math.max(0,survLives)),8,10); ctx.fillStyle='#ffa62b'; ctx.fillText('ТОЧКИ '+(survScore+stats.kills*10),8+survLives*9+6,10); ctx.font='600 6px "IBM Plex Mono",monospace'; }
   if(muted){ ctx.fillStyle='#7f8e97'; ctx.fillText('БЕЗ ЗВУК (M)',8,SURV?20:9); }
   if(LVL.training&&TRN){ ctx.font='600 6px "IBM Plex Mono",monospace'; ctx.fillStyle=TRN.skip>0?'#ffd36b':'rgba(200,210,215,0.5)'; ctx.fillText(TRN.skip>0?'НАТИСНИ ENTER ОТНОВО, ЗА ДА ПРОПУСНЕШ':'ENTER — ПРОПУСНИ КУРСА',8,muted?19:9); }
@@ -359,6 +359,7 @@ function render(){
   renderWorld();
   if(state==='title'){ renderSplash(); return; }
   if(state==='gmenu'){ renderGMenu(); return; }
+  if(state==='cheats'){ chtRender(); return; }
   if(state==='svmenu'){ renderSvMenu(); return; }
   if(state==='survOver'){ renderSurvOver(); return; }
   if(state==='diff'){
@@ -397,7 +398,8 @@ function render(){
   if(state==='dead'){ overlay(Math.min(0.7,deadT*0.8)); ctx.fillStyle=`rgba(120,0,0,${Math.min(0.25,deadT*0.3)})`; ctx.fillRect(0,0,W,H);
     centerText('ЗАГИНА',122,'30px '+DFONT(),'#ff5a45');
     if(deadT>1) centerText(SURV?(survLives>1?'Z — продължи ('+(survLives-1===1?'остава 1 живот':'остават '+(survLives-1)+' живота')+')':'Z — край на оцеляването'):'Z — опитай отново от последната контролна точка',148,'600 10px "IBM Plex Mono",monospace','#f3e6cf'); }
-  if(state==='paused'){ overlay(0.6); centerText('ПАУЗА',124,'28px '+DFONT(),ACC()); centerText('Z или P — продължи · Esc — изход в менюто',148,'600 9px "IBM Plex Mono",monospace','#cfd8dc'); audPauseLine(); }
+  if(state==='paused'){ overlay(0.6); centerText('ПАУЗА',124,'28px '+DFONT(),ACC()); centerText('Z или P — продължи · Esc — изход в менюто',148,'600 9px "IBM Plex Mono",monospace','#cfd8dc'); audPauseLine();
+    if(CHT.open) centerText('↓ — чийтове',182,'600 8px "IBM Plex Mono",monospace',ACC()); }
   if(state==='levelEnd'&&SURV){ overlay(Math.min(0.85,endT*0.8)); if(endT>0.5){ centerText((LVL.isBoss?'БОСЪТ Е ПОВАЛЕН · ':'')+'СЕКТОР '+(survK+1)+' ПРЕМИНАТ',60,'600 9px "IBM Plex Mono",monospace','#94ff57'); glitchTitle('ТОЧКИ '+survScore,W/2,100,26); drawStats(stats,150);
       centerText('Следва: сектор '+(survK+2)+' · '+THEME_NAME[svPlan(survK+1).theme]+(svPlan(survK+1).boss?' · БОС':''),204,'600 8px "IBM Plex Mono",monospace','#cfd8dc');
       if(endT>1.2&&blink()) centerText('Z — напред',240,'600 10px "IBM Plex Mono",monospace','#f3e6cf'); } }
@@ -405,6 +407,7 @@ function render(){
     if(endT>0.5){ centerText((LVL.training?'ТРЕНИРОВКАТА Е ЗАВЪРШЕНА':LI===GCH[gChOf(LI)].b?(GCH[gChOf(LI)].done||chName(gChOf(LI))+' ЗАВЪРШЕНА'):'ЕПИЗОД '+LVL.n+' ПРЕМИНАТ'),46,'600 9px "IBM Plex Mono",monospace','#94ff57'); glitchTitle(LVL.title,W/2,74,24);
       const y=drawParagraphs(LVL.end,104,(endT-0.5)*45); drawStats(stats,Math.max(y+8,200));
       if(endT>1.2&&(endT-0.5)*45>=parasLen(LVL.end)&&blink()) centerText(LVL.training?(TRN&&TRN.fromMenu?'Z — към менюто':(LVL.hdrN||'Z — към Сектор 7')):!epFinal(LI)?'Z — към следващия епизод':'Z — продължи',262,'600 9px "IBM Plex Mono",monospace','#f3e6cf'); } }
+  if(state==='levelEnd'&&CHT.used&&endT>0.5) centerText('С ЧИЙТОВЕ — НЕ СЕ ЗАПИСВА',24,'600 7px "IBM Plex Mono",monospace','#ff8a5a');
   if(state==='win') GAME.renderWin();
 }
 

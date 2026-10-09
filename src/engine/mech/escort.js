@@ -23,7 +23,7 @@ function updEscort(s,dt){
   for(const e of enemies){ if(e.dead||e.type==='target'||e.type==='crab') continue; if(ov(e,s)){ e.escBite=(e.escBite||0)-dt; if(e.escBite<=0){ e.escBite=0.9; escHurt(8); } } }
   if(s.bt<=0&&!want&&LVL.escort.lines){ s.bt=rnd(9,15); bark(s,LVL.escort.lines[Math.floor(rnd(LVL.escort.lines.length))],2.6); }
 }
-function escHurt(d){ const s=ESC; if(!s||s.state==='dead'||player.dead) return; s.hp-=d*[0.45,1,1.35][DI]; s.hurtT=0.15; if(s.hp<=0){ s.hp=0; s.state='dead'; blood(s.x+5,s.y+8,false,16); showMsg(LVL.escort.name+' загина! Опитай отново.',3); die(); } }
+function escHurt(d){ const s=ESC; if(!s||s.state==='dead'||player.dead||chtOn('god')) return; s.hp-=d*[0.45,1,1.35][DI]; s.hurtT=0.15; if(s.hp<=0){ s.hp=0; s.state='dead'; blood(s.x+5,s.y+8,false,16); showMsg(LVL.escort.name+' загина! Опитай отново.',3); die(); } }
 function drawEscort(s){
   begin(s); if(s.hurtT>0) tint='#ffffff';
   if(s.state==='dead'){ ctx.rotate(-Math.PI/2); }

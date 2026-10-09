@@ -9,7 +9,7 @@ function startBoss(){
   SFX.alarm(3); sfxAt(bossSfx(boss.type),boss); bossMusic=true;
   showMsg(BOSSES[a.type].intro,4.5);
 }
-function hurtBoss(d,blast){ BOSSES[boss.type].hurt(d,blast); }
+function hurtBoss(d,blast){ BOSSES[boss.type].hurt(chtOn('onehit')?d*10:d,blast); }
 function bossDie(){ const b=boss; b.hp=0; b.dead=true; b.deathT=0; b.vx=0; b.vy=0; stats.kills++; sfxAt(BOSSES[b.type].dieSfx||(b.mech?'boom':'roar'),b); for(const e of enemies) if(e.summoned&&!e.dead) hurtEnemy(e,999,0); }
 function bossDeathFx(b,dt){
   b.deathT+=dt; b.boomT-=dt;

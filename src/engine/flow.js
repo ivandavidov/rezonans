@@ -4,7 +4,7 @@ function completeLevel(){
   state='levelEnd'; endT=0; mInt=0; bossMusic=false; SFX.win();
   if(SURV){ survScore+=100+stats.kills*10+(LVL.arena?500:0); saveSurv(survScore,survK+1); return; }
   for(const k in totals) totals[k]+=stats[k];
-  if(LI+2>gUnl&&LI<GLV.length-1){ gUnl=LI+2; store.set(KEY('unlocked'),gUnl); }
+  if(!CHT.used&&LI+2>gUnl&&LI<GLV.length-1){ gUnl=LI+2; store.set(KEY('unlocked'),gUnl); }
 }
 function respawn(){
   mechRun('preRespawn'); const p=player; p.x=cp*T+3; p.h=26; p.crouch=false; p.y=groundY(cp)-26; p.vx=p.vy=0; p.hp=100; p.dead=false; p.inv=1.5; p.climb=false; p.hurtAgo=9;

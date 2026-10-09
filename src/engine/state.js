@@ -52,7 +52,7 @@ function loadLevel(i,obj){
   mechRun('load'); if(LVL.onLoad) LVL.onLoad();
 }
 function startEpisode(i,carry){
-  const prev=carry?player:null; SURV=false; bossMul=1; ehpMul=1;
+  const prev=carry?player:null; SURV=false; bossMul=1; ehpMul=1; chtStart(carry);
   loadLevel(i);
   if(prev&&!prev.dead){
     const p=player;

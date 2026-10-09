@@ -5,6 +5,7 @@ function updTrains(dt){
   const p=player;
   for(const tr of tracks){
     const near=p.x>(tr.x0-16)*T&&p.x<(tr.x1+16)*T;
+    if(chtOn('traps')){ tr.warned=false; continue; }   // чийт: влакът не тръгва
     tr.t-=dt;
     if(tr.t<trainWarn()&&!tr.warned&&near){ tr.warned=true; SFX.horn(); }
     if(tr.t<=0){ if(near) trains.push({tr,dir:tr.dir,x:tr.dir>0?tr.x0*T-TL:(tr.x1+1)*T,hitP:false}); tr.t=trainPer()*(tr.fast?0.8:1); tr.warned=false; }

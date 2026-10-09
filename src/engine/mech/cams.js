@@ -19,7 +19,7 @@ defMech('cams',{
   for(const l of LIGHTS){ const mid=(l.a0+l.a1)/2, amp=(l.a1-l.a0)/2; l.a=mid+amp*Math.sin(lvT*l.spd+l.ph);
     const lx=l.x*T+8, ly=l.y*T+8, cx=p.x+p.w/2, cy=p.y+p.h/2, d=Math.hypot(cx-lx,cy-ly), ang=Math.atan2(cy-ly,cx-lx), half=l.cam?0.17:0.22;
     let diff=Math.abs(((ang-l.a+Math.PI*3)%(Math.PI*2))-Math.PI);
-    const seen=!p.dead&&d<l.len*T&&diff<half&&los(lx,ly,cx,cy);
+    const seen=!p.dead&&!chtOn('inv')&&d<l.len*T&&diff<half&&los(lx,ly,cx,cy);
     if(seen){ l.seen+=dt; if(l.seen>0.32) mechAlarm(l); } else l.seen=Math.max(0,l.seen-dt*0.8); }
   if(ALARM>0){ ALARM-=dt; if(Math.random()<dt*1.5&&AC) osc({type:'square',f:Math.floor(lvT*2)%2?660:520,t:0.25,v:0.05}); }
   },

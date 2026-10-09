@@ -98,7 +98,7 @@ function svValidate(g,cols,sky,lowg,lifts,startX,exitX,o={}){
 /* ---------- генераторът: общият (engine/survival.js · svGen) ---------- */
 function genLevel(k){ return svGen(k); }
 function startSurv(k,carry){
-  const sv=carry&&carry!==true?carry:null; if(sv) carry=false; const prev=carry?player:null;
+  const sv=carry&&carry!==true?carry:null; if(sv) carry=false; const prev=carry?player:null; chtStart(carry);
   SURV=true; survK=k; bossMul=0.75+0.2*Math.floor(k/5); ehpMul=1+0.03*k;
   if(!carry){ survScore=0; survLives=[3,2,1][DI]; survSeed=(Date.now()%90000)+10000; survNewBest=false; survStartBest=survBest(); if(sv){ survSeed=sv.seed; survScore=sv.score|0; } }
   loadLevel(-1,genLevel(k)); if(LVL.arena) bossMul*=bossNorm(LVL.arena.type); if(LVL.arena&&(GAME.bossMulOne||[]).includes(LVL.arena.type)) bossMul=1;
@@ -112,6 +112,6 @@ function startSurv(k,carry){
 }
 function endSurv(){
   survScore+=stats.kills*10; saveSurv(survScore,survK+1);
-  survNewBest=survScore>survStartBest; survBestShown=survBest(); state='survOver'; winT=0; mInt=0; bossMusic=false;
+  survNewBest=!CHT.used&&survScore>survStartBest; survBestShown=survBest(); state='survOver'; winT=0; mInt=0; bossMusic=false;
 }
 

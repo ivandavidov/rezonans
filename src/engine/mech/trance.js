@@ -93,7 +93,7 @@ function tranceDrawWorld(){
   for(const s of SLEEPERS) drawSleeper(s);
   // скрити стени
   const c0=Math.max(0,Math.floor(cam/T)), c1=Math.min(COLS-1,c0+31);
-  for(let tx=c0;tx<=c1;tx++) for(let ty=0;ty<ROWS;ty++){ if(map[ty][tx]!=='h') continue; const P=TP(tx), x=tx*T-cam, y=ty*T, rv=HREV[tx+','+ty];
+  for(let tx=c0;tx<=c1;tx++) for(let ty=0;ty<ROWS;ty++){ if(map[ty][tx]!=='h') continue; const P=TP(tx), x=tx*T-cam, y=ty*T, rv=HREV[tx+','+ty]||(chtOn('secret')?-9:0);
     const a=rv?Math.max(0.18,1-(lvT-rv)*1.5):1; ctx.globalAlpha=a; ctx.fillStyle=P.s||'#5a5a5a'; ctx.fillRect(x,y,T,T); ctx.fillStyle=P.sd||'#333'; ctx.fillRect(x,y+15,T,1); ctx.fillRect(x+15,y,1,T); ctx.fillStyle=P.sh||'#888'; ctx.fillRect(x,y,T,1); ctx.globalAlpha=1;
     if(rv){ ctx.strokeStyle='rgba(140,220,255,0.6)'; ctx.setLineDash([2,2]); ctx.strokeRect(x+0.5,y+0.5,T-1,T-1); ctx.setLineDash([]); } }
   // ракети

@@ -1,14 +1,14 @@
 /* ================= PLAYER ================= */
 const ladderAt=(x,y)=>tileP(x,y)==='H';
 function onOneWay(e){ const ty=Math.floor((e.y+e.h+1)/T); for(let tx=Math.floor(e.x/T);tx<=Math.floor((e.x+e.w-0.01)/T);tx++){ const c=tileAt(tx,ty); if(c==='-'||c==='H') return true; } return false; }
-const elecOn=()=>{ const cyc=DI===0?3.8:DI===2?3.0:3.4, on=DI===0?1.0:DI===2?1.6:1.3; return (lvT%cyc)<on; };
+const elecOn=()=>{ if(chtOn('traps')) return false; const cyc=DI===0?3.8:DI===2?3.0:3.4, on=DI===0?1.0:DI===2?1.6:1.3; return (lvT%cyc)<on; };
 const elecWarn=()=>{ const cyc=DI===0?3.8:DI===2?3.0:3.4; return (lvT%cyc)>cyc-0.6; };
 function updPlayer(dt){
   const p=player;
   p.cool-=dt; p.flashT-=dt; p.swingT-=dt; p.inv-=dt; p.hurtT-=dt; p.hurtAgo+=dt;
   if(p.dead){ p.deadT+=dt; p.vx*=0.9; p.vy=Math.min(p.vy+G*dt,520); moveX(p,p.vx*dt); moveY(p,p.vy*dt); return; }
   if(p.y>ROWS*T+30){
-    SFX.fall(); p.hp-=D.fall; dmgFlash=0.6; p.hurtAgo=0;
+    SFX.fall(); if(!chtOn('god')) p.hp-=D.fall; dmgFlash=0.6; p.hurtAgo=0;
     if(p.hp<=0) die();
     else { p.x=cp*T+3; if(p.crouch){ p.crouch=false; p.h=26; } p.y=groundY(cp)-p.h; p.vx=p.vy=0; p.inv=1.2; p.climb=false; }
     return;
@@ -23,7 +23,8 @@ function updPlayer(dt){
   const inSlime=rectHas(p.x,p.y+p.h-6,p.w,6,'~');
   const cx=p.x+p.w/2, bot=p.y+p.h;
   if(!p.climb&&!p.crouch&&((U&&ladderAt(cx,bot-2))||(Dn&&ladderAt(cx,bot+3)&&p.onGround))){ p.climb=true; p.x=Math.floor(cx/T)*T+T/2-p.w/2; p.vx=0; p.vy=0; }
-  if(mechMove(p,dt,dir,U,Dn)){}
+  if(chtFly(p,dt,dir,U,Dn)){}
+  else if(mechMove(p,dt,dir,U,Dn)){}
   else if(p.climb){
     p.aimUp=false; p.vy=U?-90:Dn?90:0; p.vx=0; p.dropThrough=Dn?0.1:0;
     const ltx=Math.floor((p.x+p.w/2)/T); let tty=Math.floor((p.y+p.h-1)/T); while(tty>0&&tileAt(ltx,tty-1)==='H') tty--; const topY=tty*T;

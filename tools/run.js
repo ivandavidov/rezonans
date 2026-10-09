@@ -7,12 +7,14 @@
      node tools/run.js <файл.html> storage                        договорът на записите (localStorage): четене и писане по ключове
      node tools/run.js <файл.html> stand ['{"seeds":2}']          опора: декорът „на земята“, огньовете, отдушниците, неподвижните
                                                                   врагове и бъчвите не висят във въздуха (кампаниите и секторите)
+     node tools/run.js <файл.html> cheats                         чийтовете: отключване, действието им, нищо не се записва; всички
+                                                                  режими и действия във всяка част — без грешки
 
    Пример:  node tools/run.js docs/index.html baseline '{"game":"r1"}' */
 'use strict';
 const fs = require('fs'), vm = require('vm'), path = require('path');
 const [file, cmd = 'suite', optsJson] = process.argv.slice(2);
-if (!file) { console.error('употреба: node tools/run.js <файл.html> <проверка|suite|storage|stand> [опции като JSON]'); process.exit(2); }
+if (!file) { console.error('употреба: node tools/run.js <файл.html> <проверка|suite|storage|stand|cheats> [опции като JSON]'); process.exit(2); }
 const m = fs.readFileSync(file, 'utf8').match(/<script>([\s\S]*)<\/script>/);
 if (!m) { console.error('няма <script> в ' + file); process.exit(2); }
 const GAME_JS = m[1], CHECKS_JS = fs.readFileSync(path.join(__dirname, 'checks.js'), 'utf8');
@@ -23,15 +25,15 @@ function makeStorage(init) { const d = new Map(Object.entries(init || {}));
 // пуска играта в нов контекст: всичко, което не е логика (канва, звук, шрифтове), е празен заместител
 function boot(ls, o = {}) {   // o.js — друг изходен код (обвитият за „опора“), o.rec — канвите записват какво се рисува
   const stub = new Proxy(function () {}, { get: (t, k) => k === Symbol.toPrimitive ? () => 0 : k === 'then' ? undefined : stub, apply: () => stub, construct: () => stub, set: () => true });
-  const storage = makeStorage(ls);
+  const storage = makeStorage(ls), LS = {};
   const document = { getElementById: () => stub, createElement: t => o.rec && t === 'canvas' ? recCanvas(ctx) : stub, querySelectorAll: () => [], body: { classList: { toggle() {} } },
     fonts: { load: () => Promise.resolve() }, addEventListener() {}, hidden: false };
   const ctx = { document, localStorage: storage, performance, setTimeout, clearTimeout, setInterval: () => 0, clearInterval() {}, console,
-    requestAnimationFrame: () => 0, addEventListener() {} };
+    requestAnimationFrame: () => 0, addEventListener: (t, f) => (LS[t] = LS[t] || []).push(f) };
   ctx.window = ctx; vm.createContext(ctx);
   vm.runInContext(o.js || GAME_JS, ctx, { filename: path.basename(file) });
   vm.runInContext(CHECKS_JS, ctx, { filename: 'checks.js' });
-  return { ctx, rz: ctx.__rz, storage };
+  return { ctx, rz: ctx.__rz, storage, fire: (t, e) => (LS[t] || []).forEach(f => f(e)) };   // fire — събитие към слушателите на window
 }
 const check = (env, name, opts) => new Promise((res, rej) => {
   const msg = env.ctx.rzChecks.run(name, opts); if (!/^стартирано/.test(msg)) return rej(new Error(msg));
@@ -44,6 +46,7 @@ async function suite() {
     out.push(`baseline ${g} сектори=${r.сектори} отпечатък=${r.отпечатък} терен=${r.терен} население=${r.население} без връщане=${r['без връщане']}`);
     let b = null; try { b = await check(env, 'back', { games: [g] }); } catch (e) {}   // по-стара сборка (без опциите на svValidate) — „—“
     out.push(b ? `back ${g} нива=${b.нива} препятствия=${b.препятствия} без изход в модела=${b['без изход в модела'].length} недостижими предмети=${b['недостижими предмети'].length} платформи=${b['недостижими платформи'].length}` : `back ${g} —`); }
+  const ch = cheats(); out.push(ch.нямa ? 'cheats —' : `cheats ${ch.bad ? 'НЕ' : 'ОК'} ${ch.n - ch.bad}/${ch.n}`);
   const st = stand({ seeds: 2 });   // опора — в свой контекст (обвитият код)
   for (const g of games) out.push(`stand ${g} предмети=${st.части[g].предмети} висящи=${st.части[g].висящи}`);
   const s = await check(boot(), 'smoke', {});   // smoke — в чист контекст
@@ -145,6 +148,53 @@ const CASES = [
     очаквано: { k: 7, game: 'r2' } },
   { име: 'r3/r4: избраните краища', нужни: ['r3', 'r4'], ls: { 'rz3.ending': '2', 'rz4.ending': '3' }, f: rz => ({ r3: rz.ENDING, r4: rz.ENDING4 }), очаквано: { r3: 2, r4: 3 } },
 ];
+/* ---------- чийтовете: отключване, действие, нищо не се записва ---------- */
+const frames = (rz, n, keys = {}) => { for (const k in keys) rz.keys[k] = keys[k]; for (let i = 0; i < n; i++) rz.frame(frames.t += 1000 / 60); for (const k in keys) rz.keys[k] = false; };
+frames.t = 1000;
+const CHEAT_CASES = [
+  { име: 'думата kokoloko отключва реда в менюто', f: (rz, ls, env) => { const n = rz.menuItems().length;
+      for (const c of 'kokoloko') env.fire('keydown', { code: 'Key' + c.toUpperCase(), repeat: false, preventDefault() {} });
+      return { open: rz.CHT.open, state: rz.state, ред: rz.menuItems()[rz.gSel].t, нови: rz.menuItems().length - n }; },
+    очаквано: { open: true, state: 'gmenu', ред: 'ЧИЙТОВЕ', нови: 1 } },
+  { име: 'екранът: от менюто, от паузата (↓) и действие', f: (rz, ls, env) => { const st = []; rz.chtUnlock(); rz.toMenu(rz.menuItems().findIndex(m => m.k === 'cheats'));
+      press(rz, 'fire', frames.t += 20); st.push(rz.state); rz.render(); press(rz, 'fire', frames.t += 20); st.push(!!rz.CHT.on.god); press(rz, 'esc', frames.t += 20); st.push(rz.state);
+      rz.startEpisode(2, false); rz.state = 'paused'; rz.render(); press(rz, 'down', frames.t += 20); st.push(rz.state); rz.render();
+      press(rz, 'esc', frames.t += 20); st.push(rz.state); press(rz, 'down', frames.t += 20); press(rz, 'up', frames.t += 20); press(rz, 'fire', frames.t += 20);   // последният ред — „Убий враговете“
+      st.push(rz.state, rz.enemies.every(e => e.dead)); return st; },
+    очаквано: ['cheats', true, 'gmenu', 'cheats', 'paused', 'play', true] },
+  { име: 'безсмъртие и безкрайни муниции', f: rz => { rz.startEpisode(2, false); rz.state = 'play'; const p = rz.player; p.weapons.pistol = true; p.cur = 'pistol';
+      rz.chtSet('god', 1); rz.chtSet('ammo', 1); rz.hurtPlayer(60); const hp = p.hp; p.y = 17 * 16 + 40; frames(rz, 2); const fall = p.hp;
+      const m = p.ammo.pistol.mag; frames(rz, 120, { fire: true }); return { hp, fall, пълнител: p.ammo.pistol.mag === m && m === 17 }; },
+    очаквано: { hp: 100, fall: 100, пълнител: true } },
+  { име: 'край на нивото — без запис на напредъка', ls: { 'rz.unlocked': '2' }, f: (rz, ls) => { rz.startEpisode(2, false); rz.state = 'play'; rz.chtDo('end');
+      return { state: rz.state, key: ls.getItem('rz.unlocked'), unl: rz.unl }; }, очаквано: { state: 'levelEnd', key: '2', unl: 2 } },
+  { име: 'чийт само в менюто не пречи на записа', ls: { 'rz.unlocked': '2' }, f: (rz, ls) => { rz.chtSet('god', 1); rz.chtSet('god', 0); rz.startEpisode(2, false); rz.state = 'play'; rz.completeLevel();
+      return ls.getItem('rz.unlocked'); }, очаквано: '4' },
+  { име: 'отключени нива — записът не се пипа', ls: { 'rz.unlocked': '2' }, f: (rz, ls) => { rz.chtSet('unl', 1); const с = rz.unl; rz.chtSet('unl', 0);
+      return { с, без: rz.unl, key: ls.getItem('rz.unlocked') }; }, очаквано: { с: 25, без: 2, key: '2' } },
+  { име: 'оцеляване — без рекорд и без „продължи“', f: (rz, ls) => { rz.setDiff(1); rz.chtSet('god', 1);
+      rz.startSurv(3, { k: 3, seed: 1, score: 500, w: ['wrench', 'pistol'], a: {}, ar: 0, hp: 100, cur: 'pistol' }); rz.chtSet('god', 0); rz.startSurv(4, true);
+      rz.state = 'paused'; press(rz, 'esc', frames.t += 20); rz.toggleMus(); return { best: ls.getItem('rz.best1'), sv: ls.getItem('rz.svSave1'), звук: ls.getItem('rz.audio') }; },
+    очаквано: { best: null, sv: null, звук: '10' } },
+  { име: 'начален сектор в оцеляването', f: rz => { rz.setDiff(1); rz.chtSet('start', 6); rz.svEnter(); return { survK: rz.survK, used: rz.CHT.used }; }, очаквано: { survK: 5, used: true } },
+  { име: 'всички режими и действия във всяка част — без грешки', f: rz => { const err = [], modes = ['god', 'ammo', 'fly', 'clip', 'inv', 'onehit', 'light', 'slow', 'secret', 'freeze', 'traps', 'unl'];
+      for (const g of rz.GAMES) { rz.enterGame(g.id);
+        for (const i of [1, rz.levels.length - 1]) try { rz.startEpisode(i, false); rz.state = 'play'; for (const m of modes) rz.chtSet(m, 1);
+          frames(rz, 120, { right: true, fire: true, up: true }); rz.render();
+          for (const a of ['heal', 'arms', 'kill', 'fwd', 'boss', 'life', 'end']) { if (rz.state !== 'play') break; rz.chtDo(a); frames(rz, 20, { right: true }); }
+          for (const m of modes) rz.chtSet(m, 0); frames(rz, 10); rz.render();
+        } catch (e) { err.push(g.id + ':' + (i + 1) + ' ' + String(e && e.message || e).slice(0, 90)); }
+        rz.toMenu(2); }
+      return err; }, очаквано: [] },
+];
+function cheats() {
+  const out = []; let bad = 0; if (!boot().rz.chtSet) return { нямa: true, text: 'няма чийтове в сборката', bad: 0, n: 0 };
+  for (const c of CHEAT_CASES) { let got; try { const env = boot(c.ls); got = c.f(env.rz, env.storage, env); } catch (e) { got = 'грешка: ' + String(e && e.stack || e).split('\n')[0]; }
+    const ok = JSON.stringify(got) === JSON.stringify(c.очаквано); if (!ok) bad++;
+    out.push(`${ok ? 'ОК ' : 'НЕ '} ${c.име}` + (ok ? '' : `\n      очаквано: ${JSON.stringify(c.очаквано)}\n      получено: ${JSON.stringify(got)}`)); }
+  out.push(bad ? `${bad} несъответствия` : 'чийтовете работят и нищо не записват');
+  return { text: out.join('\n'), bad, n: CHEAT_CASES.length };
+}
 function storage() {
   const out = []; let bad = 0; const have = boot().rz.GAMES.map(g => g.id);
   for (const c of CASES) {
@@ -161,6 +211,7 @@ function storage() {
   try {
     if (cmd === 'suite') console.log(await suite());
     else if (cmd === 'storage') { const r = storage(); console.log(r.text); process.exitCode = r.bad ? 1 : 0; }
+    else if (cmd === 'cheats') { const r = cheats(); console.log(r.text); process.exitCode = r.bad ? 1 : 0; }
     else if (cmd === 'stand') { const r = stand(optsJson ? JSON.parse(optsJson) : undefined); console.log(r.text); process.exitCode = r.висящи ? 1 : 0; }
     else { const r = await check(boot(), cmd, optsJson ? JSON.parse(optsJson) : undefined); console.log(JSON.stringify(r, null, 1)); }
   } catch (e) { console.error(String(e && e.stack || e)); process.exitCode = 1; }

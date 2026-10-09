@@ -22,14 +22,14 @@ function svItems(){
   const o=svLoad(); return (o?[{t:'ПРОДЪЛЖИ · СЕКТОР '+(o.k+1),k:'cont'}]:[]).concat([{t:'НОВО НАЧАЛО',k:'new'},{t:'ИЗЧИСТИ ПРОГРЕСА',k:'clr'}]);
 }
 /* след избор на трудност: без запис и рекорд — направо в сектор 1 */
-function svEnter(){ if(!svLoad()&&!survBest()) return startSurv(0,false); state='svmenu'; svSel=0; svConf=false; }
+function svEnter(){ if(!svLoad()&&!survBest()) return startSurv(chtSector(),false); state='svmenu'; svSel=0; svConf=false; }
 function svMenuInput(){
   const it=svItems(), n=it.length;
   if(pressed.up){ svSel=(svSel+n-1)%n; SFX.menu(); } if(pressed.down){ svSel=(svSel+1)%n; SFX.menu(); }
   if(pressed.jump||pressed.esc){ SFX.menu(); if(svConf){ svConf=false; svSel=svItems().length-1; } else { state='diff'; menuSel=DI; } return; }
   if(!ok()) return; SFX.menuOk(); const k=it[svSel].k;
   if(k==='cont') startSurv(svLoad().k,svLoad());
-  else if(k==='new') startSurv(0,false);
+  else if(k==='new') startSurv(chtSector(),false);
   else if(k==='clr'){ svConf=true; svSel=0; }
   else if(k==='no'){ svConf=false; svSel=svItems().length-1; }
   else { svClear(); svConf=false; state='diff'; menuSel=DI; }

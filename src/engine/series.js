@@ -30,14 +30,16 @@ function setGame(id){
   const g=gameById(id)||GAMES[0]; GAME=g;
   for(const o of GAMES) document.body.classList.toggle('g-'+o.id,o===g);
   document.body.classList.toggle('has-e',!!g.eBtn);
-  GLV=g.levels; GCH=g.chapters; gUnl=clamp(parseInt(store.get(KEY('unlocked'),'1'),10)||1,1,GLV.length); if(g.unlFix) gUnl=g.unlFix(gUnl);
+  GLV=g.levels; GCH=g.chapters; gUnl=unlRead();
   const ek=document.getElementById('ekey'), eb=document.getElementById('ebtn');
   if(ek){ ek.style.display=g.eKey?'':'none'; ek.innerHTML='<kbd>E</kbd>'+(g.eKey||''); }
   if(eb){ eb.style.display=g.eBtn?'':'none'; eb.innerHTML=g.eBtn||'E'; }
 }
+// отключените епизоди: записът (r1 — и бонус главата); с чийта „Отключени нива“ — всички, без да се пипа записът
+function unlRead(){ let u=clamp(parseInt(store.get(KEY('unlocked'),'1'),10)||1,1,GLV.length); if(GAME.unlFix) u=GAME.unlFix(u); return chtOn('unl')?GLV.length:u; }
 /* ---------- менюто ---------- */
 const MENU_FIX=[{t:'ИНТРО',k:'intro'},{t:'ТРЕНИРОВКА',k:'training'},{t:'КАМПАНИЯ',k:'campaign'},{t:'ОЦЕЛЯВАНЕ',k:'survival'}];
-function menuItems(g=GAME){ return MENU_FIX.concat(GAMES.filter(o=>o!==g).map(o=>({t:o.order<g.order?'◂  '+o.title:o.title+'  ▸',k:'game',id:o.id}))); }
+function menuItems(g=GAME){ return MENU_FIX.concat(CHT.open?[CHT_ITEM]:[],GAMES.filter(o=>o!==g).map(o=>({t:o.order<g.order?'◂  '+o.title:o.title+'  ▸',k:'game',id:o.id}))); }
 function toMenu(sel){ SURV=false; bossMul=1; ehpMul=1; TRN=null; msg=null; loadLevel(0); state='gmenu'; gSel=sel==null?2:sel; mInt=0; bossMusic=false; cam=0;
   setMusic(GAME.menuMusic||LVL.music); if(AC&&AC.state==='suspended') AC.resume(); }
 function enterGame(id,sel){ setGame(id); toMenu(sel); }
@@ -51,15 +53,16 @@ function gmenuInput(){
   if(m.k==='game') followLink(m.id);
   else if(m.k==='intro') GAME.intro(true);
   else if(m.k==='training') GAME.training(true);
+  else if(m.k==='cheats') chtOpen('gmenu');
   else { modeSel=m.k==='survival'?1:0; state='diff'; menuSel=DI; }
 }
 function renderGMenu(){
   const g=GAME, it=menuItems(g), n=it.length;
   g.drawLogo(); ctx.textAlign='left';
-  const y0=n>7?140:146, gap=Math.max(8,Math.min(13,Math.floor((214-y0)/(n-1)))), fs=gap>=11?10:9, split=4;   // всичко се събира над описанието, колкото и части да има
+  const y0=n>7?140:146, gap=Math.max(8,Math.min(13,Math.floor((214-y0)/(n-1)))), fs=gap>=11?10:9, split=it.filter(m=>m.k!=='game').length;   // всичко се събира над описанието, колкото и части да има
   menuList(it.slice(0,split),gSel<split?gSel:-1,y0,gap,fs);
   const y1=y0+split*gap+4; menuList(it.slice(split),gSel-split,y1,gap,fs);
-  const yEnd=y1+(n-split-1)*gap, m=it[gSel], d=m.k==='game'?gameById(m.id).blurb:g.desc[m.k];
+  const yEnd=y1+(n-split-1)*gap, m=it[gSel], d=m.d||(m.k==='game'?gameById(m.id).blurb:g.desc[m.k]);
   centerText(d,yEnd+14,'600 7px "IBM Plex Mono",monospace',g.textCol||'#cfd8dc');
   if(m.k==='survival') centerText('Рекорди: '+DIFFS.map((q,i)=>q.name.toLowerCase()+' '+survBest(i)).join(' · '),yEnd+24,'600 7px "IBM Plex Mono",monospace',g.accent2);
   centerText('↑ ↓ избор · Z потвърди · Esc / X назад',H-19,'600 7px "IBM Plex Mono",monospace',g.dimCol||'#7f8e97');

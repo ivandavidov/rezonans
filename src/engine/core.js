@@ -12,5 +12,5 @@ const ov=(a,b)=>a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
    ефекти), rz.selftest (самопроверките на Mac/Windows). На частта — KEY(име) = GAME.key+'.'+име (r1: rz, после rz2 …): unlocked,
    mem, best/bestK/svSave + трудността (0–2), ending/done (r3–r7 ги пишат с пълното име). build.py спира при ключ извън списъка. */
 const STORE_KEYS=['rz.diff','rz.audio','rz.selftest'], STORE_PART=['unlocked','mem','best','bestK','svSave','ending','done'];
-const store={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:v;}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,String(v));}catch(e){}},del(k){try{localStorage.removeItem(k);}catch(e){}}};
+const store={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:v;}catch(e){return d;}},set(k,v){if(store.lock&&store.lock(k))return;try{localStorage.setItem(k,String(v));}catch(e){}},del(k){try{localStorage.removeItem(k);}catch(e){}}};   // lock — от чийтовете
 

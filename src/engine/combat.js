@@ -1,7 +1,7 @@
 /* ================= COMBAT ================= */
 function die(){ const p=player; p.hp=0; p.dead=true; p.deadT=0; p.crouch=false; stats.deaths++; SFX.beep(); osc({type:'sine',f:1650,t:1.6,v:0.12,when:0.3}); }
 function hurtPlayer(d,kx=0,hazard){
-  const p=player; if(p.dead||state!=='play') return;
+  const p=player; if(p.dead||state!=='play'||chtOn('god')) return;
   if(!hazard){ if(p.inv>0) return; p.inv=0.22; }
   d*=hazard?D.haz:D.dmg;
   const ab=Math.min(p.armor,d*0.6); p.armor-=ab; p.hp-=d-ab; p.vx+=kx; p.hurtT=0.15; p.hurtAgo=0;
@@ -10,7 +10,7 @@ function hurtPlayer(d,kx=0,hazard){
   if(p.hp<=0) die();
 }
 function hurtEnemy(e,d,kx=0,quiet){
-  if(e.dead) return; if(e.fq!=null&&LVL.freq&&e.fq!==FREQ){ e.hitT=0.04; sparks(e.x+e.w/2,e.y+e.h/2,2,'#a8a8b8'); return; } e.hp-=d; e.hitT=0.08; if(e.type!=='turret') e.vx+=kx; e.alert=true;
+  if(e.dead) return; if(e.fq!=null&&LVL.freq&&e.fq!==FREQ){ e.hitT=0.04; sparks(e.x+e.w/2,e.y+e.h/2,2,'#a8a8b8'); return; } e.hp-=chtOn('onehit')?Math.max(d,e.hp+1):d; e.hitT=0.08; if(e.type!=='turret') e.vx+=kx; e.alert=true;
   const cx=e.x+e.w/2, cy=e.y+e.h/2, mech=!!FOES[e.type].mech||!!e.mech, alien=!FOES[e.type].human;
   if(!quiet){ if(mech) sparks(cx,cy,4); else blood(cx,cy,alien,5); }
   if(e.type==='shocker'&&e.state==='charge'&&Math.random()<0.35){ e.state='stagger'; e.t=0.45; }
@@ -59,9 +59,9 @@ function fire(){
     if(hit){ SFX.clang(); shake=Math.max(shake,2); } else if(solidAt(ox+p.face*10,oy)){ SFX.clang(); sparks(ox+p.face*10,oy,4); }
     return;
   }
-  const a=p.ammo[w];
+  const a=p.ammo[w]; if(chtOn('ammo')) a.mag=Math.max(a.mag,1);
   if(a.mag<=0){ if(a.res>0){ startReload(); } else { SFX.empty(); p.cool=0.3; autoSwitch(); } return; }
-  a.mag--;
+  if(!chtOn('ammo')) a.mag--;
   if(w==='grenade'){
     p.cool=0.75; SFX.throwG(); p.swingT=0.2;
     const up=p.aimUp; grenades.push({x:p.x+p.w/2+p.face*6,y:p.y+(p.crouch?2:6),vx:p.face*(up?150:230)+p.vx*0.4,vy:up?-330:-190,t:1.6,own:true});
@@ -94,7 +94,7 @@ function fire(){
 }
 function startReload(){ const p=player, w=p.cur; if(w==='wrench'||w==='grenade'||w==='rocket'||p.reload>0) return; const a=p.ammo[w]; if(a.res<=0||a.mag>=CAP[w]) return; p.reload=w==='pistol'?1.1:w==='pulse'?1.3:1.6; SFX.reload(); }
 function finishReload(){ const p=player,w=p.cur; if(w==='wrench'||w==='grenade'||w==='rocket') return; const a=p.ammo[w], n=Math.min(CAP[w]-a.mag,a.res); a.mag+=n; a.res-=n; }
-function hasAmmo(w){ return w==='wrench'||(player.weapons[w]&&(player.ammo[w].mag+player.ammo[w].res)>0); }
+function hasAmmo(w){ return w==='wrench'||(player.weapons[w]&&(chtOn('ammo')||(player.ammo[w].mag+player.ammo[w].res)>0)); }
 function autoSwitch(){ for(const w of ['pulse','shotgun','pistol','wrench']) if(player.weapons[w]&&hasAmmo(w)){ if(player.cur!==w){ player.cur=w; player.reload=0; } return; } }
 function selectWeapon(w){ const p=player; if(!p.weapons[w]||p.cur===w) return; p.cur=w; p.reload=0; p.cool=0.25; SFX.reload(); if(w!=='wrench'&&w!=='grenade'&&w!=='rocket'&&p.ammo[w].mag===0) startReload(); }
 
