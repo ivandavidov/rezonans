@@ -4,7 +4,7 @@
                                   флагове: fixed (закотвен: без физика като мъртъв, асансьорите и токът не го пипат, остава нащрек),
                                   noCrush, fly (появява се във въздуха), mech, human, glow (меко сияние); light(e,L) — своя светлина
      defBoss(id,{make,hurt,upd,draw,intro,name,col,sfx,norm,onTone,onCmd})   бос; norm — множител на здравето в оцеляването,
-                                  onTone(разстояние) — реакция на тона (mech4), onCmd(курсор) — на команда (mech5);
+                                  onTone(разстояние) — реакция на тона (механиката tone), onCmd(курсор) — на команда (cursors);
                                   portal (голям портал при появата), dieSfx, keepT (таймерът не се нулира при прераждане),
                                   glow(b) — основната светлина [x,y,r,a], lights(L) — още светлини, onRespawn() — при прераждане в арената
      defItem(id,{take,draw})      предмет: take(k) → false, ако не е взет; draw(k,x,y)

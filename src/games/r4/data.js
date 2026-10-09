@@ -27,7 +27,7 @@ const SKY4={
 addUnique(SKIES,{plnight:SKY4.night,pldusk:SKY4.dusk,plpano:SKY4.pano,plkail:SKY4.kail,plbeyond:SKY4.beyond},'SKIES');
 // ---------- плочки ----------
 defTile(function(tx,ty,ch,x,y,P,z){
-  if(ch==='1'||ch==='2'||ch==='3'){ if(!P.sky) drawBack(tx,ty); return true; }   // тоновите плочки се рисуват всеки кадър (mech2)
+  if(ch==='1'||ch==='2'||ch==='3'){ if(!P.sky) drawBack(tx,ty); return true; }   // тоновите плочки се рисуват всеки кадър (механиката freqsonar)
   if(ch!=='#') return false;
   const top=!isS(tx,ty-1);
   if(P.plcity){ const bl=Math.floor(tx/5), c=hash(bl,3)>0.5?'#a8946e':'#9a8a70';

@@ -64,7 +64,8 @@ python3 src/win/make_exe.py            # dist/Rezonans-windows/ (Rezonans-x64.ex
   Няма модули и `import`: всеки файл вижда глобалните имена на двигателя (`W`, `state`, `centerText`, `store`, …).
   Всяка част е в свой блок `{…}`: вижда двигателя и своите файлове, но не и другите части — с двигателя говори само през
   регистрите (`registerGame`, `def*`, `addUnique`), а двигателят не вика имена от частите.
-- Реархитектурата върви по [notes/rearch-plan.md](notes/rearch-plan.md) (клон `rearch`); ходът — в `notes/handoff.md`.
+- Реархитектурата по [notes/rearch-plan.md](notes/rearch-plan.md) е изпълнена (стъпки 0–9); ходът и очакваните числа — в
+  `notes/handoff.md`. Как се добавя част, враг, механика, тема за оцеляването — в `src/README.md`.
 - Шрифтове и CSS на играта се декларират в `game.json`, не в JS.
 
 ## Правила, които сборката проверява (и спира при нарушение)

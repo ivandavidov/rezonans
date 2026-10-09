@@ -7,7 +7,7 @@ addUnique(SV_THEMES,SV8,'SV_THEMES'); for(const k in SV8) addUnique(THEME_NAME,{
 const SV8_SPEC={salt:[139,7927,8],early:['r8a'],mid:[],late:[],recent:1,mut:{base:0.2,max:0.6,opts:()=>['swarm','scarce']}};
 registerGame({
   id:'r8', order:8, title:'РЕЗОНАНС 8', subtitle:'Подзаглавие', name:'РЕЗОНАНС 8', key:'rz8',
-  blurb:'Шестата част — кратко описание за менютата на другите части.',
+  blurb:'Новата част — кратко описание за менютата на другите части.',
   desc:{intro:'…', training:'…', campaign:'…', survival:'Безкрайни сектори, генерирани наново при всяко начало.'},
   controls:'← → движение · Z стрелба · X скок · P / Esc пауза',
   levels:LEVELS_R8, chapters:CH_R8,
