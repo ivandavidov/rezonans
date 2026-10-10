@@ -66,6 +66,7 @@ body.idle #bar,body:not(.run) #bar,body.embed #bar,body.idle #infBtn,body:not(.r
 #sleep{position:fixed;inset:0;z-index:20;background:#000;display:none;cursor:none}
 #tip{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:30;width:max-content;max-width:calc(100vw - 32px);padding:16px 20px;border-radius:12px;border:1px solid #ffffff30;background:#03080ef0;color:#dff;font:13px/1.65 'IBM Plex Mono',monospace;text-align:center;white-space:pre-line;opacity:0;transition:opacity .5s;pointer-events:none}
 #tip.on{opacity:1;pointer-events:auto}
+body.iosweb canvas{touch-action:auto}
 i.kb{font-style:normal}body.touch .kb{display:none}
 #sleep.on{display:block}#sleep.ui{cursor:default}
 #slTxt{position:absolute;left:0;top:0;white-space:nowrap;font:400 clamp(18px,2.3vw,30px) Comfortaa,'Exo 2',sans-serif;color:#b4c8ff;text-shadow:0 0 14px #6f8fff66;opacity:0;will-change:transform,opacity;pointer-events:none}
@@ -998,7 +999,7 @@ function full(){const el=D.documentElement;let r=null;
   try{r=el.requestFullscreen?el.requestFullscreen():el.webkitRequestFullscreen?el.webkitRequestFullscreen():null;}catch(e){}
   if(r&&r.catch)r.catch(()=>{});
   // не се получи — обяснение в средата на екрана
-  clearTimeout(fsT);fsT=setTimeout(()=>{if(!inFs())tip(IOS?'Safari на iPhone не позволява на страница\nда скрие лентите си.\n\nЗа цял екран: Сподели ⬆ → „Добави към\nначален екран“ и отваряй от иконата.':'Браузърът не позволи цял екран.');},1500);}
+  clearTimeout(fsT);fsT=setTimeout(()=>{if(!inFs())tip(IOS?'Safari на iPhone не позволява на страница\nда скрие лентите си.\n\nДокосни картината два пъти — Safari ги прибира.\nИли: Сподели ⬆ → „Добави към начален екран“\nи отваряй от иконата — винаги на цял екран.':'Браузърът не позволи цял екран.');},1500);}
 function muteKey(){AU.mute=!AU.mute;setVol();osd(AU.mute?'звукът е изключен':'звукът е включен');}
 const fr0=document.getElementById('game');fr0.addEventListener('focus',()=>{fr0.blur();window.focus();});
 addEventListener('keydown',e=>{
@@ -1024,10 +1025,16 @@ addEventListener('keydown',e=>{
     if(digBuf.length>=2)go();else digT=setTimeout(go,650);}
   else h=false;
   if(h)e.preventDefault();});
-cv.addEventListener('dblclick',full);
+// iPhone в Safari: жестовете на браузъра остават върху картината — двоен допир там прибира лентите на Safari
+// (страницата сама не може); затова плъзгането се следи с touch събития, които Safari не прекъсва
+const IOSWEB=IOS&&!APP&&!/[?&]embed/.test(location.search);if(IOSWEB)document.body.classList.add('iosweb');
+cv.addEventListener('dblclick',()=>{if(!IOSWEB)full();});
 {let sx=0,sy=0,st=0;   // телефон: плъзгане наляво/надясно — следваща/предишна сцена
-  cv.addEventListener('pointerdown',e=>{sx=e.clientX;sy=e.clientY;st=performance.now();document.body.classList.remove('idle');idleT=performance.now();});
-  cv.addEventListener('pointerup',e=>{const dx=e.clientX-sx,dy=e.clientY-sy;if(running&&!EMBED&&Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5&&performance.now()-st<800)step(dx<0?1:-1);});}
+  const s0=(x,y)=>{sx=x;sy=y;st=performance.now();},s1=(x,y)=>{const dx=x-sx,dy=y-sy;if(running&&!EMBED&&Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5&&performance.now()-st<800)step(dx<0?1:-1);};
+  cv.addEventListener('pointerdown',e=>{if(e.pointerType!=='touch')s0(e.clientX,e.clientY);document.body.classList.remove('idle');idleT=performance.now();});
+  cv.addEventListener('pointerup',e=>{if(e.pointerType!=='touch')s1(e.clientX,e.clientY);});
+  cv.addEventListener('touchstart',e=>{const t=e.changedTouches[0];s0(t.clientX,t.clientY);document.body.classList.remove('idle');idleT=performance.now();},{passive:true});
+  cv.addEventListener('touchend',e=>{const t=e.changedTouches[0];s1(t.clientX,t.clientY);},{passive:true});}
 addEventListener('pointermove',()=>{document.body.classList.remove('idle');idleT=performance.now();},{passive:true});
 setInterval(()=>{if(running&&performance.now()-idleT>2200&&!$('#mus').classList.contains('on'))document.body.classList.add('idle');},500);
 
