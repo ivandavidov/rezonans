@@ -23,12 +23,10 @@ body.idle,body.idle *{cursor:none!important}
 #cover{position:fixed;inset:0;display:grid;place-items:center;background:radial-gradient(ellipse at center,#0a142080 0%,#000000d8 75%);z-index:5;transition:opacity .8s}
 #cover.gone{opacity:0;pointer-events:none}
 .panel{text-align:center;padding:24px;max-width:640px}
-.panel h1{font:500 clamp(30px,7vw,64px) 'Unbounded','Exo 2',sans-serif;letter-spacing:.08em;margin:0 0 6px;background:linear-gradient(90deg,#7ef3ff,#c58cff,#ff8fc8);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 18px #6be2ff55)}
-.panel p{margin:0 0 26px;color:#9fc3d6;letter-spacing:.06em}
+.panel h1{font:500 clamp(30px,7vw,64px) 'Unbounded','Exo 2',sans-serif;letter-spacing:.08em;margin:0 0 30px;background:linear-gradient(90deg,#7ef3ff,#c58cff,#ff8fc8);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 18px #6be2ff55)}
 #go{padding:15px 30px;border:1px solid #8fe9ff;border-radius:40px;background:#0b1a26c0;color:#e6fbff;font:600 15px 'IBM Plex Mono',monospace;letter-spacing:.16em;cursor:pointer;box-shadow:0 0 30px #38cfff55,inset 0 0 18px #38cfff22;transition:transform .15s,box-shadow .15s}
 #go:hover{transform:scale(1.04);box-shadow:0 0 44px #38cfff88,inset 0 0 18px #38cfff33}
 #go:disabled{opacity:.6;cursor:wait}
-#pick{display:inline-block;margin-top:16px;background:none;border:0;color:#7fa6ba;font:13px 'IBM Plex Mono',monospace;text-decoration:underline;cursor:pointer}
 #status{min-height:20px;margin-top:16px;color:#ffd38a;font-size:13px;line-height:1.5;white-space:pre-line}
 .keys{margin-top:22px;color:#5f8193;font-size:12px;letter-spacing:.04em}
 #osd{position:fixed;left:22px;top:18px;z-index:3;font:500 15px 'IBM Plex Mono',monospace;letter-spacing:.08em;color:#fff;text-shadow:0 0 8px #000,0 0 16px #000;opacity:0;transition:opacity 1.2s;pointer-events:none}
@@ -108,10 +106,7 @@ iframe{position:fixed;width:1px;height:1px;left:-10px;top:-10px;border:0;opacity
 </div>
 <div id="cover"><div class="panel">
 <h1>РЕЗОНАНС</h1>
-<p>визуализатор · музиката от началния екран</p>
-<button id="go">▶ ПУСНИ</button><br>
-<button id="pick">или избери аудио файл…</button>
-<input id="file" type="file" accept="audio/*" hidden>
+<button id="go" disabled>ЗАРЕЖДАНЕ…</button>
 <div id="status"></div>
 <div class="keys">→ следваща сцена · Интервал — заключи · F — цял екран · H — помощ</div>
 </div></div>
@@ -1020,10 +1015,11 @@ setInterval(()=>{if(running&&performance.now()-idleT>2200&&!$('#mus').classList.
 
 /* ================= пускане на музиката ================= */
 // Музиката идва направо от звуковия двигател на играта (../index.html — сайтът е в docs/, тази страница в docs/audio/; част r1, началното меню) —
-// безкрайна и точно същата като в играта. Резервно: аудио файл, въртян без шев.
-const fr=$('#game'),goBtn=$('#go');let RZ=null,RZM=null;
-async function startLive(){
-  // зарежда се копие на играта с малка връзка към синтезатора (самата игра не се променя)
+// безкрайна и точно същата като в играта.
+const fr=$('#game'),goBtn=$('#go');let RZ=null,RZM=null,PREP=null;
+// 1) Още при отваряне: зарежда се копие на играта с малка връзка към синтезатора (самата игра не се променя).
+//    Рисуването на играта се спира веднага — нужен е само синтезаторът (той върви на setInterval, не на кадрите).
+async function prepLive(){
   let html=null;try{html=await (await fetch('../index.html')).text();}catch(e){}
   const HOOK='window.__rzMus={set:setMusic,get tr(){return mTr},get bpm(){return mBpm},get alien(){return mAlien},get prog(){return GAME.prog},get int(){return mInt},set int(v){mInt=v},get boss(){return bossMusic},set boss(v){bossMusic=v},set prog(v){GAME.prog=v}};';
   await new Promise((ok,no)=>{const to=setTimeout(()=>no(Error('timeout')),15000);fr.onload=()=>{clearTimeout(to);ok();};
@@ -1031,41 +1027,28 @@ async function startLive(){
     else fr.src='../index.html';});
   let w,rz;try{w=fr.contentWindow;rz=w.__rz;}catch(e){throw Error('file');}
   if(!rz)throw Error('Играта се зареди, но звуковият ѝ двигател не се намери.');
-  const AN=w.AudioNode.prototype,orig=AN.connect;let out=null;
+  fr.inert=true;rz.enterGame('r1');GW=w;gameRaf(false);PREP={w,rz};}
+// 2) При натискане: звукът тръгва синхронно, още в самото докосване/клавиш — iPhone иначе може да не го пусне.
+function armAudio(){
+  const {w,rz}=PREP,AN=w.AudioNode.prototype,orig=AN.connect;let out=null;
   AN.connect=function(to,...a){if(!out&&to instanceof w.AudioDestinationNode)out=this;return orig.call(this,to,...a);};
   const ls=w.localStorage,keep={};try{for(let i=0;i<ls.length;i++){const k=ls.key(i);if(/audio/.test(k))keep[k]=ls.getItem(k);}}catch(e){}
-  try{
-    rz.enterGame('r1');
-    try{w.document.querySelector('canvas').dispatchEvent(new w.PointerEvent('pointerdown',{bubbles:true}));}catch(e){}
-    if(!rz.AC){w.dispatchEvent(new w.KeyboardEvent('keydown',{code:'KeyN',bubbles:true}));w.dispatchEvent(new w.KeyboardEvent('keyup',{code:'KeyN',bubbles:true}));}
-  }finally{AN.connect=orig;}
+  try{if(!rz.AC){w.dispatchEvent(new w.KeyboardEvent('keydown',{code:'KeyN',bubbles:true}));w.dispatchEvent(new w.KeyboardEvent('keyup',{code:'KeyN',bubbles:true}));}}
+  finally{AN.connect=orig;}
   if(!rz.AC||!out)throw Error('Звуковият двигател на играта не стартира.');
   if(!rz.musOn)rz.toggleMus();
   try{for(let i=ls.length-1;i>=0;i--){const k=ls.key(i);if(/audio/.test(k)&&!(k in keep))ls.removeItem(k);}for(const k in keep)ls.setItem(k,keep[k]);}catch(e){}  // настройките на играта остават както са били
   try{rz.sfxBus.disconnect();}catch(e){}
-  const ctx=rz.AC;if(ctx.state!=='running')await ctx.resume().catch(()=>{});
-  out.disconnect();hook(ctx,out);RZ=rz;GW=w;RZM=w.__rzMus||null;AU.mode='играта (r1, начален екран)';musApply();musUI();
-  // играта фокусира своето платно — връщаме клавиатурата на визуализатора и не я пускаме повече в iframe
-  try{w.document.activeElement&&w.document.activeElement.blur();}catch(e){}fr.blur();fr.inert=true;window.focus();}
-let fileSrc=null,ownCtx=null;
-async function startFile(f){
-  statusEl.textContent='Чета „'+f.name+'“…';
-  ownCtx=ownCtx||new (window.AudioContext||window.webkitAudioContext)();await ownCtx.resume();
-  const buf=await ownCtx.decodeAudioData(await f.arrayBuffer());
-  if(RZ&&RZ.AC)RZ.AC.suspend();if(fileSrc)try{fileSrc.stop();}catch(e){}
-  const s=ownCtx.createBufferSource();s.buffer=buf;s.loop=true;s.start();fileSrc=s;hook(ownCtx,s);AU.mode='файл: '+f.name;RZM=null;musUI();go2();}
-function go2(){if(running)return;running=true;document.body.classList.add('run');statusEl.textContent='';$('#cover').classList.add('gone');idleT=performance.now();titleT=0;DR.left=rnd(45,60);osd('музика: '+AU.mode);}
-async function start(){if(running||goBtn.disabled)return;goBtn.disabled=true;goBtn.textContent='ЗАРЕЖДАНЕ…';
-  try{await startLive();go2();}
-  catch(e){goBtn.disabled=false;goBtn.textContent='▶ ОПИТАЙ ПАК';
-    statusEl.textContent=(location.protocol==='file:'||e.message==='file')
-      ?'Браузърът не дава достъп до играта, когато страницата е отворена като файл.\nПусни локален сървър в папката на проекта:\npython3 -m http.server 8766 --directory docs\nи отвори http://localhost:8766/audio/\n— или избери аудио файл (напр. rezonans-1-exact.wav).'
-      :'Не успях да пусна музиката от играта: '+e.message+'\nМожеш да избереш аудио файл.';}}
+  const ctx=rz.AC;if(ctx.state!=='running')ctx.resume().catch(()=>{});
+  out.disconnect();hook(ctx,out);RZ=rz;RZM=w.__rzMus||null;AU.mode='играта (r1, начален екран)';musApply();musUI();
+  try{w.document.activeElement&&w.document.activeElement.blur();}catch(e){}window.focus();}
+function go2(){if(running)return;running=true;goBtn.blur();document.body.classList.add('run');statusEl.textContent='';$('#cover').classList.add('gone');idleT=performance.now();titleT=0;DR.left=rnd(45,60);osd('музика: '+AU.mode);}
+function failMsg(e){return (location.protocol==='file:'||e.message==='file')
+  ?'Браузърът не дава достъп до играта, когато страницата е отворена като файл.\nПусни локален сървър в папката на проекта:\npython3 -m http.server 8766 --directory docs\nи отвори http://localhost:8766/audio/'
+  :'Не успях да пусна музиката от играта: '+e.message;}
+function start(){if(running||!PREP)return;
+  try{armAudio();go2();}catch(e){statusEl.textContent=failMsg(e);}}
 goBtn.addEventListener('click',start);
-$('#pick').addEventListener('click',()=>$('#file').click());
-$('#file').addEventListener('change',e=>{const f=e.target.files[0];if(f)startFile(f).catch(er=>statusEl.textContent='Файлът не може да се пусне: '+er.message);});
-addEventListener('dragover',e=>e.preventDefault());
-addEventListener('drop',e=>{e.preventDefault();const f=e.dataTransfer.files[0];if(f&&/^audio\//.test(f.type||'audio/'))startFile(f).catch(er=>statusEl.textContent='Файлът не може да се пусне: '+er.message);});
 
 /* ================= настройки на музиката ================= */
 // границите са тези, които се срещат в играта: транспониране −12…+6, темпо 60…150; бос — 132
@@ -1100,7 +1083,7 @@ function musUI(){const ok=!!RZM,P0=PROGS[MS.prog][1][0],root=((P0.b+MS.tr)%12+12
   document.querySelectorAll('#iInt button').forEach(b=>b.classList.toggle('on',+b.dataset.v===MS.int));
   document.querySelectorAll('#mus input,#mus select:not(#iAuto),#mus .seg button,#mus .btns button').forEach(e=>e.disabled=!ok);
   $('#iBpm').disabled=!ok||MS.boss;$('#musLvl').textContent=MS.lvl?'Ниво: '+MS.lvl:'';
-  $('#musNote').textContent=ok?'':(AU.mode?'Настройките действат само на музиката от играта, не на аудио файл.':'Пусни музиката, за да я настройваш.');}
+  $('#musNote').textContent=ok?'':(AU.mode?'Тази версия на играта не позволява настройки на музиката.':'Пусни музиката, за да я настройваш.');}
 function musSet(o){Object.assign(MS,o);if('tr' in o||'bpm' in o||'alien' in o||'prog' in o)if(!('lvl' in o))MS.lvl='';musApply();musUI();}
 function musRandom(){const int=ri(0,2);musSet({tr:ri(-12,6),bpm:ri(60,150),alien:Math.random()<.5,int,boss:int===2||Math.random()<.2,prog:ri(0,6),lvl:''});}
 function musLevel(){const L=LVLS[ri(0,LVLS.length-1)];musSet({tr:L[2],bpm:L[3],alien:!!L[4],int:0,boss:false,prog:L[0]<7?L[0]:0,lvl:L[1]+' ('+['Резонанс 1','Резонанс 2','Резонанс 3','Резонанс 4','Резонанс 5','Резонанс 6','Резонанс 7','Резонанс 8'][L[0]]+')'});}
@@ -1123,6 +1106,7 @@ if(matchMedia('(pointer:coarse)').matches)$('#hint').textContent='плъзни �
 // вграден режим (?embed): без начален екран и подсказки — за демото на интрото (intro-demo.html)
 const EMBED=new URLSearchParams(location.search).has('embed');
 if(EMBED){document.body.classList.add('embed','run');$('#cover').remove();running=true;DR.lock=true;}
+else prepLive().then(()=>{goBtn.disabled=false;goBtn.textContent='▶ ПУСНИ';},e=>{goBtn.textContent='↻ ОПИТАЙ ПАК';goBtn.disabled=false;goBtn.onclick=()=>location.reload();statusEl.textContent=failMsg(e);});
 function setScene(i){const s=DR.a;if(PR[i].ty==='fluid')FL.free();s.i=i;s.st=initSt(i);s.wt=0;clear(s.fb.rd);clear(s.fb.wr);DR.b=null;DR.q=-1;}
 function showTitle(o){Object.assign(TTL,o||{});titleT=0;}
 function hideTitle(){titleT=1e9;}
@@ -1153,8 +1137,8 @@ function sleepUI(){document.querySelectorAll('#sleepUi [data-t]').forEach(b=>b.c
 function sleepShowUi(){$('#sleep').classList.add('ui');clearTimeout(SLP.uiT);SLP.uiT=setTimeout(()=>$('#sleep').classList.remove('ui'),3000);}
 function sleepOn(){if(SLP.on||!running)return;SLP.on=true;
   for(const id of ['#help','#info','#mus'])$(id).classList.remove('on');infoOn=false;
-  cv.style.display='none';$('#sleep').classList.add('on');gameRaf(false);SLP.drawn=true;SLP.iv=setInterval(sleepTick,100);sleepUI();sleepShowUi();}
-function sleepOff(){if(!SLP.on)return;SLP.on=false;clearInterval(SLP.iv);clearTimeout(SLP.uiT);$('#sleep').classList.remove('on','ui');cv.style.display='';gameRaf(true);
+  cv.style.display='none';$('#sleep').classList.add('on');SLP.drawn=true;SLP.iv=setInterval(sleepTick,100);sleepUI();sleepShowUi();}
+function sleepOff(){if(!SLP.on)return;SLP.on=false;clearInterval(SLP.iv);clearTimeout(SLP.uiT);$('#sleep').classList.remove('on','ui');cv.style.display='';
   if(SLP.faded){SLP.faded=false;AU.mute=false;}if(AU.ctx&&AU.ctx.state==='suspended')AU.ctx.resume();SLP.end=0;SLP.mins=0;setVol();last=performance.now();if(!RAF)RAF=requestAnimationFrame(frame);}
 document.querySelectorAll('#sleepUi [data-t]').forEach(b=>b.addEventListener('click',()=>{SLP.mins=+b.dataset.t;SLP.end=SLP.mins?Date.now()+SLP.mins*60000:0;
   if(SLP.faded&&AU.ctx){AU.ctx.resume();SLP.faded=false;setVol();}sleepUI();sleepTick();sleepShowUi();}));
