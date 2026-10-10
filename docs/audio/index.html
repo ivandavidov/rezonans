@@ -66,7 +66,10 @@ body.idle #bar,body:not(.run) #bar,body.embed #bar,body.idle #infBtn,body:not(.r
 #sleep{position:fixed;inset:0;z-index:20;background:#000;display:none;cursor:none}
 #tip{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:30;width:max-content;max-width:calc(100vw - 32px);padding:16px 20px;border-radius:12px;border:1px solid #ffffff30;background:#03080ef0;color:#dff;font:13px/1.65 'IBM Plex Mono',monospace;text-align:center;white-space:pre-line;opacity:0;transition:opacity .5s;pointer-events:none}
 #tip.on{opacity:1;pointer-events:auto}
-body.iosweb canvas{touch-action:auto}
+/* iPhone в Safari: страницата се превърта малко (картината стои неподвижно) — при плъзгане нагоре Safari прибира лентите си */
+html.iosweb,html.iosweb body{overflow:visible;height:auto}
+html.iosweb body::after{content:'';display:block;height:calc(100vh + 120px)}
+html.iosweb canvas{position:fixed;left:0;top:0;width:100%;height:100%;touch-action:pan-y}
 i.kb{font-style:normal}body.touch .kb{display:none}
 #sleep.on{display:block}#sleep.ui{cursor:default}
 #slTxt{position:absolute;left:0;top:0;white-space:nowrap;font:400 clamp(18px,2.3vw,30px) Comfortaa,'Exo 2',sans-serif;color:#b4c8ff;text-shadow:0 0 14px #6f8fff66;opacity:0;will-change:transform,opacity;pointer-events:none}
@@ -999,7 +1002,7 @@ function full(){const el=D.documentElement;let r=null;
   try{r=el.requestFullscreen?el.requestFullscreen():el.webkitRequestFullscreen?el.webkitRequestFullscreen():null;}catch(e){}
   if(r&&r.catch)r.catch(()=>{});
   // не се получи — обяснение в средата на екрана
-  clearTimeout(fsT);fsT=setTimeout(()=>{if(!inFs())tip(IOS?'Safari на iPhone не позволява на страница\nда скрие лентите си.\n\nДокосни картината два пъти — Safari ги прибира.\nИли: Сподели ⬆ → „Добави към начален екран“\nи отваряй от иконата — винаги на цял екран.':'Браузърът не позволи цял екран.');},1500);}
+  clearTimeout(fsT);fsT=setTimeout(()=>{if(!inFs())tip(IOS?'Safari на iPhone не позволява на страница\nда скрие лентите си.\n\nПлъзни картината нагоре — Safari ги прибира.\nИли: Сподели ⬆ → „Добави към начален екран“\nи отваряй от иконата — винаги на цял екран.':'Браузърът не позволи цял екран.');},1500);}
 function muteKey(){AU.mute=!AU.mute;setVol();osd(AU.mute?'звукът е изключен':'звукът е включен');}
 const fr0=document.getElementById('game');fr0.addEventListener('focus',()=>{fr0.blur();window.focus();});
 addEventListener('keydown',e=>{
@@ -1025,9 +1028,9 @@ addEventListener('keydown',e=>{
     if(digBuf.length>=2)go();else digT=setTimeout(go,650);}
   else h=false;
   if(h)e.preventDefault();});
-// iPhone в Safari: жестовете на браузъра остават върху картината — двоен допир там прибира лентите на Safari
-// (страницата сама не може); затова плъзгането се следи с touch събития, които Safari не прекъсва
-const IOSWEB=IOS&&!APP&&!/[?&]embed/.test(location.search);if(IOSWEB)document.body.classList.add('iosweb');
+// iPhone в Safari: страницата сама не може да скрие лентите на браузъра, но Safari ги прибира, когато тя се превърти —
+// затова картината пропуска плъзгането нагоре/надолу към браузъра; наляво/надясно се следи с touch събития
+const IOSWEB=IOS&&!APP&&!/[?&]embed/.test(location.search);if(IOSWEB)D.documentElement.classList.add('iosweb');
 cv.addEventListener('dblclick',()=>{if(!IOSWEB)full();});
 {let sx=0,sy=0,st=0;   // телефон: плъзгане наляво/надясно — следваща/предишна сцена
   const s0=(x,y)=>{sx=x;sy=y;st=performance.now();},s1=(x,y)=>{const dx=x-sx,dy=y-sy;if(running&&!EMBED&&Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5&&performance.now()-st<800)step(dx<0?1:-1);};
@@ -1137,7 +1140,7 @@ $('#musBtn').addEventListener('click',musToggle);$('#musX').addEventListener('cl
 musUI();
 
 // телефон/таблет: без букви за клавиши в надписите — само бутоните и плъзгането
-if(matchMedia('(pointer:coarse)').matches){document.body.classList.add('touch');$('#hint').textContent='плъзни ← → за друга сцена';$('.keys').textContent='плъзни ← → за друга сцена · докосни екрана за бутоните';}
+if(matchMedia('(pointer:coarse)').matches){document.body.classList.add('touch');$('#hint').textContent='плъзни ← → за друга сцена'+(IOSWEB?' · ↑ без лентите':'');$('.keys').textContent='плъзни ← → за друга сцена · докосни екрана за бутоните';}
 $('#sndBtn').addEventListener('click',muteKey);$('#tip').addEventListener('click',()=>$('#tip').classList.remove('on'));$('#fsBtn').addEventListener('click',full);
 if(APP){$('#fsBtn').style.display='none';$('#slFs').style.display='none';}
 // вграден режим (?embed): без начален екран и подсказки — за демото на интрото (intro-demo.html)
