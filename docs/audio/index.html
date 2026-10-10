@@ -64,6 +64,8 @@ body.idle #hint{opacity:0}body:not(.run) #hint{display:none}
 #infBtn{position:fixed;left:16px;bottom:14px;z-index:3;transition:opacity .6s}
 body.idle #bar,body:not(.run) #bar,body.embed #bar,body.idle #infBtn,body:not(.run) #infBtn,body.embed #infBtn{opacity:0;pointer-events:none}
 #sleep{position:fixed;inset:0;z-index:20;background:#000;display:none;cursor:none}
+#tip{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:30;width:max-content;max-width:calc(100vw - 32px);padding:16px 20px;border-radius:12px;border:1px solid #ffffff30;background:#03080ef0;color:#dff;font:13px/1.65 'IBM Plex Mono',monospace;text-align:center;white-space:pre-line;opacity:0;transition:opacity .5s;pointer-events:none}
+#tip.on{opacity:1;pointer-events:auto}
 i.kb{font-style:normal}body.touch .kb{display:none}
 #sleep.on{display:block}#sleep.ui{cursor:default}
 #slTxt{position:absolute;left:0;top:0;white-space:nowrap;font:400 clamp(18px,2.3vw,30px) Comfortaa,'Exo 2',sans-serif;color:#b4c8ff;text-shadow:0 0 14px #6f8fff66;opacity:0;will-change:transform,opacity;pointer-events:none}
@@ -94,7 +96,7 @@ iframe{position:fixed;width:1px;height:1px;left:-10px;top:-10px;border:0;opacity
 <div id="sleep"><div id="slTxt">Приятна почивка</div>
 <div id="sleepUi"><span>сън · спиране след</span><button data-t="0">никога</button><button data-t="30">30 мин</button><button data-t="60">1 ч</button><button data-t="120">2 ч</button><span>·</span><button id="slDot">надпис</button><button id="slMute">звук вкл.<i class="kb"> (M)</i></button><button id="slFs">цял екран<i class="kb"> (F)</i></button><button id="slOut">изход<i class="kb"> (Z)</i></button><span id="slLeft"></span></div></div>
 <div id="hint">H — помощ · → следваща сцена · S — музика · Z — сън · F — цял екран</div>
-<div id="bar"><button id="sndBtn" title="Звук вкл. / изкл. (M)"><svg viewBox="0 0 16 16"><path d="M2.5 6h2.5l3.5-3v10l-3.5-3h-2.5z"/><path class="w" d="M11 5.5q1.5 2.5 0 5M12.8 3.8q3 4.2 0 8.4"/><path class="x" d="M11 6l4 4M15 6l-4 4"/></svg></button><button id="fsBtn" title="Цял екран (F)"><svg viewBox="0 0 16 16"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/></svg></button><button id="slpBtn">☾ Сън</button><button id="musBtn">♪ Музика</button></div><button id="infBtn" title="Сведения (I)">ⓘ</button>
+<div id="tip"></div><div id="bar"><button id="sndBtn" title="Звук вкл. / изкл. (M)"><svg viewBox="0 0 16 16"><path d="M2.5 6h2.5l3.5-3v10l-3.5-3h-2.5z"/><path class="w" d="M11 5.5q1.5 2.5 0 5M12.8 3.8q3 4.2 0 8.4"/><path class="x" d="M11 6l4 4M15 6l-4 4"/></svg></button><button id="fsBtn" title="Цял екран (F)"><svg viewBox="0 0 16 16"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/></svg></button><button id="slpBtn">☾ Сън</button><button id="musBtn">♪ Музика</button></div><button id="infBtn" title="Сведения (I)">ⓘ</button>
 <div id="mus">
 <h3>МУЗИКА <button id="musX" title="Затвори (S)">×</button></h3>
 <label>Тоналност <b id="vTr"></b></label><input type="range" id="iTr" min="-12" max="6" step="1">
@@ -986,12 +988,17 @@ function osd(extra){const i=tgt(),el=$('#osd');
 function info(){const bar=v=>'█'.repeat(Math.max(0,Math.min(20,Math.round(v*8))));
   $('#info').textContent=`кадри/с  ${fpsS.toFixed(0)}\nекран    ${WL&&!WL.released?'буден':'wakeLock' in navigator?'може да угасне':'(не се поддържа)'}\nизобр.   ${iw}×${ih} (${QN[qMode]}${qMode?'':' '+Math.round(qMul*100)+'%'})\nизточник ${AU.mode||'—'}\nниски    ${bar(A.bassA)}\nсредни   ${bar(A.midA)}\nвисоки   ${bar(A.trebA)}\nудар     ${bar(A.beat*2.5)}\nсцена    ${tgt()+1}/${PR.length}${DR.lock?' (заключена)':''}`;}
 function infoToggle(){infoOn=!infoOn;$('#info').classList.toggle('on',infoOn);if(infoOn)info();}
-// цял екран; iPhone не го позволява на страница — там само иконата на началния екран отваря без лентите на браузъра
-const D=document,FS_OK=!!(D.fullscreenEnabled||D.webkitFullscreenEnabled),APP=matchMedia('(display-mode: fullscreen),(display-mode: standalone)').matches||navigator.standalone===true;
-function full(){const el=D.documentElement;
-  if(!FS_OK){osd('на iPhone: Сподели → „Към начален екран“ — оттам се отваря на цял екран');return;}
-  const r=D.fullscreenElement||D.webkitFullscreenElement?(D.exitFullscreen?D.exitFullscreen():D.webkitExitFullscreen())
-    :(el.requestFullscreen?el.requestFullscreen():el.webkitRequestFullscreen());if(r&&r.catch)r.catch(()=>{});}
+// цял екран: винаги се пробва (iPhone може да казва, че не поддържа, а пак да го прави); ако не стане — обяснение
+const D=document,APP=matchMedia('(display-mode: fullscreen),(display-mode: standalone)').matches||navigator.standalone===true;
+const inFs=()=>!!(D.fullscreenElement||D.webkitFullscreenElement),IOS=/iPhone|iPad|iPod/.test(navigator.userAgent)||navigator.maxTouchPoints>1&&/Mac/.test(navigator.platform);
+let tipT=0;function tip(m){const t=$('#tip');t.textContent=m;t.classList.add('on');clearTimeout(tipT);tipT=setTimeout(()=>t.classList.remove('on'),8000);}
+let fsT=0;for(const ev of ['fullscreenchange','webkitfullscreenchange'])D.addEventListener(ev,()=>{clearTimeout(fsT);$('#tip').classList.remove('on');});
+function full(){const el=D.documentElement;let r=null;
+  if(inFs()){r=D.exitFullscreen?D.exitFullscreen():D.webkitExitFullscreen();if(r&&r.catch)r.catch(()=>{});return;}
+  try{r=el.requestFullscreen?el.requestFullscreen():el.webkitRequestFullscreen?el.webkitRequestFullscreen():null;}catch(e){}
+  if(r&&r.catch)r.catch(()=>{});
+  // не се получи — обяснение в средата на екрана
+  clearTimeout(fsT);fsT=setTimeout(()=>{if(!inFs())tip(IOS?'Safari на iPhone не позволява на страница\nда скрие лентите си.\n\nЗа цял екран: Сподели ⬆ → „Добави към\nначален екран“ и отваряй от иконата.':'Браузърът не позволи цял екран.');},1500);}
 function muteKey(){AU.mute=!AU.mute;setVol();osd(AU.mute?'звукът е изключен':'звукът е включен');}
 const fr0=document.getElementById('game');fr0.addEventListener('focus',()=>{fr0.blur();window.focus();});
 addEventListener('keydown',e=>{
@@ -1124,8 +1131,8 @@ musUI();
 
 // телефон/таблет: без букви за клавиши в надписите — само бутоните и плъзгането
 if(matchMedia('(pointer:coarse)').matches){document.body.classList.add('touch');$('#hint').textContent='плъзни ← → за друга сцена';$('.keys').textContent='плъзни ← → за друга сцена · докосни екрана за бутоните';}
-$('#sndBtn').addEventListener('click',muteKey);$('#fsBtn').addEventListener('click',full);
-if(APP)$('#fsBtn').style.display='none';if(APP||!FS_OK)$('#slFs').style.display='none';
+$('#sndBtn').addEventListener('click',muteKey);$('#tip').addEventListener('click',()=>$('#tip').classList.remove('on'));$('#fsBtn').addEventListener('click',full);
+if(APP){$('#fsBtn').style.display='none';$('#slFs').style.display='none';}
 // вграден режим (?embed): без начален екран и подсказки — за демото на интрото (intro-demo.html)
 const EMBED=new URLSearchParams(location.search).has('embed');
 if(EMBED){document.body.classList.add('embed','run');$('#cover').remove();running=true;DR.lock=true;}
