@@ -37,7 +37,7 @@ body.idle,body.idle *{cursor:none!important}
 #info{left:16px;bottom:56px;white-space:pre;font-size:12px}
 #help.on,#info.on{display:block}
 #hint{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:3;font-size:12px;color:#ffffffa0;text-shadow:0 0 6px #000;transition:opacity .6s;pointer-events:none;white-space:nowrap}
-body.embed #hint,body.embed #musBtn,body.embed #osd,body.embed #help,body.embed #info,body.embed #mus{display:none!important}
+body.embed #hint,body.embed #osd,body.embed #help,body.embed #info,body.embed #mus{display:none!important}
 body.idle #hint{opacity:0}body:not(.run) #hint{display:none}
 #mus{position:fixed;right:16px;top:16px;bottom:16px;width:min(330px,calc(100vw - 32px));z-index:6;overflow:auto;background:#03080ed8;border:1px solid #ffffff24;border-radius:12px;padding:14px 16px 16px;font-size:12.5px;color:#cfe7f3;backdrop-filter:blur(8px);display:none}
 #mus.on{display:block}
@@ -56,12 +56,15 @@ body.idle #hint{opacity:0}body:not(.run) #hint{display:none}
 #mus input:disabled,#mus select:disabled,#mus button:disabled{opacity:.4;cursor:default}
 #musNote{margin-top:12px;color:#ffd38a;min-height:16px;line-height:1.5}
 #musLvl{margin-top:10px;color:#9ff0ff;min-height:16px}
-#musBtn,#slpBtn,#infBtn{position:fixed;right:16px;bottom:14px;z-index:3;padding:6px 12px;border-radius:20px;border:1px solid #ffffff40;background:#03080eb0;color:#dff;font:12px 'IBM Plex Mono',monospace;cursor:pointer;transition:opacity .6s}
-#slpBtn{right:118px}
+#bar{position:fixed;right:16px;bottom:14px;z-index:3;display:flex;gap:8px;transition:opacity .6s}
+#bar button,#infBtn{height:30px;padding:0 12px;border-radius:20px;border:1px solid #ffffff40;background:#03080eb0;color:#dff;font:12px 'IBM Plex Mono',monospace;cursor:pointer;display:flex;align-items:center;gap:6px}
+#bar svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+#sndBtn.off{color:#ff9f9f;border-color:#ff9f9f66}#sndBtn .x,#sndBtn.off .w{display:none}#sndBtn.off .x{display:inline}
 @media (pointer:coarse){#hint{bottom:58px;white-space:normal;text-align:center;width:calc(100vw - 32px)}}
-#infBtn{right:auto;left:16px}
-body.idle #musBtn,body:not(.run) #musBtn,body.idle #slpBtn,body:not(.run) #slpBtn,body.embed #slpBtn,body.idle #infBtn,body:not(.run) #infBtn,body.embed #infBtn{opacity:0;pointer-events:none}
+#infBtn{position:fixed;left:16px;bottom:14px;z-index:3;transition:opacity .6s}
+body.idle #bar,body:not(.run) #bar,body.embed #bar,body.idle #infBtn,body:not(.run) #infBtn,body.embed #infBtn{opacity:0;pointer-events:none}
 #sleep{position:fixed;inset:0;z-index:20;background:#000;display:none;cursor:none}
+i.kb{font-style:normal}body.touch .kb{display:none}
 #sleep.on{display:block}#sleep.ui{cursor:default}
 #slTxt{position:absolute;left:0;top:0;white-space:nowrap;font:400 clamp(18px,2.3vw,30px) Comfortaa,'Exo 2',sans-serif;color:#b4c8ff;text-shadow:0 0 14px #6f8fff66;opacity:0;will-change:transform,opacity;pointer-events:none}
 #sleepUi{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);display:flex;flex-wrap:wrap;justify-content:center;gap:6px;align-items:center;width:max-content;max-width:calc(100vw - 32px);font:12px 'IBM Plex Mono',monospace;color:#7f9aa6;opacity:0;transition:opacity .8s;pointer-events:none}
@@ -89,9 +92,9 @@ iframe{position:fixed;width:1px;height:1px;left:-10px;top:-10px;border:0;opacity
 </div>
 <div id="info"></div>
 <div id="sleep"><div id="slTxt">Приятна почивка</div>
-<div id="sleepUi"><span>сън · спиране след</span><button data-t="0">никога</button><button data-t="30">30 мин</button><button data-t="60">1 ч</button><button data-t="120">2 ч</button><span>·</span><button id="slDot">надпис</button><button id="slMute">звук вкл. (M)</button><button id="slFs">цял екран (F)</button><button id="slOut">изход (Z)</button><span id="slLeft"></span></div></div>
+<div id="sleepUi"><span>сън · спиране след</span><button data-t="0">никога</button><button data-t="30">30 мин</button><button data-t="60">1 ч</button><button data-t="120">2 ч</button><span>·</span><button id="slDot">надпис</button><button id="slMute">звук вкл.<i class="kb"> (M)</i></button><button id="slFs">цял екран<i class="kb"> (F)</i></button><button id="slOut">изход<i class="kb"> (Z)</i></button><span id="slLeft"></span></div></div>
 <div id="hint">H — помощ · → следваща сцена · S — музика · Z — сън · F — цял екран</div>
-<button id="musBtn">♪ Музика</button><button id="slpBtn">☾ Сън</button><button id="infBtn" title="Сведения (I)">ⓘ</button>
+<div id="bar"><button id="sndBtn" title="Звук вкл. / изкл. (M)"><svg viewBox="0 0 16 16"><path d="M2.5 6h2.5l3.5-3v10l-3.5-3h-2.5z"/><path class="w" d="M11 5.5q1.5 2.5 0 5M12.8 3.8q3 4.2 0 8.4"/><path class="x" d="M11 6l4 4M15 6l-4 4"/></svg></button><button id="fsBtn" title="Цял екран (F)"><svg viewBox="0 0 16 16"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/></svg></button><button id="slpBtn">☾ Сън</button><button id="musBtn">♪ Музика</button></div><button id="infBtn" title="Сведения (I)">ⓘ</button>
 <div id="mus">
 <h3>МУЗИКА <button id="musX" title="Затвори (S)">×</button></h3>
 <label>Тоналност <b id="vTr"></b></label><input type="range" id="iTr" min="-12" max="6" step="1">
@@ -693,7 +696,7 @@ function hook(ctx,src){
   const sp=ctx.createChannelSplitter(2);src.connect(sp);
   const aL=ctx.createAnalyser(),aR=ctx.createAnalyser();aL.fftSize=aR.fftSize=1024;sp.connect(aL,0);sp.connect(aR,1);
   Object.assign(AU,{ctx,an,aL,aR,out:v,map:null,age:0,L:[0,0,0]});}
-function setVol(){if(AU.out)AU.out.gain.setTargetAtTime(AU.mute?0:AU.vol*AU.vol,AU.ctx.currentTime,.05);lsSet('rzviz.vol',AU.vol.toFixed(2));}
+function setVol(){if(AU.out)AU.out.gain.setTargetAtTime(AU.mute?0:AU.vol*AU.vol,AU.ctx.currentTime,.05);lsSet('rzviz.vol',AU.vol.toFixed(2));$('#sndBtn').classList.toggle('off',AU.mute);}
 // плавно следване: бързо нагоре (ta), бавно надолу (tr) — нищо не скача от кадър в кадър
 const sm=(c,v,ta,tr,dt)=>c+(v-c)*(1-Math.exp(-dt/(v>c?ta:tr)));
 function audioUpdate(dt,now){
@@ -983,7 +986,13 @@ function osd(extra){const i=tgt(),el=$('#osd');
 function info(){const bar=v=>'█'.repeat(Math.max(0,Math.min(20,Math.round(v*8))));
   $('#info').textContent=`кадри/с  ${fpsS.toFixed(0)}\nекран    ${WL&&!WL.released?'буден':'wakeLock' in navigator?'може да угасне':'(не се поддържа)'}\nизобр.   ${iw}×${ih} (${QN[qMode]}${qMode?'':' '+Math.round(qMul*100)+'%'})\nизточник ${AU.mode||'—'}\nниски    ${bar(A.bassA)}\nсредни   ${bar(A.midA)}\nвисоки   ${bar(A.trebA)}\nудар     ${bar(A.beat*2.5)}\nсцена    ${tgt()+1}/${PR.length}${DR.lock?' (заключена)':''}`;}
 function infoToggle(){infoOn=!infoOn;$('#info').classList.toggle('on',infoOn);if(infoOn)info();}
-function full(){if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});else document.documentElement.requestFullscreen().catch(()=>{});}
+// цял екран; iPhone не го позволява на страница — там само иконата на началния екран отваря без лентите на браузъра
+const D=document,FS_OK=!!(D.fullscreenEnabled||D.webkitFullscreenEnabled),APP=matchMedia('(display-mode: fullscreen),(display-mode: standalone)').matches||navigator.standalone===true;
+function full(){const el=D.documentElement;
+  if(!FS_OK){osd('на iPhone: Сподели → „Към начален екран“ — оттам се отваря на цял екран');return;}
+  const r=D.fullscreenElement||D.webkitFullscreenElement?(D.exitFullscreen?D.exitFullscreen():D.webkitExitFullscreen())
+    :(el.requestFullscreen?el.requestFullscreen():el.webkitRequestFullscreen());if(r&&r.catch)r.catch(()=>{});}
+function muteKey(){AU.mute=!AU.mute;setVol();osd(AU.mute?'звукът е изключен':'звукът е включен');}
 const fr0=document.getElementById('game');fr0.addEventListener('focus',()=>{fr0.blur();window.focus();});
 addEventListener('keydown',e=>{
   if(!running){if(e.code==='Enter'||e.code==='Space'){e.preventDefault();start();}return;}
@@ -999,7 +1008,7 @@ addEventListener('keydown',e=>{
   else if(c==='KeyF')full();
   else if(c==='KeyH'||e.key==='?')$('#help').classList.toggle('on');
   else if(c==='KeyI')infoToggle();
-  else if(c==='KeyM'){AU.mute=!AU.mute;setVol();osd(AU.mute?'звукът е изключен':'звукът е включен');}
+  else if(c==='KeyM')muteKey();
   else if(e.key==='+'||e.key==='='||c==='NumpadAdd'||c==='ArrowUp'){AU.vol=Math.min(1,AU.vol+.05);AU.mute=false;setVol();osd('сила на звука '+Math.round(AU.vol*100)+'%');}
   else if(e.key==='-'||c==='NumpadSubtract'||c==='ArrowDown'){AU.vol=Math.max(0,AU.vol-.05);setVol();osd('сила на звука '+Math.round(AU.vol*100)+'%');}
   else if(c==='KeyQ'){qMode=(qMode+1)%4;lsSet('rzviz.q',qMode);if(!qMode)qMul=1;alloc(true);osd('качество: '+QN[qMode]);}
@@ -1113,7 +1122,10 @@ const musToggle=()=>{const on=$('#mus').classList.toggle('on');if(on)musUI();};
 $('#musBtn').addEventListener('click',musToggle);$('#musX').addEventListener('click',musToggle);
 musUI();
 
-if(matchMedia('(pointer:coarse)').matches)$('#hint').textContent='плъзни ← → за друга сцена · двоен допир — цял екран';
+// телефон/таблет: без букви за клавиши в надписите — само бутоните и плъзгането
+if(matchMedia('(pointer:coarse)').matches){document.body.classList.add('touch');$('#hint').textContent='плъзни ← → за друга сцена';$('.keys').textContent='плъзни ← → за друга сцена · докосни екрана за бутоните';}
+$('#sndBtn').addEventListener('click',muteKey);$('#fsBtn').addEventListener('click',full);
+if(APP)$('#fsBtn').style.display='none';if(APP||!FS_OK)$('#slFs').style.display='none';
 // вграден режим (?embed): без начален екран и подсказки — за демото на интрото (intro-demo.html)
 const EMBED=new URLSearchParams(location.search).has('embed');
 if(EMBED){document.body.classList.add('embed','run');$('#cover').remove();running=true;DR.lock=true;}
@@ -1144,7 +1156,7 @@ function sleepTick(){
     b=.5+.5*Math.sin(t*Math.PI/5),n=Math.min(1,SLP.lvl/SLP.pk);
   slt.style.transform='translate('+x.toFixed(1)+'px,'+y.toFixed(1)+'px)';slt.style.opacity=(.1+.08*b+.05*n).toFixed(3);SLP.drawn=true;}
 function sleepUI(){document.querySelectorAll('#sleepUi [data-t]').forEach(b=>b.classList.toggle('on',+b.dataset.t===SLP.mins));
-  $('#slDot').textContent=SLP.blank?'напълно черно':'надпис';$('#slMute').textContent=(AU.mute||SLP.faded?'звук изкл.':'звук вкл.')+' (M)';$('#slMute').classList.toggle('on',AU.mute||SLP.faded);if(!SLP.end)$('#slLeft').textContent='';}
+  $('#slDot').textContent=SLP.blank?'напълно черно':'надпис';$('#slMute').innerHTML=(AU.mute||SLP.faded?'звук изкл.':'звук вкл.')+'<i class="kb"> (M)</i>';$('#slMute').classList.toggle('on',AU.mute||SLP.faded);if(!SLP.end)$('#slLeft').textContent='';}
 function sleepShowUi(){$('#sleep').classList.add('ui');clearTimeout(SLP.uiT);SLP.uiT=setTimeout(()=>$('#sleep').classList.remove('ui'),3000);}
 function sleepOn(){if(SLP.on||!running)return;SLP.on=true;
   for(const id of ['#help','#info','#mus'])$(id).classList.remove('on');infoOn=false;
