@@ -980,7 +980,7 @@ let osdT=0,infoOn=false,idleT=0,digBuf='',digT=0;
 function osd(extra){const i=tgt(),el=$('#osd');
   el.innerHTML=String(i+1).padStart(2,'0')+' · '+PR[i].n+(DR.lock?' 🔒':'')+(extra?'<small>'+extra+'</small>':'');el.classList.add('on');clearTimeout(osdT);osdT=setTimeout(()=>el.classList.remove('on'),3800);}
 function info(){const bar=v=>'█'.repeat(Math.max(0,Math.min(20,Math.round(v*8))));
-  $('#info').textContent=`кадри/с  ${fpsS.toFixed(0)}\nизобр.   ${iw}×${ih} (${QN[qMode]}${qMode?'':' '+Math.round(qMul*100)+'%'})\nизточник ${AU.mode||'—'}\nниски    ${bar(A.bassA)}\nсредни   ${bar(A.midA)}\nвисоки   ${bar(A.trebA)}\nудар     ${bar(A.beat*2.5)}\nсцена    ${tgt()+1}/${PR.length}${DR.lock?' (заключена)':''}`;}
+  $('#info').textContent=`кадри/с  ${fpsS.toFixed(0)}\nекран    ${WL&&!WL.released?'буден':'wakeLock' in navigator?'може да угасне':'(не се поддържа)'}\nизобр.   ${iw}×${ih} (${QN[qMode]}${qMode?'':' '+Math.round(qMul*100)+'%'})\nизточник ${AU.mode||'—'}\nниски    ${bar(A.bassA)}\nсредни   ${bar(A.midA)}\nвисоки   ${bar(A.trebA)}\nудар     ${bar(A.beat*2.5)}\nсцена    ${tgt()+1}/${PR.length}${DR.lock?' (заключена)':''}`;}
 function full(){if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});else document.documentElement.requestFullscreen().catch(()=>{});}
 const fr0=document.getElementById('game');fr0.addEventListener('focus',()=>{fr0.blur();window.focus();});
 addEventListener('keydown',e=>{
@@ -1044,7 +1044,14 @@ function armAudio(){
   // планировчикът на нотите се вика и оттук: iOS силно забавя таймерите в скрития кадър с играта — тогава се чуват само отделни звуци
   if(RZM&&RZM.sched)setInterval(()=>{try{RZM.sched();}catch(e){}},25);
   try{w.document.activeElement&&w.document.activeElement.blur();}catch(e){}window.focus();}
-function go2(){if(running)return;running=true;goBtn.blur();document.body.classList.add('run');statusEl.textContent='';$('#cover').classList.add('gone');idleT=performance.now();titleT=0;DR.left=rnd(45,60);osd('музика: '+AU.mode);}
+// екранът не гасне, докато страницата е отворена (и в режим сън); браузърът освобождава заключването,
+// когато страницата се скрие — при връщане се иска наново. Само след като таймерът за сън спре музиката, екранът може да угасне.
+let WL=null,wakeWant=false;
+async function wakeOn(){wakeWant=true;if(!('wakeLock' in navigator)||EMBED||document.visibilityState!=='visible')return;
+  if(WL&&!WL.released)return;try{WL=await navigator.wakeLock.request('screen');}catch(e){WL=null;}}
+function wakeOff(){wakeWant=false;try{if(WL)WL.release();}catch(e){}WL=null;}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&wakeWant)wakeOn();});
+function go2(){if(running)return;running=true;wakeOn();goBtn.blur();document.body.classList.add('run');statusEl.textContent='';$('#cover').classList.add('gone');idleT=performance.now();titleT=0;DR.left=rnd(45,60);osd('музика: '+AU.mode);}
 function failMsg(e){return (location.protocol==='file:'||e.message==='file')
   ?'Браузърът не дава достъп до играта, когато страницата е отворена като файл.\nПусни локален сървър в папката на проекта:\npython3 -m http.server 8766 --directory docs\nи отвори http://localhost:8766/audio/'
   :'Не успях да пусна музиката от играта: '+e.message;}
@@ -1125,7 +1132,7 @@ function gameRaf(on){if(!GW)return;try{
 const slt=$('#slTxt');
 function sleepTick(){
   if(SLP.end&&!SLP.faded&&Date.now()>=SLP.end&&AU.out){SLP.faded=true;AU.out.gain.cancelScheduledValues(AU.ctx.currentTime);AU.out.gain.setTargetAtTime(0,AU.ctx.currentTime,12);   // ~1 мин плавно затихване
-    setTimeout(()=>{if(SLP.on&&SLP.faded&&AU.ctx)AU.ctx.suspend();},60000);}
+    setTimeout(()=>{if(SLP.on&&SLP.faded&&AU.ctx){AU.ctx.suspend();wakeOff();}},60000);}
   if(SLP.end)$('#slLeft').textContent=SLP.faded?'· музиката затихва':'· остават '+Math.max(1,Math.ceil((SLP.end-Date.now())/60000))+' мин';
   if(SLP.blank||SLP.faded){if(SLP.drawn){slt.style.opacity=0;SLP.drawn=false;}return;}
   if(AU.an){AU.an.getFloatTimeDomainData(AU.td);let r=0;for(let i=0;i<2048;i+=4)r+=AU.td[i]*AU.td[i];r=Math.sqrt(r/512);SLP.lvl+=(r-SLP.lvl)*.06;SLP.pk=Math.max(SLP.lvl,SLP.pk*.9995,.002);}
@@ -1140,20 +1147,20 @@ function sleepShowUi(){$('#sleep').classList.add('ui');clearTimeout(SLP.uiT);SLP
 function sleepOn(){if(SLP.on||!running)return;SLP.on=true;
   for(const id of ['#help','#info','#mus'])$(id).classList.remove('on');infoOn=false;
   cv.style.display='none';$('#sleep').classList.add('on');SLP.drawn=true;SLP.iv=setInterval(sleepTick,100);sleepUI();sleepShowUi();}
-function sleepOff(){if(!SLP.on)return;SLP.on=false;clearInterval(SLP.iv);clearTimeout(SLP.uiT);$('#sleep').classList.remove('on','ui');cv.style.display='';
+function sleepOff(){if(!SLP.on)return;SLP.on=false;wakeOn();clearInterval(SLP.iv);clearTimeout(SLP.uiT);$('#sleep').classList.remove('on','ui');cv.style.display='';
   if(SLP.faded){SLP.faded=false;AU.mute=false;}if(AU.ctx&&AU.ctx.state==='suspended')AU.ctx.resume();SLP.end=0;SLP.mins=0;setVol();last=performance.now();if(!RAF)RAF=requestAnimationFrame(frame);}
 document.querySelectorAll('#sleepUi [data-t]').forEach(b=>b.addEventListener('click',()=>{SLP.mins=+b.dataset.t;SLP.end=SLP.mins?Date.now()+SLP.mins*60000:0;
-  if(SLP.faded&&AU.ctx){AU.ctx.resume();SLP.faded=false;setVol();}sleepUI();sleepTick();sleepShowUi();}));
+  if(SLP.faded&&AU.ctx){AU.ctx.resume();SLP.faded=false;setVol();wakeOn();}sleepUI();sleepTick();sleepShowUi();}));
 $('#slDot').addEventListener('click',()=>{SLP.blank=!SLP.blank;lsSet('rzviz.blank',SLP.blank?'1':'0');sleepUI();sleepShowUi();});
 $('#slOut').addEventListener('click',sleepOff);$('#slpBtn').addEventListener('click',sleepOn);
 // M в съня: изключва/включва музиката; изключена — звуковият двигател спира изцяло (нула натоварване), включена — продължава
 function sleepMute(){if(!AU.ctx)return;
-  if(SLP.faded){SLP.faded=false;SLP.end=0;SLP.mins=0;AU.mute=false;}else AU.mute=!AU.mute;
+  if(SLP.faded){SLP.faded=false;SLP.end=0;SLP.mins=0;AU.mute=false;wakeOn();}else AU.mute=!AU.mute;
   setVol();if(AU.mute)setTimeout(()=>{if(SLP.on&&AU.mute&&AU.ctx)AU.ctx.suspend();},300);else AU.ctx.resume();
   sleepUI();sleepShowUi();}
 $('#slMute').addEventListener('click',sleepMute);$('#slFs').addEventListener('click',full);
 $('#sleep').addEventListener('pointermove',sleepShowUi);$('#sleep').addEventListener('pointerdown',sleepShowUi);$('#sleep').addEventListener('dblclick',full);
 
 alloc(true);RAF=requestAnimationFrame(frame);
-window.__viz={PR,DR,SL,A,AU,SLP,sleepOn,sleepOff,goTo,step,frame,get raf(){return RAF},get frames(){return frameNo},setScene,showTitle,hideTitle,attach,TTL,pause(b){PAUSE=!!b;},get iw(){return iw},get ih(){return ih},get fps(){return fpsS},get qMul(){return qMul}};
+window.__viz={get WL(){return WL},wakeOff,PR,DR,SL,A,AU,SLP,sleepOn,sleepOff,goTo,step,frame,get raf(){return RAF},get frames(){return frameNo},setScene,showTitle,hideTitle,attach,TTL,pause(b){PAUSE=!!b;},get iw(){return iw},get ih(){return ih},get fps(){return fpsS},get qMul(){return qMul}};
 </script>
