@@ -2,7 +2,7 @@
    Само за разработка, без npm. Секторите не зависят от JS двигателя, затова baseline, placement, reach и acidSim дават
    същите числа като браузърният панел (tools/checks.js); smoke — също.
 
-     node tools/run.js <файл.html> <проверка> [опции като JSON]   проверка от tools/checks.js: baseline, placement, reach, acidSim, smoke, back
+     node tools/run.js <файл.html> <проверка> [опции като JSON]   проверка от tools/checks.js: baseline, placement, reach, acidSim, smoke, back, episodes
      node tools/run.js <файл.html> suite                          отпечатъците за A/B: baseline, back, cheats, stand + smoke (по сценарии)
      node tools/run.js <файл.html> storage                        договорът на записите (localStorage) — tools/cases.js
      node tools/run.js <файл.html> cheats                         чийтовете: отключване, действие, нищо не се записва — tools/cases.js
@@ -46,6 +46,8 @@ async function suite() {
     out.push(`baseline ${g} сектори=${r.сектори} отпечатък=${r.отпечатък} терен=${r.терен} население=${r.население} без връщане=${r['без връщане']}`);
     let b = null; try { b = await check(env, 'back', { games: [g] }); } catch (e) {}   // по-стара сборка (без опциите на svValidate) — „—“
     out.push(b ? `back ${g} нива=${b.нива} препятствия=${b.препятствия} без изход в модела=${b['без изход в модела'].length} недостижими предмети=${b['недостижими предмети'].length} платформи=${b['недостижими платформи'].length}` : `back ${g} —`); }
+  for (const g of games) { let e = null; try { e = await check(env, 'episodes', { games: [g], seeds: 5 }); } catch (x) {}   // само части с генерирани епизоди
+    if (e && e.нива) out.push(`episodes ${g} нива=${e.нива} резервни=${e['резервен генератор']} без връщане=${e['места без връщане']} без изход=${e['без изход в модела']} недостижими=${e['недостижими предмети']} в стена=${e['в стена/врата']} отпечатък=${e.отпечатък}`); }
   const ch = cheats(); out.push(ch.няма ? 'cheats —' : `cheats ${ch.bad ? 'НЕ' : 'ОК'} ${ch.n - ch.bad}/${ch.n}`);
   const st = stand({ seeds: 2 });   // опора — в свой контекст (обвитият код)
   for (const g of games) out.push(`stand ${g} предмети=${st.части[g].предмети} висящи=${st.части[g].висящи}`);

@@ -24,7 +24,7 @@ function makePlayer(lo){
   return p;
 }
 function loadLevel(i,obj){
-  LI=i; LVL=Object.create(obj||GLV[i]); COLS=LVL.cols; G=LVL.grav;   // екземпляр: записите по време на игра (епоха, флагове на босовете, финал) не пипат описанието
+  LI=i; LVL=Object.create(obj||(GLV[i]&&GLV[i].gen?epGen(i):GLV[i])); COLS=LVL.cols; G=LVL.grav;   // екземпляр: записите по време на игра (епоха, флагове на босовете, финал) не пипат описанието
   map=[]; for(let y=0;y<ROWS;y++) map.push(new Array(COLS).fill('.'));
   const F=(x0,y0,x1,y1,c)=>{for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)if(x>=0&&x<COLS&&y>=0&&y<ROWS)map[y][x]=c;};
   LVL.build(F,COLS); prerender(); buildSky();
@@ -76,7 +76,8 @@ function spawnWave(list){
     if(via==='drop'){ const e=makeEnemy(type,tx*T+8,4*T+12); e.alert=true; e.tag='enc'; e.cd=0.9*D.react; enemies.push(e);
       const F=FOES[type]; if(F.radio){ sfxAt('radio',e); if(!said){ said=true; const B=LVL.barks||['Ето го!','Огън!','Там е!']; bark(e,B[Math.floor(rnd(B.length))],1.5); } }
       else if(F.dropSfx) sfxAt(F.dropSfx,e); }
-    else portalSpawn(type,tx*T+8,row!=null?(row+1)*T:groundY(tx),i*0.3,'enc');
+    else { let rr=row; if(rr!=null) while(rr<ROWS-2&&(isS(tx,rr)||isS(tx,rr-1))) rr++;   // летящ над стена или в тавана (засадата се строи преди тавана) — надолу до свободно
+      portalSpawn(type,tx*T+8,rr!=null?(rr+1)*T:groundY(tx),i*0.3,'enc'); }
     i++;
   }
 }

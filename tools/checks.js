@@ -23,6 +23,8 @@
                  нататък), гонитбите (L.chase) и нивата с L.noBack. Отделно: недостижими предмети (по всички трудности;
                  очаквано 0) и висящи платформи, до които не се стига (за преглед: навесите в r2:14, постовете на пазачите в r3).
                  Секторите на оцеляването — в baseline („без връщане“).
+     episodes  — генерираните епизоди (engine/episodes.js) по семена: резервен генератор, места без връщане и недостижими
+                 предмети (моделът на back), врагове/предмети в стена, спомени, време и отпечатък (същият в Node и Chrome).
      smoke     — за всяка част: меню, интро, тренировка, всеки епизод (+ старт на боса), сектори 1 и 5 — с програмиран вход и
                  семенен Math.random. Хваща грешки и дава отпечатък на сценарий („златен образец“): при чисто преструктуриране
                  трябва да остане същият. Записите в localStorage се възстановяват след проверката. Може да се пуска многократно
@@ -57,6 +59,7 @@ async function* sectors({ game = 'r1', seeds = 20, from = 1, ks = 40, dis = [0, 
   z().toMenu(2);
 }
 
+const FOES_FLY = new Set(['flyer', 'drone', 'bat', 'mite', 'fish', 'jelly']);   // във въздуха или във водата — не стоят на земя
 const SM_KEYS = ['left', 'right', 'up', 'down', 'fire', 'jump', 'crouch', 'swap', 'era', 'enter', 'esc', 'pause'];
 /* ---------- back: обратна проходимост на нивата от кампаниите ---------- */
 // Картата за модела: вратите — отворени (назад се минава, след като са отворени), скритите проходи и тоновите врати — минават
@@ -70,7 +73,8 @@ function bkLayer(g, L, cols, rows, exitX) {
   const N = cols * rows, adj = Array.from(V.adj, a => a ? a.slice() : []), free = new Uint8Array(N);
   const sol = (x, y) => x < 0 || x >= cols || y < 0 || (y < rows && BK_SOL.includes(g[y][x]));
   for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) if (g[y][x] === 'w' || g[y][x] === 'H') free[y * cols + x] = 1;   // стълбата се хваща и отстрани, и в падане
-  for (const w of L.winds || []) if (w[5] < 0) for (let y = Math.max(0, w[1]); y <= Math.min(rows - 1, w[3]); y++) for (let x = Math.max(0, w[0]); x <= Math.min(cols - 1, w[2]); x++) if (!sol(x, y)) free[y * cols + x] = 1;
+  const wind = new Uint8Array(N);   // възходящо течение — в него се скача и встрани, на височината на тялото
+  for (const w of L.winds || []) if (w[5] < 0) for (let y = Math.max(0, w[1]); y <= Math.min(rows - 1, w[3]); y++) for (let x = Math.max(0, w[0]); x <= Math.min(cols - 1, w[2]); x++) if (!sol(x, y)) free[y * cols + x] = wind[y * cols + x] = 1;
   if (L.zeroG || L.zgZones) for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++)   // безтегловност — също свободно движение
     if (!sol(x, y) && (L.zeroG || L.zgZones.some(([x0, y0, x1, y1]) => x >= x0 && x <= x1 && y >= y0 && y <= y1))) free[y * cols + x] = 1;
   const fall = (x, y, from, drift = 0) => { for (let cx = Math.max(0, x - drift); cx <= Math.min(cols - 1, x + drift); cx++)   // падане (с отнасяне встрани до drift колони)
@@ -84,7 +88,7 @@ function bkLayer(g, L, cols, rows, exitX) {
       if (near || surf) adj[id].push(s); if (near) adj[s].push(id); } }
   if (free.some(v => v)) for (let s = 0; s < N; s++) if (V.kind[s]) { const x = s % cols, y = (s / cols) | 0;   // влизане: сход в съседната колона или скок до 3 встрани и 4 нагоре
     for (const d of [-1, 1]) if (x + d >= 0 && x + d < cols && !sol(x + d, y - 1)) fall(x + d, y - 1, s);
-    for (let fy = Math.max(0, y - 4); fy < y - 1; fy++) { if (sol(x, fy)) continue; for (const d of [-1, 1]) for (let fx = x + d, k = 0; k < 3 && fx >= 0 && fx < cols && !sol(fx, fy); fx += d, k++) if (free[fy * cols + fx]) adj[s].push(fy * cols + fx); } }
+    for (let fy = Math.max(0, y - 4); fy <= y; fy++) { if (sol(x, fy)) continue; for (const d of [-1, 1]) for (let fx = x + d, k = 0; k < 3 && fx >= 0 && fx < cols && !sol(fx, fy); fx += d, k++) if (free[fy * cols + fx] && (fy < y - 1 || wind[fy * cols + fx])) adj[s].push(fy * cols + fx); } }
   return { V, adj, free };
 }
 // едно ниво: откъде се влиза в област без връщане до началото. Картата — пълната (L.build; касетата я пълни постепенно), с
@@ -194,6 +198,7 @@ const C = {
     const r = { нива: 0, 'нива с препятствия': 0, препятствия: 0, 'без изход в модела': [], изключени: [], подробно: [], 'недостижими предмети': [], 'недостижими платформи': [] }, di0 = z().DI;
     for (const g of games || z().GAMES.map(q => q.id)) { z().enterGame(g, 2); const lv = z().levels;
       for (let i = 0; i < lv.length; i++) { const name = g + ':' + (i + 1), items = [], seen = new Set();
+        if (lv[i].gen) continue;   // генерираните епизоди — в проверката episodes (по семена)
         for (const di of [0, 1, 2]) { z().setDiff(di); z().loadLevel(i); for (const k of z().pickups) { const key = k.type + k.x + ',' + k.y; if (!seen.has(key)) { seen.add(key); items.push(k); } } }   // предметите по всички трудности
         const L = z().LVL, a = bkLevel(L, z().map.length), sp = bkSpots(L, a, items);
         if (sp.предмети.length) r['недостижими предмети'].push(name + ' ' + L.title + ': ' + sp.предмети.join(' '));
@@ -205,6 +210,28 @@ const C = {
         if (i % 4 === 3) await pause(); }
       z().toMenu(2); }
     z().setDiff(di0); return r;
+  },
+  // генерираните епизоди (engine/episodes.js): всеки епизод със seeds семена — резервен генератор, места без връщане и недостижими
+  // предмети (моделът на back), врагове/предмети в стена, време; отпечатък на картите и населението при семената 1000+s·7919
+  async episodes({ games = null, seeds = 10, dis = [1] } = {}) {
+    const r = { нива: 0, 'резервен генератор': 0, 'места без връщане': 0, 'без изход в модела': 0, 'недостижими предмети': 0, 'в стена/врата': 0, спомени: 0,
+      'време ср. ms': 0, 'време макс ms': 0, отпечатък: '', примери: [] }, di0 = z().DI, ter = []; let tt = 0;
+    const ex = (what, x) => { r[what]++; if (r.примери.length < 12) r.примери.push(x); };
+    for (const g of games || z().GAMES.map(q => q.id)) { z().enterGame(g, 2); const lv = z().levels; if (!lv.some(l => l.gen)) { z().toMenu(2); continue; }
+      for (const di of dis) { z().setDiff(di);
+        for (let i = 0; i < lv.length; i++) { if (!lv[i].gen) continue;
+          for (let s = 1; s <= seeds; s++) { const seed = 1000 + s * 7919, name = g + ':' + (i + 1) + ' семе ' + seed; z().epFix = seed;
+            const t0 = performance.now(); z().loadLevel(i); const dt = performance.now() - t0; tt += dt; r['време макс ms'] = Math.max(r['време макс ms'], Math.round(dt)); r.нива++;
+            const L = z().LVL; if (z().genLevel.att === 99) ex('резервен генератор', name);
+            const a = bkLevel(L, z().map.length), sp = bkSpots(L, a, z().pickups);
+            if (!a.exit) ex('без изход в модела', name); if (a.препятствия.length) ex('места без връщане', name + ' x' + a.препятствия[0].x);
+            for (const q of sp.предмети) ex('недостижими предмети', name + ' ' + q);
+            for (const e of z().enemies) if (!FOES_FLY.has(e.type) && e.type !== 'turret' && e.type !== 'nest' && z().solidAt(e.x + e.w / 2, e.y + e.h / 2)) ex('в стена/врата', name + ' ' + e.type);
+            for (const p of z().pickups) { if (p.type === 'memory') r.спомени++; if (z().solidAt(p.x + 6, p.y + 5)) ex('в стена/врата', name + ' ' + p.type); }
+            ter.push(hstr(z().map.map(q => q.join('')).join('|') + '#' + L.spawns.map(q => q.join(':')).join(';')));
+            if (r.нива % 10 === 0) await pause(); } } }
+      z().toMenu(2); }
+    z().epFix = null; z().setDiff(di0); r['време ср. ms'] = r.нива ? +(tt / r.нива).toFixed(1) : 0; r.отпечатък = hstr(ter.join(',')); return r;
   },
   async baseline(o) {
     const out = [], ter = [], pop = []; let noBack = 0, haveB = true;

@@ -54,7 +54,9 @@ module.exports = ({ GAME_JS, file, boot }) => {
       for (const e of rz.enemies) if (FOES[e.type] && FOES[e.type].fixed) base(where, e.type, m, [[e.x, e.x + e.w]], e.y + e.h);
       for (const b of ev('barrels')) base(where, 'бъчва', m, [[b.x, b.x + b.w]], b.y + b.h); };
     for (const g of rz.GAMES.map(x => x.id)) { if (games && !games.includes(g)) continue; rz.enterGame(g, 2); q = части[g] = { предмети: 0, висящи: 0 };
-      for (let i = 0; i < rz.levels.length; i++) { W.__stLog = []; rz.loadLevel(i); const log = W.__stLog; W.__stLog = null; scan(g + ':' + (i + 1) + ' ' + rz.LVL.title, rz.LVL, log); }
+      for (let i = 0; i < rz.levels.length; i++) for (let s = 1; s <= (rz.levels[i].gen ? seeds : 1); s++) {   // генериран епизод — по семена
+        if (rz.levels[i].gen) rz.epFix = 1000 + s * 7919; W.__stLog = []; rz.loadLevel(i); const log = W.__stLog; W.__stLog = null; scan(g + ':' + (i + 1) + ' ' + rz.LVL.title + (rz.levels[i].gen ? ' (семе ' + rz.epFix + ')' : ''), rz.LVL, log); }
+      rz.epFix = null;
       for (const di of [0, 2]) { rz.setDiff(di); for (let s = 1; s <= seeds; s++) for (let k = 0; k < 40; k++) { rz.survSeed = 10000 + s * 7919; const L = rz.genLevel(k);
         W.__stLog = []; rz.loadLevel(-1, L); const log = W.__stLog; W.__stLog = null; scan(`${g} сектор ${k + 1} (семе ${s}, ${['лесно', '', 'трудно'][di]}) ${L.themeName}`, L, log); } }
       rz.toMenu(2); }

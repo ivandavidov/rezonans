@@ -15,7 +15,8 @@
      svBoss / svArena   арените: копия от кампанията {бос:[епизод,тема]} или строител svArena(тип,x,o) (r1)
      svFallback, bossMulOne     резервната тема на генератора; босовете с еднаква сила в оцеляването
      accent, accentRgb, accent2, font, suit, glitch, hintCols, prog, menuMusic, menuCam, controls
-     eKey / eBtn   надпис за клавиш E (легенда / бутон на тъч екран), echo, flashlight
+     eKey / eBtn   надпис за клавиш E (легенда / бутон на тъч екран), echo, flashlight; eraHint — надписът за E при епохите,
+                 eraGhost — очертания на плочките, които ги има само в другия слой
      radioWho    кой говори по радиото (radio()); voices — {име: цвят} на говорещите в съобщенията (иначе — цветът на HUD-а)
      heroName(h) надписът за героя в нивата с двама герои (LVL.hero); sonarName, memLabel — имената на сонара и на спомените
      epsExtra()  допълнително рисуване в менюто на епизодите
@@ -43,7 +44,7 @@ function unlRead(){ let u=clamp(parseInt(store.get(KEY('unlocked'),'1'),10)||1,1
 /* ---------- менюто ---------- */
 const MENU_FIX=[{t:'ИНТРО',k:'intro'},{t:'ТРЕНИРОВКА',k:'training'},{t:'КАМПАНИЯ',k:'campaign'},{t:'ОЦЕЛЯВАНЕ',k:'survival'}];
 function menuItems(g=GAME){ return MENU_FIX.concat(CHT.open?[CHT_ITEM]:[],GAMES.filter(o=>o!==g).map(o=>({t:o.order<g.order?'◂  '+o.title:o.title+'  ▸',k:'game',id:o.id}))); }
-function toMenu(sel){ SURV=false; bossMul=1; ehpMul=1; TRN=null; msg=null; loadLevel(0); state='gmenu'; gSel=sel==null?2:sel; mInt=0; bossMusic=false; cam=0;
+function toMenu(sel){ SURV=false; bossMul=1; ehpMul=1; TRN=null; msg=null; loadMenuLevel(); state='gmenu'; gSel=sel==null?2:sel; mInt=0; bossMusic=false; cam=0;
   setMusic(GAME.menuMusic||LVL.music); if(AC&&AC.state==='suspended') AC.resume(); }
 function enterGame(id,sel){ setGame(id); toMenu(sel); }
 function followLink(id){ const i=GHIST.indexOf(id); if(i>=0) GHIST.length=i; else GHIST.push(GAME.id); enterGame(id,2); }

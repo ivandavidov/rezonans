@@ -377,7 +377,7 @@ function render(){
   if(state==='dead'){ overlay(Math.min(0.7,deadT*0.8)); ctx.fillStyle=`rgba(120,0,0,${Math.min(0.25,deadT*0.3)})`; ctx.fillRect(0,0,W,H);
     centerText('ЗАГИНА',122,'30px '+DFONT(),'#ff5a45');
     if(deadT>1) centerText(SURV?(survLives>1?'Z — продължи ('+(survLives-1===1?'остава 1 живот':'остават '+(survLives-1)+' живота')+')':'Z — край на оцеляването'):'Z — опитай отново от последната контролна точка',148,'600 10px "IBM Plex Mono",monospace','#f3e6cf'); }
-  if(state==='paused'){ overlay(0.6); centerText('ПАУЗА',124,'28px '+DFONT(),ACC()); centerText('Z или P — продължи · Esc — изход в менюто',148,'600 9px "IBM Plex Mono",monospace','#cfd8dc'); audPauseLine();
+  if(state==='paused'){ overlay(0.6); centerText('ПАУЗА',124,'28px '+DFONT(),ACC()); centerText('Z или P — продължи · Esc — изход в менюто',148,'600 9px "IBM Plex Mono",monospace','#cfd8dc'); audPauseLine(); if(LVL.seed&&!SURV) centerText('сийд: '+LVL.seed,174,'600 7px "IBM Plex Mono",monospace','#7f8e97');
     if(CHT.open) centerText('↓ — чийтове',182,'600 8px "IBM Plex Mono",monospace',ACC()); }
   if(state==='levelEnd'&&SURV){ overlay(Math.min(0.85,endT*0.8)); if(endT>0.5){ centerText((LVL.isBoss?'БОСЪТ Е ПОВАЛЕН · ':'')+'СЕКТОР '+(survK+1)+' ПРЕМИНАТ',60,'600 9px "IBM Plex Mono",monospace','#94ff57'); glitchTitle('ТОЧКИ '+survScore,W/2,100,26); drawStats(stats,150);
       centerText('Следва: сектор '+(survK+2)+' · '+THEME_NAME[svPlan(survK+1).theme]+(svPlan(survK+1).boss?' · БОС':''),204,'600 8px "IBM Plex Mono",monospace','#cfd8dc');

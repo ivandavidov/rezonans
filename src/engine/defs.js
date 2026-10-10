@@ -14,13 +14,15 @@
      defItem(id,{take,draw})      предмет: take(k) → false, ако не е взет; draw(k,x,y)
      defWeapon(id,{name,kind,cap,res,reload,auto,fire,sprite,rot,flash,casing,light})   оръжие — виж engine/lib/weapons.js
      defTile(fn), defBack(fn)     собствен вид на плочките / на фона (fn връща true, ако е нарисувала)
+     defPrefab(id,{build(S)})     готова сцена в генерирано ниво (engine/episodes.js): S — инструментите на генератора (курсорът
+                                  S.b {x,gy}, ground, stepTo, fill, set, colG, fixed, triggers, lifts …, сегментите S.F); координатите — от S.b.x
    defFoes/defBosses(поле,{id:стойност,…}) задават едно поле на няколко наведнъж. Вече зададено поле спира играта с ясна грешка.
    addUnique — за общите речници (TH, SKIES, SV_THEMES, THEME_NAME, MUT_NAME). */
 function addUnique(target,obj,what){ for(const k in obj){ if(k in target) throw new Error(what+': ключът „'+k+'“ вече е зает от друга игра'); target[k]=obj[k]; } }
-const FOES={}, BOSSES={}, ITEMS={}, WEAPONS={}, DIMS={}, TILE_FX=[], BACK_FX=[];
+const FOES={}, BOSSES={}, ITEMS={}, WEAPONS={}, DIMS={}, TILE_FX=[], BACK_FX=[], PREFABS={};
 function defIn(R,what,id,d){ const o=R[id]||(R[id]={}); for(const k in d){ if(k in o) throw new Error(what+': „'+id+'.'+k+'“ вече е зададено'); o[k]=d[k]; } }
 function defFoe(id,d){ defIn(FOES,'defFoe',id,d); if(d.dims) DIMS[id]=d.dims; }
-const defBoss=(id,d)=>defIn(BOSSES,'defBoss',id,d), defItem=(id,d)=>defIn(ITEMS,'defItem',id,d);
+const defBoss=(id,d)=>defIn(BOSSES,'defBoss',id,d), defItem=(id,d)=>defIn(ITEMS,'defItem',id,d), defPrefab=(id,d)=>defIn(PREFABS,'defPrefab',id,d);
 // оръжие (engine/lib/weapons.js): редът на регистрация е редът на клавишите 1–6; таблиците NAMES/ORDER/CAP/RES_MAX се пълнят оттук
 function defWeapon(id,d){ defIn(WEAPONS,'defWeapon',id,d); if(d.name){ NAMES[id]=d.name; ORDER.push(id); if(d.kind!=='melee'){ CAP[id]=d.cap; RES_MAX[id]=d.res||0; } } }
 const defFoes=(f,m)=>{ for(const id in m) defFoe(id,{[f]:m[id]}); }, defBosses=(f,m)=>{ for(const id in m) defBoss(id,{[f]:m[id]}); };

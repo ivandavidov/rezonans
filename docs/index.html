@@ -168,13 +168,15 @@ const store={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:v;}c
      defItem(id,{take,draw})      предмет: take(k) → false, ако не е взет; draw(k,x,y)
      defWeapon(id,{name,kind,cap,res,reload,auto,fire,sprite,rot,flash,casing,light})   оръжие — виж engine/lib/weapons.js
      defTile(fn), defBack(fn)     собствен вид на плочките / на фона (fn връща true, ако е нарисувала)
+     defPrefab(id,{build(S)})     готова сцена в генерирано ниво (engine/episodes.js): S — инструментите на генератора (курсорът
+                                  S.b {x,gy}, ground, stepTo, fill, set, colG, fixed, triggers, lifts …, сегментите S.F); координатите — от S.b.x
    defFoes/defBosses(поле,{id:стойност,…}) задават едно поле на няколко наведнъж. Вече зададено поле спира играта с ясна грешка.
    addUnique — за общите речници (TH, SKIES, SV_THEMES, THEME_NAME, MUT_NAME). */
 function addUnique(target,obj,what){ for(const k in obj){ if(k in target) throw new Error(what+': ключът „'+k+'“ вече е зает от друга игра'); target[k]=obj[k]; } }
-const FOES={}, BOSSES={}, ITEMS={}, WEAPONS={}, DIMS={}, TILE_FX=[], BACK_FX=[];
+const FOES={}, BOSSES={}, ITEMS={}, WEAPONS={}, DIMS={}, TILE_FX=[], BACK_FX=[], PREFABS={};
 function defIn(R,what,id,d){ const o=R[id]||(R[id]={}); for(const k in d){ if(k in o) throw new Error(what+': „'+id+'.'+k+'“ вече е зададено'); o[k]=d[k]; } }
 function defFoe(id,d){ defIn(FOES,'defFoe',id,d); if(d.dims) DIMS[id]=d.dims; }
-const defBoss=(id,d)=>defIn(BOSSES,'defBoss',id,d), defItem=(id,d)=>defIn(ITEMS,'defItem',id,d);
+const defBoss=(id,d)=>defIn(BOSSES,'defBoss',id,d), defItem=(id,d)=>defIn(ITEMS,'defItem',id,d), defPrefab=(id,d)=>defIn(PREFABS,'defPrefab',id,d);
 // оръжие (engine/lib/weapons.js): редът на регистрация е редът на клавишите 1–6; таблиците NAMES/ORDER/CAP/RES_MAX се пълнят оттук
 function defWeapon(id,d){ defIn(WEAPONS,'defWeapon',id,d); if(d.name){ NAMES[id]=d.name; ORDER.push(id); if(d.kind!=='melee'){ CAP[id]=d.cap; RES_MAX[id]=d.res||0; } } }
 const defFoes=(f,m)=>{ for(const id in m) defFoe(id,{[f]:m[id]}); }, defBosses=(f,m)=>{ for(const id in m) defBoss(id,{[f]:m[id]}); };
@@ -625,7 +627,7 @@ function makePlayer(lo){
   return p;
 }
 function loadLevel(i,obj){
-  LI=i; LVL=Object.create(obj||GLV[i]); COLS=LVL.cols; G=LVL.grav;   // екземпляр: записите по време на игра (епоха, флагове на босовете, финал) не пипат описанието
+  LI=i; LVL=Object.create(obj||(GLV[i]&&GLV[i].gen?epGen(i):GLV[i])); COLS=LVL.cols; G=LVL.grav;   // екземпляр: записите по време на игра (епоха, флагове на босовете, финал) не пипат описанието
   map=[]; for(let y=0;y<ROWS;y++) map.push(new Array(COLS).fill('.'));
   const F=(x0,y0,x1,y1,c)=>{for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)if(x>=0&&x<COLS&&y>=0&&y<ROWS)map[y][x]=c;};
   LVL.build(F,COLS); prerender(); buildSky();
@@ -677,7 +679,8 @@ function spawnWave(list){
     if(via==='drop'){ const e=makeEnemy(type,tx*T+8,4*T+12); e.alert=true; e.tag='enc'; e.cd=0.9*D.react; enemies.push(e);
       const F=FOES[type]; if(F.radio){ sfxAt('radio',e); if(!said){ said=true; const B=LVL.barks||['Ето го!','Огън!','Там е!']; bark(e,B[Math.floor(rnd(B.length))],1.5); } }
       else if(F.dropSfx) sfxAt(F.dropSfx,e); }
-    else portalSpawn(type,tx*T+8,row!=null?(row+1)*T:groundY(tx),i*0.3,'enc');
+    else { let rr=row; if(rr!=null) while(rr<ROWS-2&&(isS(tx,rr)||isS(tx,rr-1))) rr++;   // летящ над стена или в тавана (засадата се строи преди тавана) — надолу до свободно
+      portalSpawn(type,tx*T+8,rr!=null?(rr+1)*T:groundY(tx),i*0.3,'enc'); }
     i++;
   }
 }
@@ -1756,7 +1759,7 @@ function render(){
   if(state==='dead'){ overlay(Math.min(0.7,deadT*0.8)); ctx.fillStyle=`rgba(120,0,0,${Math.min(0.25,deadT*0.3)})`; ctx.fillRect(0,0,W,H);
     centerText('ЗАГИНА',122,'30px '+DFONT(),'#ff5a45');
     if(deadT>1) centerText(SURV?(survLives>1?'Z — продължи ('+(survLives-1===1?'остава 1 живот':'остават '+(survLives-1)+' живота')+')':'Z — край на оцеляването'):'Z — опитай отново от последната контролна точка',148,'600 10px "IBM Plex Mono",monospace','#f3e6cf'); }
-  if(state==='paused'){ overlay(0.6); centerText('ПАУЗА',124,'28px '+DFONT(),ACC()); centerText('Z или P — продължи · Esc — изход в менюто',148,'600 9px "IBM Plex Mono",monospace','#cfd8dc'); audPauseLine();
+  if(state==='paused'){ overlay(0.6); centerText('ПАУЗА',124,'28px '+DFONT(),ACC()); centerText('Z или P — продължи · Esc — изход в менюто',148,'600 9px "IBM Plex Mono",monospace','#cfd8dc'); audPauseLine(); if(LVL.seed&&!SURV) centerText('сийд: '+LVL.seed,174,'600 7px "IBM Plex Mono",monospace','#7f8e97');
     if(CHT.open) centerText('↓ — чийтове',182,'600 8px "IBM Plex Mono",monospace',ACC()); }
   if(state==='levelEnd'&&SURV){ overlay(Math.min(0.85,endT*0.8)); if(endT>0.5){ centerText((LVL.isBoss?'БОСЪТ Е ПОВАЛЕН · ':'')+'СЕКТОР '+(survK+1)+' ПРЕМИНАТ',60,'600 9px "IBM Plex Mono",monospace','#94ff57'); glitchTitle('ТОЧКИ '+survScore,W/2,100,26); drawStats(stats,150);
       centerText('Следва: сектор '+(survK+2)+' · '+THEME_NAME[svPlan(survK+1).theme]+(svPlan(survK+1).boss?' · БОС':''),204,'600 8px "IBM Plex Mono",monospace','#cfd8dc');
@@ -1889,7 +1892,8 @@ defItem('grenade',{take(k){ const p=player; const first=!p.weapons.grenade; p.we
      svBoss / svArena   арените: копия от кампанията {бос:[епизод,тема]} или строител svArena(тип,x,o) (r1)
      svFallback, bossMulOne     резервната тема на генератора; босовете с еднаква сила в оцеляването
      accent, accentRgb, accent2, font, suit, glitch, hintCols, prog, menuMusic, menuCam, controls
-     eKey / eBtn   надпис за клавиш E (легенда / бутон на тъч екран), echo, flashlight
+     eKey / eBtn   надпис за клавиш E (легенда / бутон на тъч екран), echo, flashlight; eraHint — надписът за E при епохите,
+                 eraGhost — очертания на плочките, които ги има само в другия слой
      radioWho    кой говори по радиото (radio()); voices — {име: цвят} на говорещите в съобщенията (иначе — цветът на HUD-а)
      heroName(h) надписът за героя в нивата с двама герои (LVL.hero); sonarName, memLabel — имената на сонара и на спомените
      epsExtra()  допълнително рисуване в менюто на епизодите
@@ -1917,7 +1921,7 @@ function unlRead(){ let u=clamp(parseInt(store.get(KEY('unlocked'),'1'),10)||1,1
 /* ---------- менюто ---------- */
 const MENU_FIX=[{t:'ИНТРО',k:'intro'},{t:'ТРЕНИРОВКА',k:'training'},{t:'КАМПАНИЯ',k:'campaign'},{t:'ОЦЕЛЯВАНЕ',k:'survival'}];
 function menuItems(g=GAME){ return MENU_FIX.concat(CHT.open?[CHT_ITEM]:[],GAMES.filter(o=>o!==g).map(o=>({t:o.order<g.order?'◂  '+o.title:o.title+'  ▸',k:'game',id:o.id}))); }
-function toMenu(sel){ SURV=false; bossMul=1; ehpMul=1; TRN=null; msg=null; loadLevel(0); state='gmenu'; gSel=sel==null?2:sel; mInt=0; bossMusic=false; cam=0;
+function toMenu(sel){ SURV=false; bossMul=1; ehpMul=1; TRN=null; msg=null; loadMenuLevel(); state='gmenu'; gSel=sel==null?2:sel; mInt=0; bossMusic=false; cam=0;
   setMusic(GAME.menuMusic||LVL.music); if(AC&&AC.state==='suspended') AC.resume(); }
 function enterGame(id,sel){ setGame(id); toMenu(sel); }
 function followLink(id){ const i=GHIST.indexOf(id); if(i>=0) GHIST.length=i; else GHIST.push(GAME.id); enterGame(id,2); }
@@ -2497,7 +2501,12 @@ function switchEra(force){
   return true;
 }
 defMech('eras',{
-  chips(chip){ if(ERAD) chip('◷ '+LVL.eraNames[ERA]+'   ·   E — смени епохата','#ffd08a'); },
+  drawWorld(){ if(!ERAD||!GAME.eraGhost) return;   // очертания на плочките, които ги има само в другия слой (r8: мостът е там — натисни E)
+    const o=ERAD.maps[1-ERA], x0=Math.max(0,Math.floor(cam/T)), x1=Math.min(COLS-1,Math.floor((cam+W)/T)), a=0.3+0.12*Math.sin(titleT*4);
+    ctx.save(); ctx.strokeStyle=`rgba(255,210,122,${a})`; ctx.fillStyle=`rgba(255,210,122,${a*0.18})`; ctx.setLineDash([3,3]);
+    for(let tx=x0;tx<=x1;tx++) for(let ty=0;ty<ROWS;ty++) if(SOLID.has(o[ty][tx])&&!SOLID.has(map[ty][tx])){ const x=Math.round(tx*T-cam)+0.5, y=ty*T+0.5; ctx.fillRect(x,y,T-1,T-1); ctx.strokeRect(x,y,T-1,T-1); }
+    ctx.restore(); },
+  chips(chip){ if(ERAD) chip('◷ '+LVL.eraNames[ERA]+'   ·   '+(GAME.eraHint||'E — смени епохата'),'#ffd08a'); },
   load(){ ERA=0; ERAD=null; cpEra=0; eraCd=0; const L=LVL;
   if(L.buildB) buildEras();
   },
@@ -3105,12 +3114,13 @@ function svPlanBy(P,k){
   }
   return L[k];
 }
-function svGen(k){
-  const plan=svPlan(k);
+function svGen(k){ return svGenBy(k,svPlan(k)); }
+// plan: {theme, muts, boss} (+ seed и ep — рецептата на генериран епизод, engine/episodes.js; без тях — семето на оцеляването)
+function svGenBy(k,plan){
   if(plan.boss&&GAME.svBoss) return svBoss(k,plan);   // арена — копие от кампанията; иначе я строи GAME.svArena в svTry
   const zg=plan.muts.includes('zerog');
   for(let a=0;a<20;a++){ const L=zg?svZero(k,plan,a):svTry(k,plan,a,false); if(L){ genLevel.att=a; return L; } }
-  genLevel.att=99; return svTry(k,{theme:plan.theme,muts:[],boss:plan.boss},99,true)||svTry(k,{theme:GAME.svFallback,muts:[],boss:plan.boss},98,true);
+  genLevel.att=99; return svTry(k,Object.assign({},plan,{muts:[]}),99,true)||svTry(k,Object.assign({},plan,{theme:GAME.svFallback,muts:[]}),98,true);
 }
 function svBoss(k,plan){
   const L=GLV[GAME.svBoss[plan.boss][0]], portal=L.arena.px!=null;
@@ -3123,7 +3133,7 @@ function svBoss(k,plan){
 /* ---------- обикновен сектор: един генератор за всички части ----------
    Темата (SV_THEMES) дава етикети — sky, lowg, alien, cave, dark, human, turret, acid, elec, laser, vent, crush, conv, track, lift ('float'),
    pad, nest, tower, islands, zfloor, wind, water, lever, era, shift, ghost, stealth, term, plate, rhythm, freq, sun, still, sonar, flares,
-   sleepers, tone, snow, gusts, noGuard, noPipes — и данни: name, th, thB, sky (ключ или списък от ключове в SKIES), skyB, mus, foes, foesB,
+   sleepers, tone, snow, gusts, noGuard, noPipes — и данни: eraTip, bridgeTip (подсказките за епохите), name, th, thB, sky (ключ или списък от ключове в SKIES), skyB, mus, foes, foesB,
    foesK ([[от сектор, враг]]; без него — пазачи от сектор 7), air (летящ враг над веригите), deco/decoB(x,y,h,py) (декор на
    земята в колоните x-1…x+1 — под тях има равен под), sign, eraNames, alarmFoe.
    Теглата на сегментите се изчисляват от етикетите. Сектор с бос: GAME.svArena строи арената (r1); копията от кампанията — svBoss. */
@@ -3133,8 +3143,8 @@ function svBoss(k,plan){
 const SV_ROLES={air:'flyer',elite:'guard',sniper:'soldier',any:'crab',perch:['turret','shocker'],swim:['fish','jelly'],hover:'drone',zero:['guard','shocker','crab']};
 const svRoles=()=>Object.assign({},SV_ROLES,GAME.svSpec&&GAME.svSpec.roles);
 function svTry(k,plan,att,simple){
-  const RL=svRoles();
-  const r=mkRng(survSeed*7919+k*104729+att*31337+13), ri=(a,b)=>a+Math.floor(r()*(b-a+1)), pick=a=>a[Math.floor(r()*a.length)], ch=p=>r()<p;
+  const RL=svRoles(), E=plan.ep||null;   // E — рецептата на генериран епизод (engine/episodes.js); в оцеляването я няма
+  const r=mkRng((plan.seed!=null?plan.seed:survSeed)*7919+k*104729+att*31337+13), ri=(a,b)=>a+Math.floor(r()*(b-a+1)), pick=a=>a[Math.floor(r()*a.length)], ch=p=>r()<p;
   const theme=plan.theme, tg=SV_THEMES[theme], sky=!!tg.sky, era=!!tg.era, lowg=!!tg.lowg||plan.muts.includes('lowg'), isBoss=!!plan.boss;
   const swarm=plan.muts.includes('swarm'), scarce=plan.muts.includes('scarce'), air=tg.air!==undefined?tg.air:tg.foes.includes(RL.air)?RL.air:null;
   const MAXC=460, g=[]; for(let y=0;y<ROWS;y++) g.push(new Array(MAXC).fill('.'));
@@ -3236,10 +3246,10 @@ function svTry(k,plan,att,simple){
       gvOps.push([x0,Math.max(gy,ty),x1,16,'#']);
       b.x=x1+1; b.gy=ty; ground(ri(3,6)); },
     eraWall(){ if(!era) return F.terrain(); ground(2); const r0=sky?0:2; let e=ri(0,1);
-      once('era',b.x-4,'Стената я няма в другата епоха — натисни E, за да превключиш.',3.5);
+      once('era',b.x-4,tg.eraTip||'Стената я няма в другата епоха — натисни E, за да превключиш.',3.5);
       for(let n=ri(1,2);n>0;n--){ const x=b.x, w=ri(1,2); eraR.push({r:[x,r0,x+w-1,b.gy-1,'#'],era:e}); for(let j=0;j<w;j++){ colG(b.x,b.gy); noCeil.add(b.x); noSpawn.add(b.x); b.x++; } ground(ri(3,5)); e=1-e; } },
     eraBridge(){ if(!era) return F.gaps(); ground(2); const W=ri(6,9), x0=b.x, e=ri(0,1), gy=b.gy;
-      once('bridge',x0-4,'Мостът съществува само в едната епоха — смени я с E.',3.5);
+      once('bridge',x0-4,tg.bridgeTip||'Мостът съществува само в едната епоха — смени я с E.',3.5);
       for(let i=0;i<W;i++){ noSpawn.add(b.x); b.x++; }
       eraR.push({r:[x0,gy,x0+W-1,16,'#'],era:e,bridge:true}); gvOps.push([x0,gy,x0+W-1,16,'#']);
       ground(ri(3,5)); },
@@ -3275,15 +3285,22 @@ function svTry(k,plan,att,simple){
     lasers:tg.laser?1.35:0,crushers:tg.crush?1.4:0,vents:tg.vent?1.2:0,conveyor:tg.conv?1.35:0,train:tg.track?1.6:0,encounter:k>=1&&!era?1:0,nests:tg.nest?1.2:0,
     perch:tg.turret||tg.human?1:0.7,islands:tg.islands?1.4:tg.wind?1.2:0,drop:0.75,zfloor:tg.zfloor?1:0,secret:0.75,
     pool:tg.water?2.6:0,sluice:tg.lever?1.3:0,updraft:tg.wind?2.4:0,eraWall:era?2.6:0,eraBridge:era?1.8:0,shift:tg.shift?2:0,shrine:tg.ghost?1.5:0,stealth:tg.stealth?2.2:0,term:tg.term?1.5:0,plate:tg.plate?2.2:0,rhythm:tg.rhythm?2.2:0,freq:tg.freq?2.4:0};
+  if(E&&E.wts) Object.assign(W_,E.wts);   // рецептата сменя теглата (0 — сегментът го няма)
   const PRIMARY=tg.freq?'freq':tg.stealth?'stealth':tg.plate?'plate':tg.rhythm?'rhythm':tg.water?'pool':era?'eraWall':tg.wind?'updraft':tg.shift?'shift':tg.ghost?'shrine':tg.conv&&!tg.human?'conveyor':null;
   // ----- build -----
   ground(10); segs.push({id:'start',x:2});
   if(tg.ghost) triggers.push({x:6,fn:()=>{ if(!ALLIES.length){ addGhost(); showMsg('Дух на жител от града се присъедини към теб. Духовете стрелят по враговете.',3.2); } }});
-  const runLen=isBoss?ri(80,110)+Math.min(30,k*2):ri(135,165)+Math.min(60,k*3), stop=2+runLen;
+  const runLen=E&&E.len?ri(E.len[0],E.len[1]):isBoss?ri(80,110)+Math.min(30,k*2):ri(135,165)+Math.min(60,k*3), stop=2+runLen;
   const used={}; let last=null, guard=0;
-  if(PRIMARY&&!simple){ ground(2); segs.push({id:PRIMARY,x:b.x}); F[PRIMARY](); used[PRIMARY]=1; last=PRIMARY; }
+  // готова сцена (defPrefab): инструментите на генератора, курсорът b е общ
+  const S={F,b,g,gtop,set,fill,colG,ground,stepTo,loot,foeT,once,ri,r,ch,pick,k,sky,lowg,tg,fixed,triggers,lifts,lasers,vents,crushers,tracks,decos,decosB,noCeil,noSpawn,gvOps,levers,winds,shifters,eraR,lights:lights3,terms:terms3,plates:plates3};
+  const seg=id=>{ segs.push({id,x:b.x}); if(PREFABS[id]) PREFABS[id].build(S); else F[id](); used[id]=(used[id]||0)+1; last=id; };
+  const pre=E&&E.pre&&!simple?E.pre.map(q=>({x:2+q[0]*runLen,id:q[1]})):[];
+  if(E&&E.seq&&!simple) for(const id of E.seq){ ground(2); seg(id); }
+  else if(PRIMARY&&!simple){ ground(2); segs.push({id:PRIMARY,x:b.x}); F[PRIMARY](); used[PRIMARY]=1; last=PRIMARY; }
   while(b.x<stop&&guard++<80){
     let id;
+    if(pre.length&&b.x>=pre[0].x){ ground(2); seg(pre.shift().id); continue; }
     if(simple) id=pick(['terrain','stairs','terrain']);
     else { const cand=Object.keys(W_).filter(f=>W_[f]>0&&f!==last); let tot=0; const w=cand.map(f=>{ const v=W_[f]/(1+(used[f]||0)*0.8); tot+=v; return v; }); let x=r()*tot; id=cand[cand.length-1]; for(let i=0;i<cand.length;i++){ x-=w[i]; if(x<=0){ id=cand[i]; break; } } }
     segs.push({id,x:b.x}); F[id](); used[id]=(used[id]||0)+1; last=id;
@@ -3341,7 +3358,7 @@ function svTry(k,plan,att,simple){
   // enemies (разбъркването е Fisher–Yates с r() — еднакво във всеки JS двигател)
   const spawns=fixed.slice(), spawnsB=[], end=arena?Math.min(arena.door-1,exit):exit;
   const cells=[]; for(let x=14;x<end-2;x++) for(let y=1;y<ROWS;y++) if(safe(x,y)&&g[y][x]!=='Z'&&g[y][x]!=='^'&&!cps.some(c=>Math.abs(c-x)<3)) cells.push([x,y]);
-  const nE=Math.min(26,Math.round((end-14)/15*(0.7+0.05*k)*(swarm?1.5:1)));
+  const nE=E&&E.foes!=null?E.foes:Math.min(26,Math.round((end-14)/15*(0.7+0.05*k)*(swarm?1.5:1)));
   for(let i=cells.length-1;i>0;i--){ const j=Math.floor(r()*(i+1)), c=cells[i]; cells[i]=cells[j]; cells[j]=c; }
   const placed=[];
   for(const [x,y] of cells){ if(placed.length>=nE*1.35) break; if(placed.some(p=>Math.abs(p[0]-x)<4)) continue; placed.push([x,y]); }
@@ -3358,22 +3375,23 @@ function svTry(k,plan,att,simple){
     if(best) loot(best[0],best[1],best[2]); }
   for(let x=20;x<end;x+=ri(24,32)){ for(let xx=x;xx<x+5;xx++){ const y=gyEq(xx); if(y<16&&safe(xx,y)){ spawns.push(['health',xx,y-1,'E']); break; } } }
   for(const f of fixed) if(!spawns.includes(f)) spawns.push(f);   // плячката, добавена след разстановката на враговете
-  const WEAP=SV_WEAP; const sy=gyEq(8);
-  if(WEAP[k]) spawns.push([WEAP[k],8,sy-1]); if(k>=10&&k%5===0) spawns.push(['rockets',9,sy-1]); spawns.push(['health',10,sy-1,'E']);
+  const WEAP=E?{}:SV_WEAP; const sy=gyEq(8);
+  if(WEAP[k]) spawns.push([WEAP[k],8,sy-1]); if(!E&&k>=10&&k%5===0) spawns.push(['rockets',9,sy-1]); spawns.push(['health',10,sy-1,'E']);
+  if(E) epPlace(E,{r,ri,cols,end,cps,safe,gyEq,path,pathList:V.pathList,spawns,triggers,g,memory:plan.memory});   // engine/episodes.js
   // предмет на недостижимо място — до най-близкото безопасно (до 8 колони) или отпада; предметите под вода остават
   for(let i=spawns.length-1;i>=0;i--){ const [t,x,y]=spawns[i]; if(DIMS[t]||t==='barrel'||t.startsWith('nest')||V.R[(y+1)*cols+x]||g[y]&&g[y][x]==='w') continue;
     let to=null; for(let d=0;d<=8&&!to;d++) for(const xx of d?[x-d,x+d]:[x]){ if(xx<2||xx>=cols-2) continue; for(let yy=1;yy<ROWS&&!to;yy++) if(safe(xx,yy)&&g[yy][xx]!=='Z'&&g[yy][xx]!=='^') to=[xx,yy]; if(to) break; }
     if(to) spawns[i]=[t,to[0],to[1]-1].concat(spawns[i].slice(3)); else spawns.splice(i,1); }
   // decorations
-  const signY=sky?Math.max(2,gyEq(3)-5):Math.max(3,gyEq(3)-4), signT='СЕКТОР '+(k+1)+' · '+tg.name.toUpperCase(), ex=GAME.svSpec.exitCol||['#06201e','#4fe3d6'];
+  const signY=sky?Math.max(2,gyEq(3)-5):Math.max(3,gyEq(3)-4), signT=E?E.sign||'':'СЕКТОР '+(k+1)+' · '+tg.name.toUpperCase(), ex=GAME.svSpec.exitCol||['#06201e','#4fe3d6'];
   // декорът на темите заема до 3 плочки (x-1…x+1) и стои цял на земята: мястото се измества с една колона в равен участък, иначе отпада
   const flat=(c,y)=>c>=3&&c<cols-3&&gyEq(c)===y&&g[y][c]==='#'&&g[y-1][c]==='.'&&!noSpawn.has(c);
   const dsp=[]; for(let x=4;x<cols-4;x+=ri(4,9)){ const y=gyEq(x); if(y>=16||!flat(x,y)) continue; let a=x,b=x; while(a>x-2&&flat(a-1,y)) a--; while(b<x+2&&flat(b+1,y)) b++; if(b-a>=2) dsp.push([clamp(x,a+1,b-1),y]); }
   const exitDeco=()=>{ if(isBoss) return; const y=gyEq(cols-6); drawSign(cols-10,Math.max(sky?2:3,y-4),'ИЗХОД →',ex[0],ex[1]); lightDot((cols-4)*T,(y-2)*T,ex[1],0); };
-  decos.push(()=>{ (tg.sign||drawSign)(3,signY,signT); exitDeco();
+  decos.push(()=>{ if(signT) (tg.sign||drawSign)(3,signY,signT); exitDeco();
     if(!sky&&!tg.noPipes) pipeH(3*T+4,2,cols-2);
     if(tg.deco) for(const [x,y] of dsp) tg.deco(x,y,hash(x,y),y*T); });
-  decosB.push(()=>{ drawSign(3,signY,signT); exitDeco();
+  decosB.push(()=>{ if(signT) drawSign(3,signY,signT); exitDeco();
     if(tg.decoB) for(const [x,y] of dsp) tg.decoB(x,y,hash(x,y),y*T); });
   // era maps
   const gA=g.map(row=>row.slice()), gB=g.map(row=>row.slice());
@@ -3405,7 +3423,7 @@ function svTry(k,plan,att,simple){
 /* ---------- zero-g sectors (Източникът · Безтегловност) ---------- */
 function svZero(k,plan,att){
   const RL=svRoles();
-  const r=mkRng(survSeed*7919+k*104729+att*31337+29), ri=(a,b)=>a+Math.floor(r()*(b-a+1)), ch=p=>r()<p, pick=a=>a[Math.floor(r()*a.length)];
+  const r=mkRng((plan.seed!=null?plan.seed:survSeed)*7919+k*104729+att*31337+29), ri=(a,b)=>a+Math.floor(r()*(b-a+1)), ch=p=>r()<p, pick=a=>a[Math.floor(r()*a.length)];
   const cols=ri(140,170)+Math.min(40,k*2), g=[]; for(let y=0;y<ROWS;y++) g.push(new Array(cols).fill('#'));
   const clr=(x0,y0,x1,y1)=>{ for(let y=Math.max(2,y0);y<=Math.min(14,y1);y++) for(let x=Math.max(2,x0);x<=Math.min(cols-3,x1);x++) g[y][x]='.'; };
   clr(2,8,15,14); const mid=[]; let cy=10, h=3;
@@ -3493,6 +3511,50 @@ function renderSvMenu(){
 function svDiffNote(i){
   if(titleT-svClrT<2.5&&i===DI) return centerText('Прогресът е изчистен.',227,'600 8px "IBM Plex Mono",monospace',ACC());
   const o=svLoad(i); if(o) centerText('Запазен напредък: сектор '+(o.k+1)+' · '+o.score+' точки',227,'600 8px "IBM Plex Mono",monospace','#cfd8dc');
+}
+
+/* ================= ДВИГАТЕЛ · ГЕНЕРИРАНИ ЕПИЗОДИ =================
+   Епизод на кампанията без ръчна карта: в levels на частта записът носи рецептата gen, а нивото се строи от генератора на
+   секторите (engine/survival.js · svTry) при всяко зареждане с ново семе. След смърт играчът остава в същото ниво (то не се
+   зарежда наново); ново начало на епизода — ново ниво.
+   Записът: n, title, story, end, loadout, memory (текстът на спомена — тогава в нивото има спомен) + полетата от EP_COPY;
+   gen: {theme       тема от SV_THEMES (етикетите водят сегментите, враговете и декора)
+         k           трудност по реда — като номера на сектор в оцеляването (0…)
+         len         [от, до] — дължината на пътя в колони (иначе — като в оцеляването)
+         muts        мутации (dark, lowg, swarm, scarce, alarm, bats, zerog …)
+         boss        бос в края — арената я строи GAME.svArena
+         seq         сегменти (или сцени, defPrefab) в началото, по ред — вместо основната механика на темата
+         wts         тегла на сегментите {id: тегло}; 0 — без него
+         pre         [[дял от пътя, сцена], …] — готови сцени по пътя
+         beats       [[дял, кой, текст], …] — кой: 'radio' (GAME.radioWho), 'msg' или име от GAME.voices
+         weap        [[оръжие, дял], …] — оръжията по сюжета, на основния път
+         foes        колко врагове да разположи генераторът (иначе — по дължината и трудността; тренировката — малко)
+         sign        надписът в началото, music — друга музика}
+   Семето: epFix (проверките) или Math.random (в проверките е семенен) — window.__rz.epSeed пази последното. */
+let epSeed=0, epFix=null;
+const EP_COPY=['n','title','story','end','loadout','memory','barks','alarmFoe','onLoad','tick','drawExtra','lightsExtra'];
+const epSeedNew=()=>epFix!=null?epFix:1+Math.floor(Math.random()*999999999);
+function epGen(i,seed){
+  const R=GLV[i], E=R.gen; epSeed=seed!=null?seed:epSeedNew();
+  const L=svGenBy(E.k||0,{theme:E.theme,muts:(E.muts||[]).slice(),boss:E.boss||null,seed:epSeed,ep:E,memory:!!R.memory});
+  for(const f of EP_COPY) if(R[f]!==undefined) L[f]=R[f];
+  if(E.music) L.music=Object.assign({},E.music);
+  L.surv=false; L.seed=epSeed; return L;
+}
+// фонът на менюто — епизод 1; генериран — винаги с едно и също семе (менюто не се мени, проверките са повторими)
+const EP_MENU_SEED=1307;
+function loadMenuLevel(){ loadLevel(0,GLV[0]&&GLV[0].gen?epGen(0,EP_MENU_SEED):undefined); }
+// вика го svTry, след враговете и плячката: оръжията и спомените по сюжета, репликите по пътя
+function epPlace(E,o){
+  const {r,cols,end,cps,safe,gyEq,path,pathList,spawns,triggers,g}=o, at=f=>Math.round(14+clamp(f,0,1)*Math.max(0,end-20));
+  const onPath=f=>{ const tx=at(f); for(const id of pathList){ const x=id%cols, y=(id/cols)|0; if(x>=tx&&safe(x,y)&&g[y][x]!=='Z') return [x,y]; } return null; };
+  for(const [w,f] of E.weap||[]){ const q=onPath(f); if(q) spawns.push([w,q[0],q[1]-1]); }
+  if(o.memory){   // спомен — извън основния път, във втората половина; по-скоро на високо
+    const c=[]; for(let x=Math.floor(end*0.35);x<end-4;x++) for(let y=1;y<ROWS;y++) if(safe(x,y)&&!path[y*cols+x]&&g[y][x]!=='Z') c.push([x,y]);
+    const hi=c.filter(([x,y])=>y<gyEq(x)), pool=hi.length?hi:c, q=pool.length?pool[Math.floor(r()*pool.length)]:onPath(0.7);
+    if(q) spawns.push(['memory',q[0],q[1]-1]); }
+  for(const [f,who,t] of E.beats||[]){ const tx=at(f), cx=cps.find(x=>x>=tx);   // при първата контролна точка след дела f
+    triggers.push({x:cx!=null&&cx-tx<12?cx:tx,fn:who==='radio'?()=>radio(t):who==='msg'?()=>showMsg(t,3.5):()=>showMsg(t,0,who)}); }
 }
 
 /* ================= ДВИГАТЕЛ · ЗВУК: музика и ефекти поотделно =================
@@ -5857,10 +5919,10 @@ function frame(now){
   render(); audDraw();
   requestAnimationFrame(frame);
 }
-loadLevel(0); totals={time:0,shots:0,hits:0,kills:0,deaths:0};
+loadMenuLevel(); totals={time:0,shots:0,hits:0,kills:0,deaths:0};
 if(document.fonts&&document.fonts.load){ Promise.all([document.fonts.load('10px "Russo One"'),document.fonts.load('600 10px "IBM Plex Mono"')]).then(()=>{ prerender(); }).catch(()=>{}); }
 document.addEventListener('visibilitychange',()=>{ if(document.hidden&&state==='play'){ state='paused'; if(AC) AC.suspend(); } });
-window.__rz={get GAME(){return GAME},GAMES,GHIST,setGame,enterGame,toMenu,menuItems,get gSel(){return gSel},hurtEnemy,get ECHO(){return ECHO},get PLATES(){return PLATES},get LIGHTS(){return LIGHTS},get TERMS(){return TERMS},get ALARM(){return ALARM},get NOISE(){return NOISE},get MST(){return MST},get FLOOD(){return FLOOD},get ESC(){return ESC},get CHASE(){return CHASE},get ERA(){return ERA},get FLIP(){return FLIP},get GENS(){return GENS},get LEVERS(){return LEVERS},get SHIFT(){return SHIFT},get ALLIES(){return ALLIES},switchEra,flipWorld,isWater,get pickups(){return pickups},get scientists(){return scientists},get barks(){return barks},solidAt,startBoss,respawn,get cp(){return cp},hurtBoss,get musOn(){return musOn},get AC(){return AC},get musBus(){return musBus},get sfxBus(){return sfxBus},get sfxOn(){return sfxOn},toggleMute,toggleMus,toggleSfx,svLoad,svSave,svClear,svEnter,svItems,get svSel(){return svSel},get svConf(){return svConf},get DI(){return DI},get survLives(){return survLives},get survSeed(){return survSeed},get keys(){return keys},get pressed(){return pressed},frame,get levels(){return GLV},get unl(){return gUnl},resetClock(){titleT=0;acc=0;},svValidate,elecOn,CHT,chtSet,chtDo,chtUnlock,hurtPlayer,finishTraining,get TRN(){return TRN},get msg(){return msg},get grav(){return G},completeLevel,get bmiss(){return bmiss},get LI(){return LI},startSurv,genLevel,svPlan,get survK(){return survK},get survScore(){return survScore},set survSeed(v){survSeed=v},get LVL(){return LVL},get lifts(){return lifts},get tracks(){return tracks},get trains(){return trains},get gateOpen(){return gateOpen},get rockets(){return rockets},clearPressed,loadLevel,get map(){return map},get LV(){return LV},get player(){return player},get state(){return state},set state(v){state=v},get boss(){return boss},get enemies(){return enemies},get exitPortal(){return exitPortal},get enc(){return enc},update,setDiff(i){DI=i;D=DIFFS[i];},startEpisode,get cam(){return cam},set cam(v){cam=v},render,groundY};
+window.__rz={get GAME(){return GAME},GAMES,GHIST,setGame,enterGame,toMenu,menuItems,get gSel(){return gSel},hurtEnemy,get ECHO(){return ECHO},get PLATES(){return PLATES},get LIGHTS(){return LIGHTS},get TERMS(){return TERMS},get ALARM(){return ALARM},get NOISE(){return NOISE},get MST(){return MST},get FLOOD(){return FLOOD},get ESC(){return ESC},get CHASE(){return CHASE},get ERA(){return ERA},get FLIP(){return FLIP},get GENS(){return GENS},get LEVERS(){return LEVERS},get SHIFT(){return SHIFT},get ALLIES(){return ALLIES},switchEra,flipWorld,isWater,get pickups(){return pickups},get scientists(){return scientists},get barks(){return barks},solidAt,startBoss,respawn,get cp(){return cp},hurtBoss,get musOn(){return musOn},get AC(){return AC},get musBus(){return musBus},get sfxBus(){return sfxBus},get sfxOn(){return sfxOn},toggleMute,toggleMus,toggleSfx,svLoad,svSave,svClear,svEnter,svItems,get svSel(){return svSel},get svConf(){return svConf},get DI(){return DI},get survLives(){return survLives},get survSeed(){return survSeed},get keys(){return keys},get pressed(){return pressed},frame,get levels(){return GLV},get unl(){return gUnl},resetClock(){titleT=0;acc=0;},svValidate,elecOn,CHT,chtSet,chtDo,chtUnlock,hurtPlayer,finishTraining,get TRN(){return TRN},get msg(){return msg},get grav(){return G},completeLevel,get bmiss(){return bmiss},get LI(){return LI},startSurv,genLevel,svPlan,epGen,get epSeed(){return epSeed},get epFix(){return epFix},set epFix(v){epFix=v},get survK(){return survK},get survScore(){return survScore},set survSeed(v){survSeed=v},get LVL(){return LVL},get lifts(){return lifts},get tracks(){return tracks},get trains(){return trains},get gateOpen(){return gateOpen},get rockets(){return rockets},clearPressed,loadLevel,get map(){return map},get LV(){return LV},get player(){return player},get state(){return state},set state(v){state=v},get boss(){return boss},get enemies(){return enemies},get exitPortal(){return exitPortal},get enc(){return enc},update,setDiff(i){DI=i;D=DIFFS[i];},startEpisode,get cam(){return cam},set cam(v){cam=v},render,groundY};
 for(const g of GAMES) if(g.debug) Object.defineProperties(window.__rz,Object.getOwnPropertyDescriptors(g.debug));
 requestAnimationFrame(frame);
 })();

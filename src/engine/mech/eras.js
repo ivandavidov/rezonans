@@ -26,7 +26,12 @@ function switchEra(force){
   return true;
 }
 defMech('eras',{
-  chips(chip){ if(ERAD) chip('◷ '+LVL.eraNames[ERA]+'   ·   E — смени епохата','#ffd08a'); },
+  drawWorld(){ if(!ERAD||!GAME.eraGhost) return;   // очертания на плочките, които ги има само в другия слой (r8: мостът е там — натисни E)
+    const o=ERAD.maps[1-ERA], x0=Math.max(0,Math.floor(cam/T)), x1=Math.min(COLS-1,Math.floor((cam+W)/T)), a=0.3+0.12*Math.sin(titleT*4);
+    ctx.save(); ctx.strokeStyle=`rgba(255,210,122,${a})`; ctx.fillStyle=`rgba(255,210,122,${a*0.18})`; ctx.setLineDash([3,3]);
+    for(let tx=x0;tx<=x1;tx++) for(let ty=0;ty<ROWS;ty++) if(SOLID.has(o[ty][tx])&&!SOLID.has(map[ty][tx])){ const x=Math.round(tx*T-cam)+0.5, y=ty*T+0.5; ctx.fillRect(x,y,T-1,T-1); ctx.strokeRect(x,y,T-1,T-1); }
+    ctx.restore(); },
+  chips(chip){ if(ERAD) chip('◷ '+LVL.eraNames[ERA]+'   ·   '+(GAME.eraHint||'E — смени епохата'),'#ffd08a'); },
   load(){ ERA=0; ERAD=null; cpEra=0; eraCd=0; const L=LVL;
   if(L.buildB) buildEras();
   },

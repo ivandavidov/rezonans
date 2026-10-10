@@ -30,12 +30,13 @@ function svPlanBy(P,k){
   }
   return L[k];
 }
-function svGen(k){
-  const plan=svPlan(k);
+function svGen(k){ return svGenBy(k,svPlan(k)); }
+// plan: {theme, muts, boss} (+ seed и ep — рецептата на генериран епизод, engine/episodes.js; без тях — семето на оцеляването)
+function svGenBy(k,plan){
   if(plan.boss&&GAME.svBoss) return svBoss(k,plan);   // арена — копие от кампанията; иначе я строи GAME.svArena в svTry
   const zg=plan.muts.includes('zerog');
   for(let a=0;a<20;a++){ const L=zg?svZero(k,plan,a):svTry(k,plan,a,false); if(L){ genLevel.att=a; return L; } }
-  genLevel.att=99; return svTry(k,{theme:plan.theme,muts:[],boss:plan.boss},99,true)||svTry(k,{theme:GAME.svFallback,muts:[],boss:plan.boss},98,true);
+  genLevel.att=99; return svTry(k,Object.assign({},plan,{muts:[]}),99,true)||svTry(k,Object.assign({},plan,{theme:GAME.svFallback,muts:[]}),98,true);
 }
 function svBoss(k,plan){
   const L=GLV[GAME.svBoss[plan.boss][0]], portal=L.arena.px!=null;
@@ -48,7 +49,7 @@ function svBoss(k,plan){
 /* ---------- обикновен сектор: един генератор за всички части ----------
    Темата (SV_THEMES) дава етикети — sky, lowg, alien, cave, dark, human, turret, acid, elec, laser, vent, crush, conv, track, lift ('float'),
    pad, nest, tower, islands, zfloor, wind, water, lever, era, shift, ghost, stealth, term, plate, rhythm, freq, sun, still, sonar, flares,
-   sleepers, tone, snow, gusts, noGuard, noPipes — и данни: name, th, thB, sky (ключ или списък от ключове в SKIES), skyB, mus, foes, foesB,
+   sleepers, tone, snow, gusts, noGuard, noPipes — и данни: eraTip, bridgeTip (подсказките за епохите), name, th, thB, sky (ключ или списък от ключове в SKIES), skyB, mus, foes, foesB,
    foesK ([[от сектор, враг]]; без него — пазачи от сектор 7), air (летящ враг над веригите), deco/decoB(x,y,h,py) (декор на
    земята в колоните x-1…x+1 — под тях има равен под), sign, eraNames, alarmFoe.
    Теглата на сегментите се изчисляват от етикетите. Сектор с бос: GAME.svArena строи арената (r1); копията от кампанията — svBoss. */
@@ -58,8 +59,8 @@ function svBoss(k,plan){
 const SV_ROLES={air:'flyer',elite:'guard',sniper:'soldier',any:'crab',perch:['turret','shocker'],swim:['fish','jelly'],hover:'drone',zero:['guard','shocker','crab']};
 const svRoles=()=>Object.assign({},SV_ROLES,GAME.svSpec&&GAME.svSpec.roles);
 function svTry(k,plan,att,simple){
-  const RL=svRoles();
-  const r=mkRng(survSeed*7919+k*104729+att*31337+13), ri=(a,b)=>a+Math.floor(r()*(b-a+1)), pick=a=>a[Math.floor(r()*a.length)], ch=p=>r()<p;
+  const RL=svRoles(), E=plan.ep||null;   // E — рецептата на генериран епизод (engine/episodes.js); в оцеляването я няма
+  const r=mkRng((plan.seed!=null?plan.seed:survSeed)*7919+k*104729+att*31337+13), ri=(a,b)=>a+Math.floor(r()*(b-a+1)), pick=a=>a[Math.floor(r()*a.length)], ch=p=>r()<p;
   const theme=plan.theme, tg=SV_THEMES[theme], sky=!!tg.sky, era=!!tg.era, lowg=!!tg.lowg||plan.muts.includes('lowg'), isBoss=!!plan.boss;
   const swarm=plan.muts.includes('swarm'), scarce=plan.muts.includes('scarce'), air=tg.air!==undefined?tg.air:tg.foes.includes(RL.air)?RL.air:null;
   const MAXC=460, g=[]; for(let y=0;y<ROWS;y++) g.push(new Array(MAXC).fill('.'));
@@ -161,10 +162,10 @@ function svTry(k,plan,att,simple){
       gvOps.push([x0,Math.max(gy,ty),x1,16,'#']);
       b.x=x1+1; b.gy=ty; ground(ri(3,6)); },
     eraWall(){ if(!era) return F.terrain(); ground(2); const r0=sky?0:2; let e=ri(0,1);
-      once('era',b.x-4,'Стената я няма в другата епоха — натисни E, за да превключиш.',3.5);
+      once('era',b.x-4,tg.eraTip||'Стената я няма в другата епоха — натисни E, за да превключиш.',3.5);
       for(let n=ri(1,2);n>0;n--){ const x=b.x, w=ri(1,2); eraR.push({r:[x,r0,x+w-1,b.gy-1,'#'],era:e}); for(let j=0;j<w;j++){ colG(b.x,b.gy); noCeil.add(b.x); noSpawn.add(b.x); b.x++; } ground(ri(3,5)); e=1-e; } },
     eraBridge(){ if(!era) return F.gaps(); ground(2); const W=ri(6,9), x0=b.x, e=ri(0,1), gy=b.gy;
-      once('bridge',x0-4,'Мостът съществува само в едната епоха — смени я с E.',3.5);
+      once('bridge',x0-4,tg.bridgeTip||'Мостът съществува само в едната епоха — смени я с E.',3.5);
       for(let i=0;i<W;i++){ noSpawn.add(b.x); b.x++; }
       eraR.push({r:[x0,gy,x0+W-1,16,'#'],era:e,bridge:true}); gvOps.push([x0,gy,x0+W-1,16,'#']);
       ground(ri(3,5)); },
@@ -200,15 +201,22 @@ function svTry(k,plan,att,simple){
     lasers:tg.laser?1.35:0,crushers:tg.crush?1.4:0,vents:tg.vent?1.2:0,conveyor:tg.conv?1.35:0,train:tg.track?1.6:0,encounter:k>=1&&!era?1:0,nests:tg.nest?1.2:0,
     perch:tg.turret||tg.human?1:0.7,islands:tg.islands?1.4:tg.wind?1.2:0,drop:0.75,zfloor:tg.zfloor?1:0,secret:0.75,
     pool:tg.water?2.6:0,sluice:tg.lever?1.3:0,updraft:tg.wind?2.4:0,eraWall:era?2.6:0,eraBridge:era?1.8:0,shift:tg.shift?2:0,shrine:tg.ghost?1.5:0,stealth:tg.stealth?2.2:0,term:tg.term?1.5:0,plate:tg.plate?2.2:0,rhythm:tg.rhythm?2.2:0,freq:tg.freq?2.4:0};
+  if(E&&E.wts) Object.assign(W_,E.wts);   // рецептата сменя теглата (0 — сегментът го няма)
   const PRIMARY=tg.freq?'freq':tg.stealth?'stealth':tg.plate?'plate':tg.rhythm?'rhythm':tg.water?'pool':era?'eraWall':tg.wind?'updraft':tg.shift?'shift':tg.ghost?'shrine':tg.conv&&!tg.human?'conveyor':null;
   // ----- build -----
   ground(10); segs.push({id:'start',x:2});
   if(tg.ghost) triggers.push({x:6,fn:()=>{ if(!ALLIES.length){ addGhost(); showMsg('Дух на жител от града се присъедини към теб. Духовете стрелят по враговете.',3.2); } }});
-  const runLen=isBoss?ri(80,110)+Math.min(30,k*2):ri(135,165)+Math.min(60,k*3), stop=2+runLen;
+  const runLen=E&&E.len?ri(E.len[0],E.len[1]):isBoss?ri(80,110)+Math.min(30,k*2):ri(135,165)+Math.min(60,k*3), stop=2+runLen;
   const used={}; let last=null, guard=0;
-  if(PRIMARY&&!simple){ ground(2); segs.push({id:PRIMARY,x:b.x}); F[PRIMARY](); used[PRIMARY]=1; last=PRIMARY; }
+  // готова сцена (defPrefab): инструментите на генератора, курсорът b е общ
+  const S={F,b,g,gtop,set,fill,colG,ground,stepTo,loot,foeT,once,ri,r,ch,pick,k,sky,lowg,tg,fixed,triggers,lifts,lasers,vents,crushers,tracks,decos,decosB,noCeil,noSpawn,gvOps,levers,winds,shifters,eraR,lights:lights3,terms:terms3,plates:plates3};
+  const seg=id=>{ segs.push({id,x:b.x}); if(PREFABS[id]) PREFABS[id].build(S); else F[id](); used[id]=(used[id]||0)+1; last=id; };
+  const pre=E&&E.pre&&!simple?E.pre.map(q=>({x:2+q[0]*runLen,id:q[1]})):[];
+  if(E&&E.seq&&!simple) for(const id of E.seq){ ground(2); seg(id); }
+  else if(PRIMARY&&!simple){ ground(2); segs.push({id:PRIMARY,x:b.x}); F[PRIMARY](); used[PRIMARY]=1; last=PRIMARY; }
   while(b.x<stop&&guard++<80){
     let id;
+    if(pre.length&&b.x>=pre[0].x){ ground(2); seg(pre.shift().id); continue; }
     if(simple) id=pick(['terrain','stairs','terrain']);
     else { const cand=Object.keys(W_).filter(f=>W_[f]>0&&f!==last); let tot=0; const w=cand.map(f=>{ const v=W_[f]/(1+(used[f]||0)*0.8); tot+=v; return v; }); let x=r()*tot; id=cand[cand.length-1]; for(let i=0;i<cand.length;i++){ x-=w[i]; if(x<=0){ id=cand[i]; break; } } }
     segs.push({id,x:b.x}); F[id](); used[id]=(used[id]||0)+1; last=id;
@@ -266,7 +274,7 @@ function svTry(k,plan,att,simple){
   // enemies (разбъркването е Fisher–Yates с r() — еднакво във всеки JS двигател)
   const spawns=fixed.slice(), spawnsB=[], end=arena?Math.min(arena.door-1,exit):exit;
   const cells=[]; for(let x=14;x<end-2;x++) for(let y=1;y<ROWS;y++) if(safe(x,y)&&g[y][x]!=='Z'&&g[y][x]!=='^'&&!cps.some(c=>Math.abs(c-x)<3)) cells.push([x,y]);
-  const nE=Math.min(26,Math.round((end-14)/15*(0.7+0.05*k)*(swarm?1.5:1)));
+  const nE=E&&E.foes!=null?E.foes:Math.min(26,Math.round((end-14)/15*(0.7+0.05*k)*(swarm?1.5:1)));
   for(let i=cells.length-1;i>0;i--){ const j=Math.floor(r()*(i+1)), c=cells[i]; cells[i]=cells[j]; cells[j]=c; }
   const placed=[];
   for(const [x,y] of cells){ if(placed.length>=nE*1.35) break; if(placed.some(p=>Math.abs(p[0]-x)<4)) continue; placed.push([x,y]); }
@@ -283,22 +291,23 @@ function svTry(k,plan,att,simple){
     if(best) loot(best[0],best[1],best[2]); }
   for(let x=20;x<end;x+=ri(24,32)){ for(let xx=x;xx<x+5;xx++){ const y=gyEq(xx); if(y<16&&safe(xx,y)){ spawns.push(['health',xx,y-1,'E']); break; } } }
   for(const f of fixed) if(!spawns.includes(f)) spawns.push(f);   // плячката, добавена след разстановката на враговете
-  const WEAP=SV_WEAP; const sy=gyEq(8);
-  if(WEAP[k]) spawns.push([WEAP[k],8,sy-1]); if(k>=10&&k%5===0) spawns.push(['rockets',9,sy-1]); spawns.push(['health',10,sy-1,'E']);
+  const WEAP=E?{}:SV_WEAP; const sy=gyEq(8);
+  if(WEAP[k]) spawns.push([WEAP[k],8,sy-1]); if(!E&&k>=10&&k%5===0) spawns.push(['rockets',9,sy-1]); spawns.push(['health',10,sy-1,'E']);
+  if(E) epPlace(E,{r,ri,cols,end,cps,safe,gyEq,path,pathList:V.pathList,spawns,triggers,g,memory:plan.memory});   // engine/episodes.js
   // предмет на недостижимо място — до най-близкото безопасно (до 8 колони) или отпада; предметите под вода остават
   for(let i=spawns.length-1;i>=0;i--){ const [t,x,y]=spawns[i]; if(DIMS[t]||t==='barrel'||t.startsWith('nest')||V.R[(y+1)*cols+x]||g[y]&&g[y][x]==='w') continue;
     let to=null; for(let d=0;d<=8&&!to;d++) for(const xx of d?[x-d,x+d]:[x]){ if(xx<2||xx>=cols-2) continue; for(let yy=1;yy<ROWS&&!to;yy++) if(safe(xx,yy)&&g[yy][xx]!=='Z'&&g[yy][xx]!=='^') to=[xx,yy]; if(to) break; }
     if(to) spawns[i]=[t,to[0],to[1]-1].concat(spawns[i].slice(3)); else spawns.splice(i,1); }
   // decorations
-  const signY=sky?Math.max(2,gyEq(3)-5):Math.max(3,gyEq(3)-4), signT='СЕКТОР '+(k+1)+' · '+tg.name.toUpperCase(), ex=GAME.svSpec.exitCol||['#06201e','#4fe3d6'];
+  const signY=sky?Math.max(2,gyEq(3)-5):Math.max(3,gyEq(3)-4), signT=E?E.sign||'':'СЕКТОР '+(k+1)+' · '+tg.name.toUpperCase(), ex=GAME.svSpec.exitCol||['#06201e','#4fe3d6'];
   // декорът на темите заема до 3 плочки (x-1…x+1) и стои цял на земята: мястото се измества с една колона в равен участък, иначе отпада
   const flat=(c,y)=>c>=3&&c<cols-3&&gyEq(c)===y&&g[y][c]==='#'&&g[y-1][c]==='.'&&!noSpawn.has(c);
   const dsp=[]; for(let x=4;x<cols-4;x+=ri(4,9)){ const y=gyEq(x); if(y>=16||!flat(x,y)) continue; let a=x,b=x; while(a>x-2&&flat(a-1,y)) a--; while(b<x+2&&flat(b+1,y)) b++; if(b-a>=2) dsp.push([clamp(x,a+1,b-1),y]); }
   const exitDeco=()=>{ if(isBoss) return; const y=gyEq(cols-6); drawSign(cols-10,Math.max(sky?2:3,y-4),'ИЗХОД →',ex[0],ex[1]); lightDot((cols-4)*T,(y-2)*T,ex[1],0); };
-  decos.push(()=>{ (tg.sign||drawSign)(3,signY,signT); exitDeco();
+  decos.push(()=>{ if(signT) (tg.sign||drawSign)(3,signY,signT); exitDeco();
     if(!sky&&!tg.noPipes) pipeH(3*T+4,2,cols-2);
     if(tg.deco) for(const [x,y] of dsp) tg.deco(x,y,hash(x,y),y*T); });
-  decosB.push(()=>{ drawSign(3,signY,signT); exitDeco();
+  decosB.push(()=>{ if(signT) drawSign(3,signY,signT); exitDeco();
     if(tg.decoB) for(const [x,y] of dsp) tg.decoB(x,y,hash(x,y),y*T); });
   // era maps
   const gA=g.map(row=>row.slice()), gB=g.map(row=>row.slice());
@@ -330,7 +339,7 @@ function svTry(k,plan,att,simple){
 /* ---------- zero-g sectors (Източникът · Безтегловност) ---------- */
 function svZero(k,plan,att){
   const RL=svRoles();
-  const r=mkRng(survSeed*7919+k*104729+att*31337+29), ri=(a,b)=>a+Math.floor(r()*(b-a+1)), ch=p=>r()<p, pick=a=>a[Math.floor(r()*a.length)];
+  const r=mkRng((plan.seed!=null?plan.seed:survSeed)*7919+k*104729+att*31337+29), ri=(a,b)=>a+Math.floor(r()*(b-a+1)), ch=p=>r()<p, pick=a=>a[Math.floor(r()*a.length)];
   const cols=ri(140,170)+Math.min(40,k*2), g=[]; for(let y=0;y<ROWS;y++) g.push(new Array(cols).fill('#'));
   const clr=(x0,y0,x1,y1)=>{ for(let y=Math.max(2,y0);y<=Math.min(14,y1);y++) for(let x=Math.max(2,x0);x<=Math.min(cols-3,x1);x++) g[y][x]='.'; };
   clr(2,8,15,14); const mid=[]; let cy=10, h=3;
