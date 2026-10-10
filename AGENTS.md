@@ -45,6 +45,8 @@ python3 src/win/make_exe.py            # dist/Rezonans-windows/ (Rezonans-x64.ex
 - **`docs/index.html`**, иконите и **`docs/manifest.webmanifest`** — генерират се. Всяка промяна се прави в `src/` и се пуска сборката.
   Пресглобените файлове се commit-ват заедно с промените в `src/`.
 - `docs/.nojekyll` трябва да остане (иначе GitHub Pages прекарва файла през Jekyll).
+- Изключение: **`docs/audio/index.html`** (визуализаторът на музиката, на сайта — `/audio/`) не се генерира — пише се на ръка
+  и сборката не го пипа. Зарежда играта от `../index.html` и свири музиката от нейния синтезатор.
 - **`src/fonts/fonts.css`, `src/fonts/files/`, `src/fonts/licenses/`** — генерират се от `src/fonts/fetch.py`, но се commit-ват
   (офлайн сборката не трябва да зависи от мрежата). Лицензите (SIL OFL) остават до шрифтовете.
 

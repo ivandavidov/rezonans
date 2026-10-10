@@ -1,0 +1,1148 @@
+<!doctype html>
+<html lang="bg">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Резонанс · Визуализатор</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Unbounded:wght@500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#000;color:#e9f6ff;font:14px 'IBM Plex Mono',ui-monospace,monospace}
+canvas{display:block;width:100vw;height:100vh}
+body.idle,body.idle *{cursor:none!important}
+#cover{position:fixed;inset:0;display:grid;place-items:center;background:radial-gradient(ellipse at center,#0a142080 0%,#000000d8 75%);z-index:5;transition:opacity .8s}
+#cover.gone{opacity:0;pointer-events:none}
+.panel{text-align:center;padding:24px;max-width:640px}
+.panel h1{font:500 clamp(30px,7vw,64px) 'Unbounded','Exo 2',sans-serif;letter-spacing:.08em;margin:0 0 6px;background:linear-gradient(90deg,#7ef3ff,#c58cff,#ff8fc8);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 18px #6be2ff55)}
+.panel p{margin:0 0 26px;color:#9fc3d6;letter-spacing:.06em}
+#go{padding:15px 30px;border:1px solid #8fe9ff;border-radius:40px;background:#0b1a26c0;color:#e6fbff;font:600 15px 'IBM Plex Mono',monospace;letter-spacing:.16em;cursor:pointer;box-shadow:0 0 30px #38cfff55,inset 0 0 18px #38cfff22;transition:transform .15s,box-shadow .15s}
+#go:hover{transform:scale(1.04);box-shadow:0 0 44px #38cfff88,inset 0 0 18px #38cfff33}
+#go:disabled{opacity:.6;cursor:wait}
+#pick{display:inline-block;margin-top:16px;background:none;border:0;color:#7fa6ba;font:13px 'IBM Plex Mono',monospace;text-decoration:underline;cursor:pointer}
+#status{min-height:20px;margin-top:16px;color:#ffd38a;font-size:13px;line-height:1.5;white-space:pre-line}
+.keys{margin-top:22px;color:#5f8193;font-size:12px;letter-spacing:.04em}
+#osd{position:fixed;left:22px;top:18px;z-index:3;font:500 15px 'IBM Plex Mono',monospace;letter-spacing:.08em;color:#fff;text-shadow:0 0 8px #000,0 0 16px #000;opacity:0;transition:opacity 1.2s;pointer-events:none}
+#osd.on{opacity:.92;transition:opacity .3s}
+#osd small{display:block;margin-top:3px;font-size:11px;color:#9cc;opacity:.8}
+#help,#info{position:fixed;z-index:4;background:#02060bd0;border:1px solid #ffffff22;border-radius:10px;padding:14px 18px;font-size:12.5px;line-height:1.7;color:#cfe7f3;display:none;backdrop-filter:blur(6px)}
+#help{right:20px;top:18px}#help b{color:#8ff0ff;display:inline-block;min-width:74px}
+#info{left:20px;bottom:18px;white-space:pre;font-size:12px}
+#help.on,#info.on{display:block}
+#hint{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:3;font-size:12px;color:#ffffffa0;text-shadow:0 0 6px #000;transition:opacity .6s;pointer-events:none;white-space:nowrap}
+body.embed #hint,body.embed #musBtn,body.embed #osd,body.embed #help,body.embed #info,body.embed #mus{display:none!important}
+body.idle #hint{opacity:0}body:not(.run) #hint{display:none}
+#mus{position:fixed;right:16px;top:16px;bottom:16px;width:min(330px,calc(100vw - 32px));z-index:6;overflow:auto;background:#03080ed8;border:1px solid #ffffff24;border-radius:12px;padding:14px 16px 16px;font-size:12.5px;color:#cfe7f3;backdrop-filter:blur(8px);display:none}
+#mus.on{display:block}
+#mus h3{margin:0 0 10px;font:500 15px 'Unbounded','Exo 2',sans-serif;letter-spacing:.06em;color:#9ff0ff;display:flex;justify-content:space-between;align-items:center}
+#mus h3 button{background:none;border:0;color:#9cc;font-size:20px;cursor:pointer;line-height:1}
+#mus label{display:flex;justify-content:space-between;margin:12px 0 5px;color:#9fc3d6}
+#mus label b{color:#fff;font-weight:600}
+#mus label.row{justify-content:flex-start;gap:8px;cursor:pointer;color:#cfe7f3}
+#mus input[type=range]{width:100%;accent-color:#7ef3ff}
+#mus input[type=checkbox]{accent-color:#7ef3ff}
+#mus select{width:100%;background:#0b1822;color:#e6fbff;border:1px solid #ffffff2a;border-radius:6px;padding:6px;font:12.5px 'IBM Plex Mono',monospace}
+#mus .seg{display:flex;gap:4px}#mus .seg button,#mus .btns button{flex:1;padding:7px 4px;background:#0b1822;color:#cfe7f3;border:1px solid #ffffff2a;border-radius:6px;font:12px 'IBM Plex Mono',monospace;cursor:pointer}
+#mus .seg button.on{background:#174257;border-color:#7ef3ff;color:#fff}
+#mus .btns{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:14px}#mus .btns button:hover,#mus .seg button:hover{border-color:#7ef3ff88}
+#mus .btns button.wide{grid-column:1/3}
+#mus input:disabled,#mus select:disabled,#mus button:disabled{opacity:.4;cursor:default}
+#musNote{margin-top:12px;color:#ffd38a;min-height:16px;line-height:1.5}
+#musLvl{margin-top:10px;color:#9ff0ff;min-height:16px}
+#musBtn{position:fixed;right:16px;bottom:14px;z-index:3;padding:6px 12px;border-radius:20px;border:1px solid #ffffff40;background:#03080eb0;color:#dff;font:12px 'IBM Plex Mono',monospace;cursor:pointer;transition:opacity .6s}
+body.idle #musBtn,body:not(.run) #musBtn{opacity:0;pointer-events:none}
+#sleep{position:fixed;inset:0;z-index:20;background:#000;display:none;cursor:none}
+#sleep.on{display:block}#sleep.ui{cursor:default}
+#slc{position:absolute;left:50%;top:50%;width:200px;height:200px;transform:translate(-50%,-50%)}
+#sleepUi{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);display:flex;flex-wrap:wrap;justify-content:center;gap:6px;align-items:center;width:max-content;max-width:calc(100vw - 32px);font:12px 'IBM Plex Mono',monospace;color:#7f9aa6;opacity:0;transition:opacity .8s;pointer-events:none}
+#sleep.ui #sleepUi{opacity:.85;pointer-events:auto}
+#sleepUi button{background:#05080c;color:#8fa9b4;border:1px solid #ffffff1c;border-radius:14px;padding:5px 10px;font:inherit;cursor:pointer}
+#sleepUi button.on{border-color:#7ef3ff55;color:#cff}
+iframe{position:fixed;width:1px;height:1px;left:-10px;top:-10px;border:0;opacity:0;pointer-events:none}
+</style>
+<canvas id="c"></canvas>
+<div id="osd"></div>
+<div id="help">
+<b>→ / ←</b> следваща / предишна сцена по номер<br>
+<b>1 … 24</b> избор на сцена (две цифри — бързо една след друга)<br>
+<b>Интервал</b> заключи / отключи сцената<br>
+без натискане сцените се сменят сами, в случаен ред<br>
+<b>F</b> цял екран (и двоен клик)<br>
+<b>M</b> звук вкл. / изкл.<br>
+<b>+ / −</b> сила на звука<br>
+<b>Q</b> качество: авто / високо / средно / ниско<br>
+<b>T</b> надписът „Резонанс“<br>
+<b>I</b> сведения (кадри, нива на звука)<br>
+<b>S</b> настройки на музиката<br>
+<b>Z</b> сън: черен екран, почти без натоварване<br>
+<b>H</b> тази помощ
+</div>
+<div id="info"></div>
+<div id="sleep"><canvas id="slc" width="200" height="200"></canvas>
+<div id="sleepUi"><span>сън · спиране след</span><button data-t="0">никога</button><button data-t="30">30 мин</button><button data-t="60">1 ч</button><button data-t="120">2 ч</button><span>·</span><button id="slDot">точка</button><button id="slOut">изход (Z)</button><span id="slLeft"></span></div></div>
+<div id="hint">H — помощ · → следваща сцена · S — музика · Z — сън · F — цял екран</div>
+<button id="musBtn">♪ Музика</button>
+<div id="mus">
+<h3>МУЗИКА <button id="musX" title="Затвори (S)">×</button></h3>
+<label>Тоналност <b id="vTr"></b></label><input type="range" id="iTr" min="-12" max="6" step="1">
+<label>Темпо <b id="vBpm"></b></label><input type="range" id="iBpm" min="60" max="150" step="1">
+<label class="row"><input type="checkbox" id="iAl"> Извънземен режим</label>
+<label>Интензивност</label><div class="seg" id="iInt"><button data-v="0">Спокойно</button><button data-v="1">Битка</button><button data-v="2">Бос</button></div>
+<label class="row"><input type="checkbox" id="iBoss"> Музика на бос (темпо 132)</label>
+<label>Хармония (акордите на частта)</label><select id="iProg"></select>
+<div class="btns"><button id="bRnd">🎲 Случайно</button><button id="bLvl">🎲 Ниво от играта</button><button id="bDef" class="wide">↺ Като на началния екран</button></div>
+<div id="musLvl"></div>
+<label>При смяна на сцената</label><select id="iAuto"><option value="0">без промяна</option><option value="1">случайни настройки</option><option value="2">случайно ниво от играта</option></select>
+<div id="musNote"></div>
+</div>
+<div id="cover"><div class="panel">
+<h1>РЕЗОНАНС</h1>
+<p>визуализатор · музиката от началния екран</p>
+<button id="go">▶ ПУСНИ</button><br>
+<button id="pick">или избери аудио файл…</button>
+<input id="file" type="file" accept="audio/*" hidden>
+<div id="status"></div>
+<div class="keys">→ следваща сцена · Интервал — заключи · F — цял екран · H — помощ</div>
+</div></div>
+<iframe id="game" allow="autoplay" title="Звуков двигател на играта" tabindex="-1"></iframe>
+<script>
+'use strict';
+const $=s=>document.querySelector(s);
+const cv=$('#c'),statusEl=$('#status');
+const gl=cv.getContext('webgl2',{antialias:false,alpha:false,depth:false,stencil:false,premultipliedAlpha:false,powerPreference:'high-performance'});
+if(!gl){statusEl.textContent='Браузърът не поддържа WebGL2 — визуализаторът не може да работи.';throw Error('webgl2');}
+const HF=!!gl.getExtension('EXT_color_buffer_float'),FL32=!!gl.getExtension('OES_texture_float_linear');
+const TF=HF?[gl.RGBA16F,gl.RGBA,gl.HALF_FLOAT]:[gl.RGBA8,gl.RGBA,gl.UNSIGNED_BYTE];
+const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:v}catch(e){return d}},lsSet=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
+
+/* ================= GL помощници ================= */
+function mkTex(w,h,f=TF,filt=gl.LINEAR,wrapT=gl.CLAMP_TO_EDGE){const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,filt);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,filt);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,wrapT);
+  gl.texImage2D(gl.TEXTURE_2D,0,f[0],w,h,0,f[1],f[2],null);return t;}
+function rt(w,h,f,filt){const t=mkTex(w,h,f,filt),fb=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,fb);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,t,0);gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);
+  return {t,f:fb,w,h,tx:[1/w,1/h],del(){gl.deleteTexture(t);gl.deleteFramebuffer(fb)}};}
+function dbl(w,h,f,filt){let a=rt(w,h,f,filt),b=rt(w,h,f,filt);return {get rd(){return a},get wr(){return b},swap(){const c=a;a=b;b=c},del(){a.del();b.del()},w,h};}
+function shader(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);
+  if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)){const log=gl.getShaderInfoLog(s);console.error(log+'\n'+src.split('\n').map((l,i)=>(i+1)+': '+l).join('\n'));throw Error('Шейдър: '+log);}return s;}
+function prog(vs,fs){const p=gl.createProgram();gl.attachShader(p,shader(gl.VERTEX_SHADER,vs));gl.attachShader(p,shader(gl.FRAGMENT_SHADER,fs));gl.linkProgram(p);
+  if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw Error('Връзка: '+gl.getProgramInfoLog(p));return {p,loc:{}};}
+const G={};   // общи униформи (време, звук)
+function setU(pr,U,unit){for(const k in U){let v=U[k];let l=pr.loc[k];if(l===undefined)l=pr.loc[k]=gl.getUniformLocation(pr.p,k);if(l===null)continue;
+  if(v&&v.t)v=v.t;
+  if(v instanceof WebGLTexture){gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,v);gl.uniform1i(l,unit++);}
+  else if(typeof v==='number')gl.uniform1f(l,v);
+  else if(v.length===2)gl.uniform2f(l,v[0],v[1]);else if(v.length===3)gl.uniform3f(l,v[0],v[1],v[2]);else gl.uniform4f(l,v[0],v[1],v[2],v[3]);}
+  return unit;}
+function run(pr,U,dst,o){const w=dst?dst.w:cv.width,h=dst?dst.h:cv.height;
+  gl.bindFramebuffer(gl.FRAMEBUFFER,dst?dst.f:null);gl.viewport(0,0,w,h);gl.useProgram(pr.p);
+  G.uRes=[w,h];G.uAsp=w/h;setU(pr,U,setU(pr,G,0));
+  if(o&&o.blend){gl.enable(gl.BLEND);if(o.blend==='add')gl.blendFunc(gl.ONE,gl.ONE);else gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);}else gl.disable(gl.BLEND);
+  gl.drawArrays(o&&o.mode!=null?o.mode:gl.TRIANGLES,0,o&&o.n?o.n:3);}
+function clear(dst){gl.bindFramebuffer(gl.FRAMEBUFFER,dst.f);gl.viewport(0,0,dst.w,dst.h);gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);}
+
+/* ================= шейдъри ================= */
+const HEAD=`#version 300 es
+precision highp float;precision highp int;precision highp sampler2D;
+`;
+const VSQ=`#version 300 es
+out vec2 uv;void main(){vec2 p=vec2(float((gl_VertexID<<1)&2),float(gl_VertexID&2));uv=p;gl_Position=vec4(p*2.-1.,0.,1.);}`;
+const COMMON=`
+#define PI 3.14159265
+#define TAU 6.28318531
+uniform float uT,uMT,uBass,uMid,uTreb,uBassA,uMidA,uTrebA,uBeat,uBeatLo,uBeatHi,uVol,uAsp;
+uniform vec2 uRes;
+uniform sampler2D uAud,uNT;
+float spec(float x){return texture(uAud,vec2(x,.125)).r;}
+float wav(float x){return texture(uAud,vec2(x,.375)).r;}
+float wavL(float x){return texture(uAud,vec2(x,.625)).r;}
+float wavR(float x){return texture(uAud,vec2(x,.875)).r;}
+mat2 rot(float a){float c=cos(a),s=sin(a);return mat2(c,s,-s,c);}
+float h11(float p){p=fract(p*.1031);p*=p+33.33;p*=p+p;return fract(p);}
+float h21(vec2 p){vec3 q=fract(vec3(p.xyx)*.1031);q+=dot(q,q.yzx+33.33);return fract((q.x+q.y)*q.z);}
+float h31(vec3 p){p=fract(p*.1031);p+=dot(p,p.zyx+31.32);return fract((p.x+p.y)*p.z);}
+float noise(vec3 x){vec3 i=floor(x),f=fract(x);f=f*f*(3.-2.*f);
+  return mix(mix(mix(h31(i),h31(i+vec3(1,0,0)),f.x),mix(h31(i+vec3(0,1,0)),h31(i+vec3(1,1,0)),f.x),f.y),
+             mix(mix(h31(i+vec3(0,0,1)),h31(i+vec3(1,0,1)),f.x),mix(h31(i+vec3(0,1,1)),h31(i+vec3(1,1,1)),f.x),f.y),f.z);}
+float fbm(vec3 p){float s=0.,a=.5;for(int i=0;i<5;i++){s+=a*noise(p);p=p*2.03+vec3(1.7,9.2,3.1);a*=.5;}return s;}
+vec3 pal(float t){return .5+.5*cos(TAU*(t+vec3(0.,.33,.67)));}
+vec3 hueRot(vec3 c,float a){const vec3 k=vec3(.57735);float ca=cos(a);return c*ca+cross(k,c)*sin(a)+k*dot(k,c)*(1.-ca);}
+float smin(float a,float b,float k){float h=clamp(.5+.5*(b-a)/k,0.,1.);return mix(b,a,h)-k*h*(1.-h);}
+// бърз 3D шум от една текстура (G = R, отместено с (37,17) — следващият слой по z)
+float tnoise(vec3 x){vec3 i=floor(x),f=fract(x);f=f*f*(3.-2.*f);vec2 u=i.xy+vec2(37.,17.)*i.z+f.xy;vec2 rg=texture(uNT,(u+.5)/256.).rg;return mix(rg.x,rg.y,f.z);}
+vec3 stars(vec3 rd){vec3 c=vec3(0.);for(int i=0;i<3;i++){vec3 q=rd*(120.+float(i)*110.),id=floor(q),f=fract(q)-.5;float h=h31(id+float(i)*17.);
+  if(h>.982)c+=mix(vec3(.7,.8,1.),vec3(1.,.85,.7),fract(h*91.))*smoothstep(.35,0.,length(f))*(.65+.35*sin(uT*(.4+h*1.5)+h*60.))*(h-.982)*55.;}return c;}
+`;
+const FS=(src,uv=true)=>HEAD+COMMON+(uv?'in vec2 uv;':'')+'out vec4 o;\n'+src;
+const VSC=src=>HEAD+COMMON+src;
+
+// обратна връзка: изкривяване на предишния кадр (като в MilkDrop) + сцената
+const WARP=`uniform sampler2D uPrev,uSc1;uniform vec2 uTx;
+uniform float uZoom,uZoomExp,uRot,uCx,uCy,uDx,uDy,uSx,uSy,uWarp,uWarpT,uWarpS,uFlow,uFlowS,uDecay,uHue,uSat,uBlur,uOver,uAdd,uFold,uFoldA,uRip,uRipT,uEdge;
+vec2 curl(vec2 p,float t){float e=.05;float a=noise(vec3(p+vec2(0,e),t)),b=noise(vec3(p-vec2(0,e),t)),c=noise(vec3(p+vec2(e,0),t)),d=noise(vec3(p-vec2(e,0),t));return vec2(a-b,d-c)/(2.*e);}
+void main(){
+  vec2 p=(uv-.5)*vec2(uAsp,1.);float r=length(p)*2.;
+  vec2 q=p/pow(uZoom,pow(uZoomExp,r-1.));
+  float wt=uWarpT,ws=1./max(uWarpS,.05);
+  vec4 f=vec4(11.68+4.*cos(wt*1.413+10.),8.77+3.*cos(wt*1.113+7.),10.54+3.*cos(wt*1.233+3.),11.49+4.*cos(wt*.933+5.));
+  vec2 s=q;
+  q.x+=uWarp*.0035*sin(wt*.333+ws*(s.x*f.x-s.y*f.w));
+  q.y+=uWarp*.0035*cos(wt*.375-ws*(s.x*f.z+s.y*f.y));
+  q.x+=uWarp*.0035*cos(wt*.753-ws*(s.x*f.y-s.y*f.z));
+  q.y+=uWarp*.0035*sin(wt*.825+ws*(s.x*f.x+s.y*f.w));
+  vec2 c=vec2(uCx,uCy);
+  q=rot(uRot)*(q-c);q=q/vec2(uSx,uSy)+c;q-=vec2(uDx,uDy);
+  if(uFlow>0.)q+=uFlow*.0012*curl(q*uFlowS,uMT*.06);
+  if(uRip>0.){float w=sin(r*26.-uRipT*18.)*exp(-4.*abs(r-uRipT*1.8));q*=1.+uRip*.012*w;}
+  if(uFoldA>0.){float sg=TAU/uFold,a=abs(mod(atan(q.y,q.x)+sg*.5,sg)-sg*.5);q=mix(q,vec2(cos(a),sin(a))*length(q),uFoldA);}
+  vec2 su=q/vec2(uAsp,1.)+.5;float edge=1.;
+  if(uEdge>.5)su=1.-abs(1.-mod(su,2.));
+  else{vec2 e=smoothstep(0.,.006,su)*smoothstep(1.,.994,su);edge=e.x*e.y;}
+  vec3 col=texture(uPrev,su).rgb;
+  if(uBlur>0.){vec3 b=texture(uPrev,su+uTx*vec2(1.5,.5)).rgb+texture(uPrev,su+uTx*vec2(-.5,1.5)).rgb+texture(uPrev,su+uTx*vec2(-1.5,-.5)).rgb+texture(uPrev,su+uTx*vec2(.5,-1.5)).rgb;col=mix(col,b*.25,uBlur);}
+  col=hueRot(col,uHue);col=mix(vec3(dot(col,vec3(.299,.587,.114))),col,uSat);
+  col=max(col*uDecay*edge-.0015,0.);
+  vec4 sc=texture(uSc1,uv);
+  col=mix(col,sc.rgb,clamp(sc.a*uOver,0.,1.))+sc.rgb*uAdd*(1.-sc.a);
+  o=vec4(min(col,vec3(10.)),1.);}`;
+
+// крайният образ: калейдоскоп, ехо, сияние, хроматична аберация, тонове
+const COMP=`uniform sampler2D uFB,uBl;uniform float uFade,uBloom,uEcho,uEchoZ,uEchoO,uKal,uKalA,uKalR,uCA,uVig,uExpo,uGrain,uFlash,uGam;
+vec3 aces(vec3 x){return clamp((x*(2.51*x+.03))/(x*(2.43*x+.59)+.14),0.,1.);}
+vec2 mir(vec2 u){return 1.-abs(1.-mod(u,2.));}
+void main(){
+  vec2 p=(uv-.5)*vec2(uAsp,1.);
+  if(uKalA>0.){vec2 k=rot(uKalR)*p;float sg=TAU/uKal,a=abs(mod(atan(k.y,k.x)+sg*.5,sg)-sg*.5);k=vec2(cos(a),sin(a))*length(k);p=mix(p,k,uKalA);}
+  vec2 d=p/vec2(uAsp,1.),su=mir(d+.5);
+  float ca=uCA*.02*length(d);
+  vec3 c=vec3(texture(uFB,mir(.5+d*(1.+ca))).r,texture(uFB,su).g,texture(uFB,mir(.5+d*(1.-ca))).b);
+  if(uEcho>0.){vec2 e=d/uEchoZ;if(mod(uEchoO,2.)>.5)e.x=-e.x;if(uEchoO>1.5)e.y=-e.y;c=mix(c,texture(uFB,mir(.5+e)).rgb,uEcho);}
+  c+=texture(uBl,su).rgb*uBloom;
+  c*=uExpo*(1.+uFlash);
+  c=aces(c);c=pow(c,vec3(uGam));
+  vec2 v=uv-.5;c*=1.-uVig*dot(v,v)*2.;
+  c+=(h21(gl_FragCoord.xy+fract(uT*7.)*311.)-.5)*uGrain;
+  o=vec4(c*uFade,1.);}`;
+const BPRE=`uniform sampler2D uSrc;uniform vec2 uTx;uniform float uThr;
+void main(){vec3 c=(texture(uSrc,uv+uTx*vec2(-.5,-.5)).rgb+texture(uSrc,uv+uTx*vec2(.5,-.5)).rgb+texture(uSrc,uv+uTx*vec2(-.5,.5)).rgb+texture(uSrc,uv+uTx*vec2(.5,.5)).rgb)*.25;
+  float l=max(c.r,max(c.g,c.b));o=vec4(c*smoothstep(uThr,uThr+.8,l),1.);}`;
+const BDOWN=`uniform sampler2D uSrc;uniform vec2 uTx;
+void main(){vec3 s=texture(uSrc,uv).rgb*4.+texture(uSrc,uv+uTx*vec2(-1,-1)).rgb+texture(uSrc,uv+uTx*vec2(1,-1)).rgb+texture(uSrc,uv+uTx*vec2(-1,1)).rgb+texture(uSrc,uv+uTx*vec2(1,1)).rgb;o=vec4(s/8.,1.);}`;
+const BUP=`uniform sampler2D uSrc,uAdd;uniform vec2 uTx;
+void main(){vec3 s=texture(uSrc,uv+uTx*vec2(-2,0)).rgb+texture(uSrc,uv+uTx*vec2(2,0)).rgb+texture(uSrc,uv+uTx*vec2(0,-2)).rgb+texture(uSrc,uv+uTx*vec2(0,2)).rgb
+  +2.*(texture(uSrc,uv+uTx*vec2(-1,-1)).rgb+texture(uSrc,uv+uTx*vec2(1,-1)).rgb+texture(uSrc,uv+uTx*vec2(-1,1)).rgb+texture(uSrc,uv+uTx*vec2(1,1)).rgb);
+  o=vec4(s/12.+texture(uAdd,uv).rgb,1.);}`;
+const COPY=`uniform sampler2D uSrc;void main(){o=texture(uSrc,uv);}`;
+const TEXT=`uniform sampler2D uTxt;uniform float uA,uSc;uniform vec3 uCol;
+void main(){vec2 p=(uv-.5)*vec2(uAsp,1.);vec2 tc=vec2(p.x/(1.35*uSc),p.y/(.3375*uSc))+.5;float a=0.;
+  if(tc.x>0.&&tc.x<1.&&tc.y>0.&&tc.y<1.)a=texture(uTxt,tc).a;o=vec4(uCol*a*uA,0.);}`;
+
+// форми с образа отвътре (като „textured shapes“ в MilkDrop)
+const SHAPE=`uniform sampler2D uPrev;uniform vec2 uC;uniform float uR,uN,uAng,uTh,uTex,uFill;uniform vec3 uCol;
+float sdN(vec2 p,float r,float n){float s=TAU/n,a=mod(atan(p.y,p.x)+s*.5,s)-s*.5;return length(p)*cos(a)-r*cos(s*.5);}
+void main(){vec2 p=(uv-.5)*vec2(uAsp,1.)*2.;vec2 q=rot(uAng)*(p-uC);float d=sdN(q,uR,uN),px=2./uRes.y;
+  float ring=exp(-abs(d)/(uTh*px)),ins=smoothstep(px,-px,d);
+  vec3 tex=texture(uPrev,.5+q/uR*.5).rgb*uTex;
+  o=vec4((tex+uCol*uFill)*ins+uCol*ring*1.4,ins*clamp(uTex+uFill,0.,1.));}`;
+
+// дебела вълнова линия (класическите вълни на MilkDrop)
+const LINEVS=`uniform float uN,uMode,uAmp,uR,uW,uRotW,uSpan;uniform vec2 uC;out float vSide;
+float W(float s){float f=smoothstep(.889,1.,s);return mix(wav(.9*s+.1),wav(.9*s-.8),f);}
+vec2 P(float s){int m=int(uMode+.5);vec2 p;
+  if(m==0){float a=s*TAU+uRotW;p=vec2(cos(a),sin(a))*(uR+W(s)*uAmp);}
+  else if(m==1){p=rot(uRotW)*vec2((s*2.-1.)*uSpan,wav(s)*uAmp);}
+  else if(m==2){p=rot(uRotW+.785)*vec2(wavL(s),wavR(s))*uAmp;}
+  else if(m==3){float a=s*TAU+uRotW;p=vec2(cos(a),sin(a))*(uR+spec(abs(s*2.-1.)*.7+.03)*uAmp);}
+  else{float a=s*TAU*3.+uRotW;p=vec2(cos(a),sin(a))*(uR*(.12+.88*s)+W(s)*uAmp*.5);}
+  return p+uC;}
+void main(){int id=gl_VertexID;float i=float(id/2),side=float(id%2)*2.-1.,n=uN-1.,s=i/n,e=1./n;
+  vec2 p=P(s),a=P(max(s-e,0.)),b=P(min(s+e,1.)),t=b-a;t=length(t)>1e-6?normalize(t):vec2(1.,0.);
+  vec2 q=p+vec2(-t.y,t.x)*side*uW*2./uRes.y;vSide=side;gl_Position=vec4(q.x/uAsp,q.y,0.,1.);}`;
+const LINEFS=`uniform vec3 uCol;uniform float uBr;in float vSide;void main(){float k=1.-vSide*vSide;o=vec4(uCol*uBr*k*k,0.);}`;
+
+// частици: морфиране между 3D форми, без състояние — всичко се смята от номера на частицата
+const PARTVS=`float gH=-1.,gC=-1.,gF=1.;uniform float uN,uA,uB,uMM,uPS,uBr,uHue,uYaw,uPitch,uCamD,uLift,uHead;uniform vec4 uSF;uniform sampler2D uHist;out vec3 vC;
+float sfm(float a){float t1=pow(abs(cos(uSF.x*a*.25)),uSF.z),t2=pow(abs(sin(uSF.x*a*.25)),uSF.w);return min(pow(t1+t2+1e-4,-1./uSF.y),2.2);}
+// фибрация на Хопф: всяка точка от S² е окръжност в S³; бавно 4D въртене → стереографска проекция
+vec3 hopf(float i,float n,int v){
+  float nf=320.,fi=mod(i,nf),ph=floor(i/nf)/floor(n/nf)*TAU,z,a;gC=fi/nf;
+  if(v==0){z=mix(-.92,.92,(fi+.5)/nf);a=fi*2.39996;}
+  else if(v==1){float b=floor(fi/64.),k=mod(fi,64.);z=mix(-.7,.7,b/4.);a=k/64.*TAU+b*.4;}
+  else{float u=fi/nf;z=sin(u*TAU*2.)*.8;a=u*TAU;}
+  float rr=sqrt(max(0.,1.-z*z)),x=rr*cos(a),y=rr*sin(a);
+  vec4 q=vec4((1.+z)*cos(ph),x*sin(ph)-y*cos(ph),x*cos(ph)+y*sin(ph),(1.+z)*sin(ph))/sqrt(2.*(1.+z));
+  q.xw=rot(uMT*.045)*q.xw;q.yz=rot(uMT*.028)*q.yz;
+  vec3 p=q.xyz/max(1.-q.w,.02);float l=length(p);gF=min(gF,smoothstep(3.2,1.9,l));p*=min(1.,3./l);return p.xzy*.55;}
+vec3 shp(float k,float i,float n){
+  float s=(i+.5)/n,h1=h11(i*.1234+.1),h2=h11(i*.7311+.7),h3=h11(i*.2917+.3);int m=int(k+.5);
+  if(m==0){float z=1.-2.*s,r=sqrt(max(0.,1.-z*z)),a=i*2.39996;vec3 p=vec3(r*cos(a),z,r*sin(a));return p*(1.05+spec(.03+abs(z)*.55)*.55*(.5+.5*uBassA));}
+  if(m==1){float u=s*TAU;vec3 c=vec3((2.+cos(3.*u))*cos(2.*u),-sin(3.*u),(2.+cos(3.*u))*sin(2.*u))*.42;
+    return c+normalize(vec3(h1,h2,h3)-.5+1e-4)*.1*(.6+.8*spec(fract(s*4.)*.5+.02));}
+  if(m==2){float arm=floor(h1*3.),rr=pow(h2,.6)*1.6,a=rr*2.6+arm*TAU/3.+(h3-.5)*.55/(rr+.3);
+    return vec3(cos(a)*rr,(h11(i*1.71)-.5)*.14*(1.-rr/1.8)+spec(rr*.3+.02)*.18,sin(a)*rr);}
+  if(m==3){float g=18.,f=floor(h1*6.);vec2 w=vec2(h2,h3)*2.-1.;if(h11(i*3.3)<.5)w.x=floor(h2*g)/(g-1.)*2.-1.;else w.y=floor(h3*g)/(g-1.)*2.-1.;
+    vec3 p=f<1.?vec3(1,w):f<2.?vec3(-1,w):f<3.?vec3(w.x,1,w.y):f<4.?vec3(w.x,-1,w.y):f<5.?vec3(w,1):vec3(w,-1);return p*.82;}
+  if(m==4){float t=s*TAU*4.,y=s*3.6-1.8;
+    if(h1<.8){float sd=step(.4,h1)*PI;return vec3(cos(t+sd)*.55,y,sin(t+sd)*.55)+(vec3(h2,h3,h11(i*.37))-.5)*.06;}
+    float tq=floor(s*56.)/56.;t=tq*TAU*4.;y=tq*3.6-1.8;float x=h2*2.-1.;return vec3(cos(t)*.55*x,y,sin(t)*.55*x);}
+  if(m==5){float th=TAU*fract(i*.618034)-PI,ph=asin(clamp(1.-2.*s,-1.,1.));float r1=sfm(th),r2=sfm(ph);
+    return vec3(r1*cos(th)*r2*cos(ph),r2*sin(ph),r1*sin(th)*r2*cos(ph))*.85;}
+  if(m==6){float cols=256.,rows=floor(n/cols),cx=mod(i,cols),cz=floor(i/cols),zf=cz/rows;
+    float row=mod(uHead-zf*126.,128.);float hg=texture(uHist,vec2(.02+abs((cx+.5)/cols*2.-1.)*.72,(row+.5)/128.)).r;gH=hg;
+    return vec3((cx/cols*2.-1.)*1.5,hg*hg*1.1-.35,(1.-zf)*3.4-1.7);}
+  return hopf(i,n,m-7);}
+void main(){
+  float i=float(gl_VertexID),h=h11(i*.917+.13);
+  float m=smoothstep(h*.4,h*.4+.6,uMM);
+  vec3 p=mix(shp(uA,i,uN),shp(uB,i,uN),m);
+  float sw=sin(PI*m);
+  if(sw>.001){vec3 q=p*1.3+vec3(0.,0.,uMT*.15);p+=(vec3(noise(q),noise(q+11.3),noise(q+27.1))-.5)*sw*1.5;}
+  p*=1.+uBeat*.06*h+.05*(uBassA-1.);
+  float hue=uHue+h*.3+length(p)*.18;
+  p.xz=rot(uYaw)*p.xz;p.yz=rot(uPitch)*p.yz;p.y+=uLift;
+  float z=p.z+uCamD;
+  if(z<.15){gl_Position=vec4(2.,2.,2.,1.);gl_PointSize=0.;vC=vec3(0.);return;}
+  vec2 sp=p.xy*1.7/z;gl_Position=vec4(sp.x/uAsp,sp.y,0.,1.);
+  float ps=max(1.,uPS*uRes.y/1000.*3./z);gl_PointSize=ps;
+  vC=pal(hue)*uBr*(.55+.9*spec(fract(h*3.1)*.5+.02))*min(1.,5./(ps*ps))*(h>.997?4.:1.);
+  if(gC>=0.)vC=pal(uHue+gC*.85+h*.04)*uBr*(.6+.7*spec(gC*.5+.02))*min(1.,5./(ps*ps))*gF;
+  if(gH>=0.)vC=pal(uHue+gH*.6+.1)*uBr*(.15+3.*gH*gH)*min(1.,5./(ps*ps));}`;
+const PARTFS=`in vec3 vC;void main(){vec2 d=gl_PointCoord*2.-1.;float a=max(0.,1.-dot(d,d));o=vec4(vC*a*a,0.);}`;
+
+// симулация на течност (Навие–Стокс върху GPU)
+const F_ADV=`uniform sampler2D uVel,uSrc;uniform vec2 uTxS;uniform float uDt,uDis;
+void main(){vec2 c=uv-uDt*texture(uVel,uv).xy*uTxS;o=texture(uSrc,c)/(1.+uDis*uDt);}`;
+const NB=`vec2 dx=vec2(uTxS.x,0.),dy=vec2(0.,uTxS.y);`;
+const F_DIV=`uniform sampler2D uVel;uniform vec2 uTxS;
+void main(){${NB}float L=texture(uVel,uv-dx).x,R=texture(uVel,uv+dx).x,T=texture(uVel,uv+dy).y,B=texture(uVel,uv-dy).y;vec2 C=texture(uVel,uv).xy;
+  if(uv.x-uTxS.x<0.)L=-C.x;if(uv.x+uTxS.x>1.)R=-C.x;if(uv.y+uTxS.y>1.)T=-C.y;if(uv.y-uTxS.y<0.)B=-C.y;o=vec4(.5*(R-L+T-B),0.,0.,1.);}`;
+const F_CURL=`uniform sampler2D uVel;uniform vec2 uTxS;
+void main(){${NB}float L=texture(uVel,uv-dx).y,R=texture(uVel,uv+dx).y,T=texture(uVel,uv+dy).x,B=texture(uVel,uv-dy).x;o=vec4(.5*(R-L-T+B),0.,0.,1.);}`;
+const F_VORT=`uniform sampler2D uVel,uCurl;uniform vec2 uTxS;uniform float uCurlK,uDt;
+void main(){${NB}float L=texture(uCurl,uv-dx).x,R=texture(uCurl,uv+dx).x,T=texture(uCurl,uv+dy).x,B=texture(uCurl,uv-dy).x,C=texture(uCurl,uv).x;
+  vec2 f=.5*vec2(abs(T)-abs(B),abs(R)-abs(L));f/=length(f)+1e-4;f*=uCurlK*C;f.y*=-1.;
+  o=vec4(clamp(texture(uVel,uv).xy+f*uDt,-1000.,1000.),0.,1.);}`;
+const F_PRES=`uniform sampler2D uP,uDiv;uniform vec2 uTxS;
+void main(){${NB}o=vec4((texture(uP,uv-dx).x+texture(uP,uv+dx).x+texture(uP,uv+dy).x+texture(uP,uv-dy).x-texture(uDiv,uv).x)*.25,0.,0.,1.);}`;
+const F_GRAD=`uniform sampler2D uP,uVel;uniform vec2 uTxS;
+void main(){${NB}vec2 v=texture(uVel,uv).xy-vec2(texture(uP,uv+dx).x-texture(uP,uv-dx).x,texture(uP,uv+dy).x-texture(uP,uv-dy).x);o=vec4(v,0.,1.);}`;
+const F_SPLAT=`uniform sampler2D uSrc;uniform vec2 uPt;uniform vec3 uCol;uniform float uRad;
+void main(){vec2 p=uv-uPt;p.x*=uAsp;o=vec4(texture(uSrc,uv).xyz+exp(-dot(p,p)/uRad)*uCol,1.);}`;
+const F_MUL=`uniform sampler2D uSrc;uniform float uV;void main(){o=texture(uSrc,uv)*uV;}`;
+const F_RING=`uniform sampler2D uSrc;uniform float uR0,uAmpR,uStr,uIsVel;uniform vec3 uCol;
+void main(){vec2 p=(uv-.5)*vec2(uAsp,1.);float r=length(p),a=atan(p.y,p.x),w=wav(a/TAU+.5);
+  float k=exp(-pow((r-uR0-w*uAmpR)/.014,2.));vec4 b=texture(uSrc,uv);
+  if(uIsVel>.5)b.xy+=normalize(p+1e-5)*k*uStr*(.25+abs(w)*2.);else b.rgb+=uCol*k*uStr*(.3+abs(w)*1.5);o=b;}`;
+const F_DISP=`uniform sampler2D uDye;uniform vec2 uTxD;
+void main(){vec3 c=texture(uDye,uv).rgb;vec2 dx=vec2(uTxD.x,0.),dy=vec2(0.,uTxD.y);
+  float L=length(texture(uDye,uv-dx).rgb),R=length(texture(uDye,uv+dx).rgb),T=length(texture(uDye,uv+dy).rgb),B=length(texture(uDye,uv-dy).rgb);
+  vec3 n=normalize(vec3(R-L,T-B,.25)),ld=normalize(vec3(-.4,.6,1.));
+  float dif=clamp(dot(n,ld)+.55,.55,1.35),sp=pow(max(dot(reflect(-ld,n),vec3(0,0,1)),0.),36.);
+  c=c*dif+sp*.35*min(length(c),1.2);o=vec4(c,1.);}`;
+
+// 3D тунел (raymarching)
+const TUN=`uniform float uZ,uRoll;
+vec2 path(float z){return vec2(sin(z*.13)*1.6+sin(z*.051)*1.2,cos(z*.1)*1.1+sin(z*.037)*.8);}
+float tR(vec3 p,out float a){vec2 c=p.xy-path(p.z);a=atan(c.y,c.x);
+  return 1.7+.1*sin(a*5.+p.z*.7)+.3*spec(fract(abs(a)/PI)*.45+.02)*(.4+.6*uBassA)-length(c);}
+float map(vec3 p){float a;return tR(p,a)*.6;}
+void main(){
+  vec2 sp=(uv-.5)*vec2(uAsp,1.);
+  vec3 ro=vec3(path(uZ),uZ),ta=vec3(path(uZ+2.5),uZ+2.5);
+  vec3 fw=normalize(ta-ro),rt=normalize(cross(vec3(sin(uRoll),cos(uRoll),0.),fw)),up=cross(fw,rt);
+  vec3 rd=normalize(sp.x*rt+sp.y*up+1.05*fw);
+  float t=.05,d=1.;vec3 glow=vec3(0.);
+  for(int i=0;i<90;i++){vec3 p=ro+rd*t;d=map(p);
+    vec2 c=p.xy-path(p.z);float zr=p.z/3.,ri=floor(zr+.5),dz=(zr-ri)*3.;
+    float rr=length(vec2(length(c)-1.35,dz));
+    glow+=pal(ri*.071+uT*.03)*(.3+3.*spec(.02+fract(ri*.1731)*.4)+1.2*uBeat)*exp(-rr*14.)*.05;
+    if(d<.0015*t||t>42.)break;t+=min(d,.3);}
+  vec3 col=vec3(0.);
+  if(t<42.){vec3 p=ro+rd*t;float a;tR(p,a);
+    vec2 e=vec2(.01,0.);vec3 n=normalize(vec3(map(p+e.xyy)-map(p-e.xyy),map(p+e.yxy)-map(p-e.yxy),map(p+e.yyx)-map(p-e.yyx)));
+    vec2 g=vec2(a/TAU*18.,p.z*.9),gi=floor(g),gf=fract(g)-.5;
+    float bd=.5-max(abs(gf.x),abs(gf.y)),edge=exp(-bd/max(fwidth(bd),1e-4)*.55)+.3*exp(-bd*14.),hc=h21(gi);
+    float lit=smoothstep(.8,1.,.5+.5*sin(hc*43.+uMT*.6))*(spec(fract(hc*7.3)*.5+.02)*1.6+.4+uBeatHi);
+    vec3 neon=pal(gi.y*.013+uT*.04+.55);
+    float dif=max(dot(n,-rd),0.);
+    col=vec3(.02,.025,.04)*(.3+.7*dif)+neon*edge*(.45+.7*uMidA)+pal(hc+uT*.05)*lit*.4;
+    col+=pow(max(dot(reflect(rd,n),-rd),0.),20.)*.12;}
+  col*=exp(-t*.055);col+=glow;
+  o=vec4(col,1.);}`;
+
+// морфираща 3D капка (течен метал / кристал)
+const BLOB=`uniform float uA,uB,uM,uMat,uRY,uRX;
+float sdS(vec3 p,float k){
+  if(k<.5)return length(p)-1.05;
+  if(k<1.5){vec3 q=abs(p)-vec3(.72);return length(max(q,0.))+min(max(q.x,max(q.y,q.z)),0.)-.18;}
+  if(k<2.5){vec2 q=vec2(length(p.xz)-.85,p.y);return length(q)-.36;}
+  if(k<3.5)return (abs(p.x)+abs(p.y)+abs(p.z)-1.35)*.577;
+  if(k<4.5)return max(length(p)-1.15,(abs(dot(sin(p*3.6),cos(p.zxy*3.6)))-.35)/5.);
+  vec3 q=abs(p);return max(smin(smin(length(q.xy)-.3,length(q.yz)-.3,.3),length(q.xz)-.3,.3),length(p)-1.3);}
+float map(vec3 p){
+  p.xz=rot(uRY)*p.xz;p.yz=rot(uRX)*p.yz;
+  float d=mix(sdS(p,uA),sdS(p,uB),uM);
+  vec3 n=normalize(p+1e-4);
+  float la=.02+acos(clamp(n.y,-1.,1.))/PI*.5;d-=(spec(la-.02)+spec(la)+spec(la+.02))*.05*(.5+.5*uBassA);
+  d+=sin(p.x*4.+uMT*1.7)*sin(p.y*4.3-uMT*1.3)*sin(p.z*3.9+uMT)*(.04+.05*uMidA);
+  for(int k=0;k<3;k++){float fk=float(k);vec3 c=vec3(cos(uMT*.6+fk*2.094),sin(uMT*.8+fk*1.3)*.6,sin(uMT*.6+fk*2.094))*(1.75+.2*(uBassA-1.));
+    d=smin(d,length(p-c)-(.2+.06*uBeat),.55);}
+  return d*.6;}
+vec3 env(vec3 r){
+  float az=atan(r.z,r.x);vec3 c=mix(vec3(.02,.02,.05),vec3(.22,.2,.32),smoothstep(-.2,1.,r.y));
+  c+=pal(az/TAU+uT*.03)*pow(max(0.,sin(az*3.+uT*.15)),8.)*smoothstep(-.4,.6,r.y)*1.6;
+  c+=vec3(1.,.95,.9)*pow(max(dot(r,normalize(vec3(.4,.9,.2))),0.),30.)*5.;
+  c+=pal(.85+uT*.02)*.12*smoothstep(0.,-1.,r.y);
+  c+=pal(.6+uT*.02)*smoothstep(.07,0.,abs(r.y+.05))*(.4+2.2*spec(fract(az/TAU+.5)*.5+.02));
+  return c;}
+void main(){
+  vec2 sp=(uv-.5)*vec2(uAsp,1.);
+  vec3 ro=vec3(.3*sin(uT*.13),.2*sin(uT*.1),6.2),rd=normalize(vec3(sp,-1.15));
+  float t=2.,d,md=9.;
+  for(int i=0;i<110;i++){d=map(ro+rd*t);md=min(md,d);if(d<.001||t>11.)break;t+=d;}
+  if(t<11.){vec3 p=ro+rd*t;vec2 k=vec2(1.,-1.)*.0015;
+    vec3 n=normalize(k.xyy*map(p+k.xyy)+k.yyx*map(p+k.yyx)+k.yxy*map(p+k.yxy)+k.xxx*map(p+k.xxx));
+    float fr=pow(1.-max(dot(n,-rd),0.),5.),ao=clamp(map(p+n*.18)/.18,0.,1.);vec3 rf=reflect(rd,n),col;
+    if(uMat<.5)col=env(rf)*mix(vec3(.55,.5,.48),vec3(1.),fr)*(.6+.4*ao);
+    else{vec3 ir=pal(fr*1.6+dot(n,vec3(.3,.5,.2))+uT*.05);col=env(refract(rd,n,.72))*ir*.7+env(rf)*(.12+fr)+ir*fr*.7;col*=.55+.45*ao;}
+    col+=pal(uT*.05)*uBeat*.2*fr;o=vec4(col,1.);}
+  else o=vec4(pal(uT*.04+.3)*exp(-md*8.)*(.02+.06*uBeat),0.);}`;
+
+// фрактал (Аполониева мрежа) — летене вътре
+const FRAC=`uniform float uS,uTc;
+float mapA(vec3 p,out vec4 tr){float sc=1.;tr=vec4(1000.);
+  for(int i=0;i<8;i++){p=-1.+2.*fract(.5*p+.5);float r2=dot(p,p);tr=min(tr,vec4(abs(p),r2));float k=uS/r2;p*=k;sc*=k;}
+  return .25*abs(p.y)/sc;}
+void main(){
+  vec2 sp=(uv-.5)*vec2(uAsp,1.)*2.;float tm=uTc;
+  vec3 ro=vec3(2.8*cos(.1+.33*tm),.4+.3*cos(.37*tm),2.8*cos(.5+.35*tm)),ta=vec3(1.9*cos(1.2+.41*tm),.4+.1*cos(.27*tm),1.9*cos(2.+.38*tm));
+  float rl=.2*cos(.1*tm);vec3 cw=normalize(ta-ro),cp=vec3(sin(rl),cos(rl),0.),cu=normalize(cross(cw,cp)),cv=cross(cu,cw);
+  vec3 rd=normalize(sp.x*cu+sp.y*cv+2.*cw);
+  vec4 tr;float t=.01,h=1.,hit=-1.;int st=0;
+  for(int i=0;i<128;i++){h=mapA(ro+rd*t,tr);st=i;if(h<.0002*t){hit=t;break;}if(t>12.)break;t+=h;}
+  vec3 col=pal(.62+uT*.01)*.03;
+  if(hit>0.){vec3 p=ro+rd*t;vec4 tq;vec2 e=vec2(1.,-1.)*.0005*t;
+    vec3 n=normalize(e.xyy*mapA(p+e.xyy,tq)+e.yyx*mapA(p+e.yyx,tq)+e.yxy*mapA(p+e.yxy,tq)+e.xxx*mapA(p+e.xxx,tq));
+    float key=clamp(dot(vec3(.577,.577,-.577),n),0.,1.),bac=clamp(.2+.8*dot(vec3(-.707,0.,.707),n),0.,1.),amb=.7+.3*n.y,ao=pow(clamp(tr.w*2.,0.,1.),1.2);
+    vec3 br=(vec3(.4)*amb+vec3(1.)*key*(.8+.5*uBassA)+vec3(.4)*bac)*ao;
+    vec3 c=vec3(1.);c=mix(c,pal(.08+uT*.012)*1.1,clamp(6.*tr.y,0.,1.));c=mix(c,pal(.55+uT*.017)*1.1,pow(clamp(1.-2.*tr.z,0.,1.),8.));
+    col=c*br*exp(-.2*t)*1.1;
+    col+=pal(uT*.03+tr.w*3.)*exp(-tr.w*30.)*(.4+.8*uTrebA+.8*uBeatHi)*exp(-.2*t);}
+  col+=pal(.5+uT*.02)*float(st)/128.*.12*(.5+uBeat);
+  o=vec4(col,1.);}`;
+
+// течен мрамор (вложено изкривяване на шум)
+const MARB=`uniform float uWK,uSc;
+void main(){
+  vec2 p=(uv-.5)*vec2(uAsp,1.)*uSc;p=rot(uMT*.01)*p;
+  vec3 P=vec3(p,uMT*.035);
+  vec2 q=vec2(fbm(P),fbm(P+vec3(5.2,1.3,.7)));
+  vec2 r=vec2(fbm(vec3(p+uWK*q+vec2(1.7,9.2),uMT*.05)),fbm(vec3(p+uWK*q+vec2(8.3,2.8),uMT*.045)));
+  float v=fbm(vec3(p+uWK*r,uMT*.03));
+  vec3 c1=pal(.55+uT*.01),c2=pal(.05+uT*.013);
+  vec3 c=mix(c1*c1*.8,c2,clamp(v*v*4.,0.,1.));
+  c=mix(c,vec3(0.,.01,.08),clamp(length(q),0.,1.)*.85);
+  c=mix(c,pal(.35+uT*.02+spec(.05+v*.4)*.4),clamp(abs(r.x),0.,1.)*.75);
+  c*=(v*v*v+.6*v*v+.5*v)*1.3*(.85+.2*uBassA);
+  vec3 n=normalize(vec3(-dFdx(v),-dFdy(v),1.5/uRes.y*28.));
+  float sp=pow(max(dot(reflect(-normalize(vec3(-.4,.5,1.)),n),vec3(0,0,1)),0.),28.);
+  c+=sp*(.4+.4*uTrebA+.25*uBeatHi)*vec3(.9,.95,1.);
+  o=vec4(c,1.);}`;
+
+// ---- фигури на Хладни: пясък върху трептяща плоча ----
+const CHL=`uniform vec4 uMd;uniform float uMk;
+float chl(vec2 u,float n,float m){return cos(n*PI*u.x)*cos(m*PI*u.y)-cos(m*PI*u.x)*cos(n*PI*u.y);}
+float F(vec2 p){vec2 u=p*.5+.5;return mix(chl(u,uMd.x,uMd.y),chl(u,uMd.z,uMd.w),uMk);}`;
+const CH_UP=`uniform sampler2D uP;uniform float uAmp,uSeed,uInit;${CHL}
+void main(){ivec2 ij=ivec2(gl_FragCoord.xy);vec2 fi=vec2(ij),p=texelFetch(uP,ij,0).xy;
+  if(uInit>.5)p=vec2(h21(fi*.731+.3),h21(fi*1.37+4.1))*2.-1.;
+  float f=F(p);vec2 e=vec2(.003,0.),g=vec2(F(p+e)-F(p-e),F(p+e.yx)-F(p-e.yx))/.006;
+  vec2 r=vec2(h21(fi+fract(uSeed)*517.),h21(fi.yx*1.13+fract(uSeed*1.7)*311.))-.5;
+  p+=r*abs(f)*uAmp*.03-g*f*.0004;   // трептенето разклаща пясъка; той се събира по възловите линии (f=0)
+  o=vec4(clamp(p,-.995,.995),0.,1.);}`;
+const CH_PL=`uniform float uScl,uRotP,uGlow;${CHL}
+void main(){vec2 p=rot(-uRotP)*((uv-.5)*vec2(uAsp,1.)*2.)/uScl,a=abs(p);float m=max(a.x,a.y),ed=smoothstep(1.015,1.,m);
+  vec3 bg=vec3(.008,.01,.016)*(1.2-.4*length(p));
+  vec3 pl=vec3(.045,.05,.065)+.035*fbm(vec3(p*5.,1.))+pal(.6+uT*.01)*abs(F(clamp(p,-1.,1.)))*uGlow*.045;
+  pl+=vec3(.1,.11,.14)*pow(max(0.,1.-length(p-vec2(-.45,.55))*.8),3.);
+  o=vec4(mix(bg,pl,ed)+smoothstep(.975,1.,m)*ed*.14,1.);}`;
+const CH_PTVS=`uniform sampler2D uP;uniform float uSW,uScl,uRotP,uPS,uBr;out vec3 vC;
+void main(){int id=gl_VertexID,w=int(uSW);vec2 p=texelFetch(uP,ivec2(id%w,id/w),0).xy,q=rot(uRotP)*p*uScl;
+  gl_Position=vec4(q.x/uAsp,q.y,0.,1.);gl_PointSize=uPS;float h=h11(float(id)*.123);vC=mix(vec3(1.,.8,.52),vec3(.85,.9,1.),h)*uBr*(.7+.6*h);}`;
+
+// ---- кимоскоп: вълново уравнение върху водна повърхност ----
+const RP_SRC=`uniform vec4 uS0,uS1,uS2,uS3;float src(vec4 s,float w){vec2 d=(uv-s.xy)*vec2(uAsp,1.);return s.z*exp(-dot(d,d)/w);}`;
+const RP_UP=`uniform sampler2D uW;uniform vec2 uTxS;uniform float uDamp;${RP_SRC}
+void main(){vec2 dx=vec2(uTxS.x,0.),dy=vec2(0.,uTxS.y);vec4 c=texture(uW,uv);
+  float s4=texture(uW,uv-dx).x+texture(uW,uv+dx).x+texture(uW,uv-dy).x+texture(uW,uv+dy).x,n=2.*c.x-c.y+.3*(s4-4.*c.x);   // c²=0.3 — под границата на устойчивост
+  vec2 e=min(uv,1.-uv)*vec2(uAsp,1.);n*=mix(.9,uDamp,smoothstep(0.,.1,min(e.x,e.y)));
+  n+=(src(uS0,.0005)*sin(uS0.w)+src(uS1,.0005)*sin(uS1.w)+src(uS2,.0005)*sin(uS2.w)+src(uS3,.0005)*sin(uS3.w));
+  n=mix(n,s4*.25,.02);
+  o=vec4(n,c.x,0.,1.);}`;
+const RP_DI=`uniform sampler2D uW;uniform vec2 uTxS;uniform float uGain;${RP_SRC}
+void main(){vec2 dx=vec2(uTxS.x,0.),dy=vec2(0.,uTxS.y);
+  float h=texture(uW,uv).x*uGain,L=texture(uW,uv-2.*dx).x*uGain,R=texture(uW,uv+2.*dx).x*uGain,B=texture(uW,uv-2.*dy).x*uGain,T=texture(uW,uv+2.*dy).x*uGain;
+  vec3 n=normalize(vec3(L-R,B-T,.5));float lap=L+R+B+T-4.*h;
+  vec2 q=(uv-.5)*vec2(uAsp,1.)+n.xy*.06,g=abs(fract(q*5.)-.5);
+  vec3 bot=mix(vec3(.015,.05,.075),vec3(.04,.11,.14),fbm(vec3(q*3.,.5)))+smoothstep(.46,.5,max(g.x,g.y))*.025;
+  vec3 tint=mix(vec3(.25,.75,.95),pal(.5+uT*.01),.3);
+  vec3 c=bot*(.7+clamp(-lap*2.5,-.5,3.)*tint*1.6);
+  vec3 ld=normalize(vec3(-.3,.5,1.));c+=pow(max(dot(reflect(-ld,n),vec3(0,0,1)),0.),50.)*.6*vec3(.9,.95,1.);
+  c+=tint*(src(uS0,.0006)+src(uS1,.0006)+src(uS2,.0006)+src(uS3,.0006))*8.;
+  o=vec4(c,1.);}`;
+
+// ---- реакция–дифузия (Грей–Скот) ----
+const RD_IN=`uniform float uSeed;void main(){vec2 g=(uv-.5)*vec2(uAsp,1.)*14.,c=floor(g);
+  float b=(h21(c+uSeed*31.)>.8&&length(fract(g)-.5)<.22)?1.:0.;o=vec4(1.,b,0.,1.);}`;
+const RD_UP=`uniform sampler2D uS;uniform vec2 uTxS;uniform float uF,uK;uniform vec4 uBr;
+void main(){vec2 dx=vec2(uTxS.x,0.),dy=vec2(0.,uTxS.y),c=texture(uS,uv).xy;
+  vec2 lap=-c+.2*(texture(uS,uv-dx).xy+texture(uS,uv+dx).xy+texture(uS,uv-dy).xy+texture(uS,uv+dy).xy)
+    +.05*(texture(uS,uv-dx-dy).xy+texture(uS,uv+dx-dy).xy+texture(uS,uv-dx+dy).xy+texture(uS,uv+dx+dy).xy);
+  vec2 p=(uv-.5)*vec2(uAsp,1.);float f=uF+.004*sin(p.x*2.1+p.y*1.3),k=uK+.0015*cos(p.y*2.4-p.x);
+  float a=c.x,b=c.y,r=a*b*b;a+=lap.x-r+f*(1.-a);b+=.5*lap.y+r-(k+f)*b;
+  vec2 d=(uv-uBr.xy)*vec2(uAsp,1.);if(dot(d,d)<uBr.z*uBr.z)b=max(b,uBr.w);
+  o=vec4(clamp(a,0.,1.),clamp(b,0.,1.),0.,1.);}`;
+const RD_DI=`uniform sampler2D uS;uniform vec2 uTxS;
+void main(){float b=texture(uS,uv).y,bx=texture(uS,uv+vec2(uTxS.x,0.)).y-texture(uS,uv-vec2(uTxS.x,0.)).y,by=texture(uS,uv+vec2(0.,uTxS.y)).y-texture(uS,uv-vec2(0.,uTxS.y)).y;
+  vec3 n=normalize(vec3(-bx,-by,.09)),ld=normalize(vec3(-.4,.6,1.));float dif=clamp(dot(n,ld),0.,1.),sp=pow(max(dot(reflect(-ld,n),vec3(0,0,1)),0.),30.);
+  float v=smoothstep(.12,.42,b);vec3 base=pal(.55+uT*.008+b*.5);
+  vec3 c=mix(vec3(.015,.012,.03),base*base,v)*(.45+.75*dif)+sp*.45*v+pal(.1+uT*.011)*smoothstep(.03,.15,b)*(1.-v)*.35;
+  o=vec4(c,1.);}`;
+
+// ---- физарум: агенти, които следват и оставят следи (3 вида) ----
+const PH_IN=`uniform float uSeed;void main(){vec2 fi=gl_FragCoord.xy;
+  o=vec4(h21(fi*.73+uSeed*13.),h21(fi*1.37+uSeed*7.),h21(fi*.29+uSeed*3.)*TAU,mod(floor(fi.x)+floor(fi.y),3.));}`;
+const PH_UP=`uniform sampler2D uA,uTr;uniform vec2 uTxT;uniform float uSA,uRA,uSD,uSS,uSeed;
+vec3 spc(float s){return s<.5?vec3(1.,-.4,-.4):s<1.5?vec3(-.4,1.,-.4):vec3(-.4,-.4,1.);}
+float sense(vec2 p,float a,vec3 w){return dot(texture(uTr,fract(p+vec2(cos(a),sin(a))*uSD*uTxT)).rgb,w);}
+void main(){ivec2 ij=ivec2(gl_FragCoord.xy);vec2 fi=vec2(ij);vec4 s=texelFetch(uA,ij,0);vec3 w=spc(s.w);float a=s.z;
+  float F=sense(s.xy,a,w),L=sense(s.xy,a+uSA,w),R=sense(s.xy,a-uSA,w),rn=h21(fi+fract(uSeed)*713.);
+  if(F>L&&F>R){}else if(F<L&&F<R)a+=(rn-.5)*2.*uRA;else if(L>R)a+=uRA;else if(R>L)a-=uRA;
+  o=vec4(fract(s.xy+vec2(cos(a),sin(a))*uSS*uTxT),mod(a,TAU),s.w);}`;
+const PH_DF=`uniform sampler2D uTr;uniform vec2 uTxS;uniform float uDec;
+void main(){vec3 s=vec3(0.);for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++)s+=texture(uTr,fract(uv+vec2(float(x),float(y))*uTxS)).rgb;o=vec4(s/9.*uDec,1.);}`;
+const PH_DPVS=`uniform sampler2D uA;uniform float uSW,uDep;out vec3 vC;
+void main(){int id=gl_VertexID,w=int(uSW);vec4 s=texelFetch(uA,ivec2(id%w,id/w),0);gl_Position=vec4(s.xy*2.-1.,0.,1.);gl_PointSize=1.;
+  vC=(s.w<.5?vec3(1,0,0):s.w<1.5?vec3(0,1,0):vec3(0,0,1))*uDep;}`;
+const PH_DPFS=`in vec3 vC;void main(){o=vec4(vC,0.);}`;
+const PH_DI=`uniform sampler2D uTr;uniform float uGain;
+void main(){vec3 t=texture(uTr,uv).rgb;float hs=uT*.006;
+  vec3 c=t.r*hueRot(vec3(1.,.42,.16),hs)+t.g*hueRot(vec3(.15,.75,1.),hs)+t.b*hueRot(vec3(.8,.25,1.),hs);
+  c=1.-exp(-c*uGain);o=vec4(c*c*1.15,1.);}`;
+
+// ---- странни атрактори (Лоренц, Айзава, Томас, Халворсен) ----
+const AT_UP=`uniform sampler2D uP;uniform float uA,uB,uK,uDt,uInit,uSeed;
+vec3 fld(vec3 x,int t){
+  if(t==0)return vec3(10.*(x.y-x.x),x.x*(28.-x.z)-x.y,x.x*x.y-8./3.*x.z);
+  if(t==1)return vec3((x.z-.7)*x.x-3.5*x.y,3.5*x.x+(x.z-.7)*x.y,.6+.95*x.z-x.z*x.z*x.z/3.-(x.x*x.x+x.y*x.y)*(1.+.25*x.z)+.1*x.z*x.x*x.x*x.x);
+  if(t==2)return vec3(sin(x.y)-.208186*x.x,sin(x.z)-.208186*x.y,sin(x.x)-.208186*x.z);
+  return vec3(-1.89*x.x-4.*x.y-4.*x.z-x.y*x.y,-1.89*x.y-4.*x.z-4.*x.x-x.z*x.z,-1.89*x.z-4.*x.x-4.*x.y-x.x*x.x);}
+vec4 cfg(int t){return t==0?vec4(0.,0.,25.,.032):t==1?vec4(0.,0.,.6,.75):t==2?vec4(0.):vec4(-1.4,-1.4,-1.4,.09);}
+vec3 vel(vec3 P,int t){vec4 c=cfg(t);float s=t==2?.26:c.w,ts=t==0?.6:t==1?1.:t==2?3.:.5;return fld(P/s+c.xyz,t)*s*ts;}
+void main(){ivec2 ij=ivec2(gl_FragCoord.xy);vec2 fi=vec2(ij);vec3 P=texelFetch(uP,ij,0).xyz;
+  if(uInit>.5||any(isnan(P))||length(P)>4.)P=(vec3(h21(fi*.71+fract(uSeed)*9.),h21(fi*1.3+fract(uSeed)*5.),h21(fi*.37+fract(uSeed)*3.))-.5)*1.4;
+  int ta=int(uA+.5),tb=int(uB+.5);vec3 v=vec3(0.);
+  for(int i=0;i<4;i++){v=mix(vel(P,ta),vel(P,tb),uK);P+=v*uDt;}
+  o=vec4(P,length(v));}`;
+const AT_VS=`uniform sampler2D uP;uniform float uSW,uYaw,uPitch,uCamD,uPS,uBr,uHue;out vec3 vC;
+void main(){int id=gl_VertexID,w=int(uSW);vec4 s=texelFetch(uP,ivec2(id%w,id/w),0);vec3 p=s.xyz;
+  p.xz=rot(uYaw)*p.xz;p.yz=rot(uPitch)*p.yz;float z=p.z+uCamD;
+  if(z<.2||any(isnan(p))){gl_Position=vec4(2.,2.,2.,1.);gl_PointSize=0.;vC=vec3(0.);return;}
+  vec2 sp=p.xy*1.7/z;gl_Position=vec4(sp.x/uAsp,sp.y,0.,1.);float ps=max(1.,uPS*uRes.y/1000.*3./z);gl_PointSize=ps;
+  float h=h11(float(id)*.37);vC=pal(uHue+h*.12+min(s.w,4.)*.1)*uBr*min(1.,4./(ps*ps));}`;
+
+// ---- северно сияние над езеро ----
+const AUR=`uniform float uHA;
+const mat2 m2=mat2(.95534,.29552,-.29552,.95534);
+float tri(float x){return clamp(abs(fract(x)-.5),.01,.49);}
+vec2 tri2(vec2 p){return vec2(tri(p.x)+tri(p.y),tri(p.y+tri(p.x)));}
+float triN(vec2 p){float z=1.8,z2=2.5,rz=0.;p*=rot(p.x*.06);vec2 bp=p;
+  for(int i=0;i<5;i++){vec2 dg=tri2(bp*1.85)*.75;dg*=rot(uMT*.07);p-=dg/z2;bp*=1.3;z2*=.45;z*=.42;p*=1.21+(rz-1.)*.02;rz+=tri(p.x+tri(p.y))*z;p*=-m2;}
+  return clamp(1./pow(rz*29.,1.3),0.,.55);}
+vec4 aur(vec3 ro,vec3 rd){vec4 col=vec4(0.),av=vec4(0.);float jt=.006*h21(gl_FragCoord.xy);
+  for(int j=0;j<44;j++){float i=float(j),pt=((.8+pow(i,1.4)*.002)-ro.y)/(rd.y*2.+.4)-jt*smoothstep(0.,15.,i);
+    float rz=triN((ro+pt*rd).zx);vec4 c2=vec4((sin(1.-vec3(2.15,-.5,1.2)+i*.043+uHA)*.5+.5)*rz,rz);
+    av=mix(av,c2,.5);col+=av*exp2(-i*.065-2.5)*smoothstep(0.,5.,i);}
+  col*=clamp(rd.y*15.+.4,0.,1.);return col*1.8;}
+float ridge(float az){return .02+.05*noise(vec3(az*3.,1.,0.))+.025*noise(vec3(az*9.,2.,0.));}
+vec3 sky(vec3 rd){return mix(vec3(.01,.015,.04),vec3(.03,.05,.1),smoothstep(.5,0.,rd.y))+stars(rd);}
+void main(){vec2 sp=(uv-.5)*vec2(uAsp,1.);vec3 ro=vec3(0.,0.,-6.7),rd=normalize(vec3(sp,1.1));
+  rd.yz=rot(-.2)*rd.yz;rd.xz=rot(.3*sin(uT*.007))*rd.xz;
+  float az=atan(rd.x,rd.z),rg=ridge(az);vec3 col;
+  if(rd.y>rg){vec4 a=aur(ro,rd);col=sky(rd)*(1.-a.a)+a.rgb*.85;}
+  else if(rd.y>0.)col=vec3(.004,.006,.012)+vec3(.01,.03,.03)*smoothstep(0.,rg,rd.y);
+  else{vec2 wp=rd.xz/-rd.y;vec3 rr=vec3(rd.x,-rd.y,rd.z);rr.xz+=(vec2(noise(vec3(wp*1.4,uMT*.12)),noise(vec3(wp*1.4+7.,uMT*.12)))-.5)*.035*(-rd.y+.2);
+    if(rr.y>ridge(atan(rr.x,rr.z))){vec4 a=aur(ro,rr);col=(sky(rr)*(1.-a.a)+a.rgb)*.55;}else col=vec3(.004,.006,.012);}
+  o=vec4(col*(.85+.35*uVol),1.);}`;
+
+// ---- мъглявина: обемен полет през светещ газ ----
+const NEB=`uniform float uHN;
+float nb(vec3 p){float s=0.,a=.5;for(int i=0;i<4;i++){s+=a*tnoise(p);p=p*2.03+vec3(3.1,1.7,5.3);a*=.5;}return s;}
+void main(){vec2 sp=(uv-.5)*vec2(uAsp,1.);vec3 ro=vec3(0.,0.,uMT*.3),rd=normalize(vec3(sp,1.2));
+  rd.xy=rot(uT*.006)*rd.xy;rd.xz=rot(.2*sin(uT*.01))*rd.xz;
+  vec3 col=vec3(0.);float tr=1.,t=.3+.25*h21(gl_FragCoord.xy);
+  for(int i=0;i<44;i++){vec3 q=(ro+rd*t)*.5;q.xy=rot(q.z*.25)*q.xy;
+    float n=nb(q),st=.16+t*.02,rid=1.-abs(2.*nb(q*1.7+vec3(3.,1.,7.))-1.),d=smoothstep(.53,.75,n)*pow(rid,5.)*1.8;   // нишки
+    if(d>.002){vec3 e=mix(vec3(.12,.22,.85),vec3(.85,.22,.62),smoothstep(.42,.66,n));e=mix(e,vec3(1.,.62,.3),smoothstep(.8,1.,rid)*.55);
+      e=hueRot(e,uHN);col+=tr*e*d*st*.55;tr*=exp(-d*st*1.4);}
+    t+=st;if(tr<.03)break;}
+  o=vec4((col+stars(rd)*tr*1.2)*(.85+.3*uVol),1.);}`;
+
+// ---- подводен свят: каустики, лъчи, планктон ----
+const SEA=`float vor(vec2 p,float t){vec2 i=floor(p),f=fract(p);float d1=8.,d2=8.;
+  for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++){vec2 g=vec2(float(x),float(y)),o=vec2(h21(i+g),h21(i+g+17.3));o=.5+.42*sin(t+TAU*o);float d=length(g+o-f);if(d<d1){d2=d1;d1=d;}else if(d<d2)d2=d;}
+  return d2-d1;}
+float caus(vec2 p,float t){p+=.8*vec2(noise(vec3(p*.5,t*.12)),noise(vec3(p*.5+5.,t*.12)));p+=.22*vec2(noise(vec3(p*2.3,t*.2+3.)),noise(vec3(p*2.3+9.,t*.2+3.)));
+  return pow(1.-smoothstep(0.,.13,vor(p,t)),5.)*.55+pow(1.-smoothstep(0.,.1,vor(p*1.35+2.,t*1.1+1.)),5.)*.45;}
+void main(){vec2 sp=(uv-.5)*vec2(uAsp,1.);vec3 ro=vec3(uMT*.12,1.5,uMT*.05),rd=normalize(vec3(sp.x,sp.y-.32,1.));
+  vec3 deep=mix(vec3(0.,.035,.07),vec3(.02,.2,.28),smoothstep(-.5,.7,rd.y)),col=deep;
+  if(rd.y<-.01){float t=-ro.y/rd.y;vec3 p=ro+rd*t;
+    float h=noise(vec3(p.xz*.5,0.))*.6+noise(vec3(p.xz*1.6,3.))*.25+.15*sin(p.x*5.+noise(vec3(p.xz*.8,7.))*6.);
+    vec3 sand=mix(vec3(.42,.38,.28),vec3(.62,.56,.42),h);
+    float c=caus(p.xz*2.,uMT*.35)*(.55+.5*uVol)*exp(-t*.08);
+    col=mix(sand*(.32+.3*h)+c*vec3(.55,.8,.8)*.9,deep,1.-exp(-t*.14));}
+  else{vec2 q=rd.xz/max(rd.y,.05);col=mix(deep,vec3(.45,.75,.85),smoothstep(0.,1.,rd.y)*.5)+caus(q*.5,uMT*.4)*.25*smoothstep(0.,.6,rd.y);}
+  float ang=atan(sp.x-.25,1.4-sp.y),ray=pow(noise(vec3(ang*7.,uMT*.12,0.)),3.)+.6*pow(noise(vec3(ang*15.+3.,uMT*.17,1.)),3.);
+  col+=vec3(.55,.85,.9)*ray*smoothstep(-.7,.6,sp.y)*.28*(.7+.5*uVol);
+  for(int l=0;l<3;l++){float L=float(l);vec2 g=sp*(4.+L*3.)+vec2(uMT*.04,-uMT*.02)*(1.+L)+L*13.,id=floor(g),f=fract(g)-.5;float hh=h21(id+L*7.);
+    if(hh>.72){vec2 of=(vec2(h21(id+3.),h21(id+5.))-.5)*.6+.08*vec2(sin(uMT*.3+hh*20.),cos(uMT*.25+hh*30.));col+=vec3(.6,.85,1.)*smoothstep(.07-L*.015,0.,length(f-of))*(hh-.72)*(1.2+L*.5);}}
+  o=vec4(col,1.);}`;
+
+// ---- Мандълбулб ----
+const BULB=`uniform float uPw,uRY,uRX;
+float mb(vec3 p,out vec4 tr){vec3 z=p;float dr=1.,r=length(z);tr=vec4(1e3);
+  for(int i=0;i<7;i++){r=length(z);if(r>2.)break;float th=acos(clamp(z.z/max(r,1e-5),-1.,1.))*uPw,ph=atan(z.y,z.x)*uPw;
+    dr=pow(r,uPw-1.)*uPw*dr+1.;z=pow(r,uPw)*vec3(sin(th)*cos(ph),sin(th)*sin(ph),cos(th))+p;tr=min(tr,vec4(abs(z),dot(z,z)));}
+  return .5*log(max(r,1e-5))*r/dr;}
+float map(vec3 p,out vec4 tr){p.xz=rot(uRY)*p.xz;p.yz=rot(uRX)*p.yz;return mb(p,tr);}
+void main(){vec2 sp=(uv-.5)*vec2(uAsp,1.);vec3 ro=vec3(0.,0.,2.9),rd=normalize(vec3(sp,-1.5));
+  vec3 col=mix(vec3(.01,.01,.025),pal(.6+uT*.01)*.07,smoothstep(.9,0.,length(sp)));
+  float b=dot(ro,rd),h=b*b-dot(ro,ro)+1.44;
+  if(h>0.){float t=max(-b-sqrt(h),0.),tm=-b+sqrt(h),d=1.,gl=0.;vec4 tr;int st=0;
+    for(int i=0;i<96;i++){d=map(ro+rd*t,tr);st=i;gl+=exp(-d*40.)*.02;if(d<.0006*t||t>tm)break;t+=d*.9;}
+    if(t<tm){vec3 p=ro+rd*t;vec4 q;vec2 e=vec2(1.,-1.)*.0008;
+      vec3 n=normalize(e.xyy*map(p+e.xyy,q)+e.yyx*map(p+e.yyx,q)+e.yxy*map(p+e.yxy,q)+e.xxx*map(p+e.xxx,q));
+      vec3 base=mix(pal(.58+uT*.008),pal(.08+uT*.011),clamp(tr.w*.6,0.,1.));base=mix(base,vec3(1.,.95,.85),clamp(tr.x*tr.x*.6,0.,1.)*.5);
+      float ao=pow(1.-float(st)/96.,1.5);vec3 l1=normalize(vec3(.6,.7,.5));float dif=clamp(dot(n,l1),0.,1.),fr=pow(1.-max(dot(n,-rd),0.),3.);
+      col=(base*(.08+dif*.9)+pal(.55+uT*.02)*fr*.5+pow(max(dot(reflect(rd,n),l1),0.),24.)*.4)*ao+pal(uT*.02+tr.w)*exp(-tr.w*6.)*(.2+.5*uTrebA);}
+    col+=pal(.6+uT*.015)*gl*(.5+.4*uVol);}
+  o=vec4(col,1.);}`;
+
+// ---- лава лампа: восъчни метатопки ----
+const LAVA=`uniform float uLT;
+float map(vec3 p){float d=p.y+2.35+.12*sin(p.x*1.4+uLT*.2)*sin(p.z*1.1-uLT*.15);d=min(d,2.55-p.y+.1*sin(p.x*1.2-uLT*.18));
+  for(int i=0;i<7;i++){float fi=float(i),ph=uLT*(.05+.03*h11(fi*3.1))+h11(fi)*6.28;
+    vec3 c=vec3(sin(fi*2.1+uLT*.04)*.85,-1.9+3.9*(.5-.5*cos(ph)),cos(fi*1.7+uLT*.035)*.45);
+    d=smin(d,length((p-c)*vec3(1.,.82,1.))-(.32+.26*h11(fi*7.7)+.04*(uBassA-1.)),.6);}
+  return d;}
+void main(){vec2 sp=(uv-.5)*vec2(uAsp,1.);vec3 ro=vec3(0.,0.,6.),rd=normalize(vec3(sp,-1.1));
+  vec3 wax=mix(vec3(1.,.28,.06),pal(.95+.1*sin(uT*.02)),.25);
+  vec3 bg=mix(vec3(.012,.008,.04),vec3(.08,.03,.1),smoothstep(.6,-.6,sp.y))+wax*.12*exp(-pow((sp.y+.6)*2.5,2.));
+  bg+=vec3(1.,.8,.7)*.05*(exp(-pow((sp.x+uAsp*.38)*25.,2.))+exp(-pow((sp.x-uAsp*.4)*40.,2.)));
+  float t=2.,d,md=9.;for(int i=0;i<80;i++){d=map(ro+rd*t);md=min(md,d);if(d<.002||t>11.)break;t+=d*.8;}
+  vec3 col=bg+wax*exp(-md*4.)*.15;
+  if(t<11.){vec3 p=ro+rd*t;vec2 e=vec2(1.,-1.)*.002;
+    vec3 n=normalize(e.xyy*map(p+e.xyy)+e.yyx*map(p+e.yyx)+e.yxy*map(p+e.yxy)+e.xxx*map(p+e.xxx));
+    float wrap=clamp(dot(n,normalize(vec3(0.,-3.2,0.)-p))*.5+.5,0.,1.),th=clamp(-map(p-n*.35)/.35,0.,1.),fr=pow(1.-max(dot(n,-rd),0.),2.),heat=exp(-max(p.y+2.4,0.)*.35);
+    col=(wax*(.12+wrap*.7*heat)+wax*wax*(1.-th)*.9*heat+vec3(1.,.7,.5)*fr*.25+pow(max(dot(reflect(rd,n),normalize(vec3(.3,.8,.6))),0.),30.)*.35)*(.85+.3*uVol);}
+  o=vec4(col,1.);}`;
+
+const P={};
+try{
+  const q=(fs,uv)=>prog(VSQ,FS(fs,uv));
+  Object.assign(P,{warp:q(WARP),comp:q(COMP),bpre:q(BPRE),bdown:q(BDOWN),bup:q(BUP),copy:q(COPY),text:q(TEXT),shape:q(SHAPE),
+    line:prog(VSC(LINEVS),FS(LINEFS,false)),part:prog(VSC(PARTVS),FS(PARTFS,false)),
+    tun:q(TUN),blob:q(BLOB),frac:q(FRAC),marb:q(MARB),aur:q(AUR),neb:q(NEB),sea:q(SEA),bulb:q(BULB),lava:q(LAVA)});
+  if(HF)Object.assign(P,{adv:q(F_ADV),div:q(F_DIV),curl:q(F_CURL),vort:q(F_VORT),pres:q(F_PRES),grad:q(F_GRAD),splat:q(F_SPLAT),mul:q(F_MUL),ring:q(F_RING),fdisp:q(F_DISP),
+    chup:q(CH_UP),chpl:q(CH_PL),chpt:prog(VSC(CH_PTVS),FS(PARTFS,false)),rpup:q(RP_UP),rpdi:q(RP_DI),rdin:q(RD_IN),rdup:q(RD_UP),rddi:q(RD_DI),
+    phin:q(PH_IN),phup:q(PH_UP),phdf:q(PH_DF),phdp:prog(VSC(PH_DPVS),FS(PH_DPFS,false)),phdi:q(PH_DI),atup:q(AT_UP),atdr:prog(VSC(AT_VS),FS(PARTFS,false))});
+}catch(e){statusEl.textContent=e.message;throw e;}
+
+/* ================= звук и анализ ================= */
+const A={bass:1,mid:1,treb:1,bassA:1,midA:1,trebA:1,beat:0,beatLo:0,beatHi:0,vol:0,onLo:0,onHi:0,spd:.45,ripT:9};
+const AU={ctx:null,an:null,aL:null,aR:null,out:null,vol:+lsGet('rzviz.vol',.8),mute:false,mode:'',
+  fq:new Float32Array(1024),td:new Float32Array(2048),tL:new Float32Array(1024),tR:new Float32Array(1024),
+  S:new Float32Array(512),V:new Float32Array(512),Vp:new Float32Array(512),N:new Float32Array(512),W:new Float32Array(1536),pLo:0,pHi:0,data:new Float32Array(2048),row:new Float32Array(256),
+  map:null,ref:-40,pk:.15,L:[0,0,0],age:0,hacc:0,head:0,dLo:null,dHi:null};
+const AT=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,AT);
+for(const [k,v] of [[gl.TEXTURE_MIN_FILTER,gl.LINEAR],[gl.TEXTURE_MAG_FILTER,gl.LINEAR],[gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE],[gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE]])gl.texParameteri(gl.TEXTURE_2D,k,v);
+gl.texImage2D(gl.TEXTURE_2D,0,gl.R16F,512,4,0,gl.RED,gl.FLOAT,AU.data);
+const HT=mkTex(256,128,[gl.R16F,gl.RED,gl.FLOAT],gl.LINEAR,gl.REPEAT);
+const NT=gl.createTexture();{const N=new Uint8Array(65536),D=new Uint8Array(65536*4);for(let i=0;i<65536;i++)N[i]=Math.random()*256;
+  for(let y=0;y<256;y++)for(let x=0;x<256;x++){const i=(y*256+x)*4;D[i]=N[y*256+x];D[i+1]=N[((y+17)&255)*256+((x+37)&255)];D[i+3]=255;}
+  gl.bindTexture(gl.TEXTURE_2D,NT);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA8,256,256,0,gl.RGBA,gl.UNSIGNED_BYTE,D);
+  for(const [k,v] of [[gl.TEXTURE_MIN_FILTER,gl.LINEAR],[gl.TEXTURE_MAG_FILTER,gl.LINEAR],[gl.TEXTURE_WRAP_S,gl.REPEAT],[gl.TEXTURE_WRAP_T,gl.REPEAT]])gl.texParameteri(gl.TEXTURE_2D,k,v);}
+const mkDet=()=>({h:new Float32Array(48),i:0,n:0,last:-9});
+AU.dLo=mkDet();AU.dHi=mkDet();
+function det(d,x,now,gap,minAbs){const h=d.h,N=Math.min(d.n,h.length);let m=0,s=0;
+  for(let i=0;i<N;i++)m+=h[i];m/=Math.max(1,N);for(let i=0;i<N;i++)s+=(h[i]-m)**2;s=Math.sqrt(s/Math.max(1,N));
+  h[d.i]=x;d.i=(d.i+1)%h.length;d.n++;
+  if(N>12&&x>m+1.4*s+minAbs&&now-d.last>gap){d.last=now;return Math.min(1,.35+(x-m)/(5*s+minAbs*4+1e-6));}return 0;}
+function hook(ctx,src){
+  const v=ctx.createGain();v.gain.value=AU.mute?0:AU.vol*AU.vol;src.connect(v);v.connect(ctx.destination);
+  const an=ctx.createAnalyser();an.fftSize=2048;an.smoothingTimeConstant=.55;an.minDecibels=-110;an.maxDecibels=-10;src.connect(an);
+  const sp=ctx.createChannelSplitter(2);src.connect(sp);
+  const aL=ctx.createAnalyser(),aR=ctx.createAnalyser();aL.fftSize=aR.fftSize=1024;sp.connect(aL,0);sp.connect(aR,1);
+  Object.assign(AU,{ctx,an,aL,aR,out:v,map:null,age:0,L:[0,0,0]});}
+function setVol(){if(AU.out)AU.out.gain.setTargetAtTime(AU.mute?0:AU.vol*AU.vol,AU.ctx.currentTime,.05);lsSet('rzviz.vol',AU.vol.toFixed(2));}
+// плавно следване: бързо нагоре (ta), бавно надолу (tr) — нищо не скача от кадър в кадър
+const sm=(c,v,ta,tr,dt)=>c+(v-c)*(1-Math.exp(-dt/(v>c?ta:tr)));
+function audioUpdate(dt,now){
+  const S=AU.S,D=AU.data;
+  A.onLo=A.onHi=0;AU.pLo*=Math.exp(-dt/.3);AU.pHi*=Math.exp(-dt/.3);
+  if(!AU.an){for(let i=0;i<512;i++){S[i]*=.97;D[i]=S[i];D[512+i]=D[1024+i]=D[1536+i]=Math.sin(i*.05+now*.8)*.04;}
+    for(const k of ['bassA','midA','trebA'])A[k]=sm(A[k],1,.5,.5,dt);A.vol=sm(A.vol,0,.5,.5,dt);}
+  else{
+  const an=AU.an,fq=AU.fq,sr=AU.ctx.sampleRate,bin=sr/2048;
+  an.getFloatFrequencyData(fq);an.getFloatTimeDomainData(AU.td);AU.aL.getFloatTimeDomainData(AU.tL);AU.aR.getFloatTimeDomainData(AU.tR);
+  if(!AU.map){AU.map=[];const K=Math.pow(14000/30,1/512);for(let j=0;j<512;j++){const b0=30*Math.pow(K,j)/bin,b1=30*Math.pow(K,j+1)/bin;AU.map.push([b0,b1]);}}
+  // ленти — като в MilkDrop: спрямо дългата средна (≈1 обикновено, >1 при удар), но плавни
+  const band=(f0,f1)=>{let s=0,n=0;for(let i=Math.max(1,Math.floor(f0/bin));i<=Math.ceil(f1/bin)&&i<1024;i++){s+=Math.pow(10,fq[i]/10);n++;}return s/Math.max(1,n);};
+  const E=[band(25,180),band(180,2000),band(2000,10000)],nm=['bass','mid','treb'];
+  AU.age+=dt;const tl=Math.min(5,.25+AU.age*.5);
+  for(let k=0;k<3;k++){const L=AU.L[k]=AU.L[k]?AU.L[k]+(E[k]-AU.L[k])*(1-Math.exp(-dt/tl)):E[k];
+    const v=Math.min(2.5,Math.sqrt((E[k]+1e-11)/(L+1e-11)));A[nm[k]]=v;A[nm[k]+'A']=sm(A[nm[k]+'A'],v,.3,1,dt);}
+  // спектър в логаритмична скала; нивото се донастройва плавно
+  let mx=-200;const V=AU.V,Vp=AU.Vp,N=AU.N;
+  for(let j=0;j<512;j++){const [b0,b1]=AU.map[j];let db;
+    if(b1-b0<1){const x=Math.min(1022,(b0+b1)/2),i=Math.floor(x),f=x-i;db=fq[i]*(1-f)+fq[i+1]*f;}
+    else{db=-200;for(let i=Math.floor(b0);i<=Math.min(1023,Math.ceil(b1));i++)db=Math.max(db,fq[i]);}
+    V[j]=db;if(db>mx)mx=db;}
+  AU.ref=mx>AU.ref?AU.ref+(mx-AU.ref)*(1-Math.exp(-dt/.5)):Math.max(mx,AU.ref-3*dt);
+  let fl=0,fh=0;
+  for(let j=0;j<512;j++){let v=Math.min(1,Math.max(0,(V[j]-(AU.ref-62))/62));v=Math.pow(v,1.4);
+    const df=v-Vp[j];if(df>0){if(j<160)fl+=df;else if(j>=290&&j<470)fh+=df;}Vp[j]=v;N[j]=v;}
+  for(let j=0;j<512;j++){const b=(N[Math.max(0,j-2)]+2*N[Math.max(0,j-1)]+3*N[j]+2*N[Math.min(511,j+1)]+N[Math.min(511,j+2)])/9;S[j]=sm(S[j],b,.09,.45,dt);}
+  // ударите само задават импулс; видимото е плавната му обвивка (долу)
+  const sl=det(AU.dLo,fl,now,.22,.6),sh=det(AU.dHi,fh,now,.15,.5);
+  if(sl){A.onLo=sl;AU.pLo=Math.max(AU.pLo,sl);}
+  if(sh){A.onHi=sh;AU.pHi=Math.max(AU.pHi,sh);}
+  // вълна: подравняване по нулата, изглаждане във времето, плавно автоматично ниво
+  const td=AU.td,W=AU.W,kw=1-Math.exp(-dt/.06);let off=0;for(let i=1;i<1024;i++)if(td[i-1]<0&&td[i]>=0){off=i;break;}
+  let pk=0,rms=0;
+  for(let k=0;k<512;k++){const x=td[off+2*k];rms+=x*x;W[k]+=(x-W[k])*kw;W[512+k]+=(AU.tL[2*k]-W[512+k])*kw;W[1024+k]+=(AU.tR[2*k]-W[1024+k])*kw;pk=Math.max(pk,Math.abs(W[k]));}
+  AU.pk=Math.max(.004,pk>AU.pk?AU.pk+(pk-AU.pk)*(1-Math.exp(-dt/.35)):AU.pk*Math.exp(-dt/3));const g=.5/AU.pk;
+  for(let k=0;k<512;k++){D[512+k]=W[k]*g;D[1024+k]=W[512+k]*g;D[1536+k]=W[1024+k]*g;D[k]=S[k];}
+  A.vol=sm(A.vol,Math.min(1,Math.sqrt(rms/512)*g*2.5),.25,.8,dt);}
+  A.beatLo=sm(A.beatLo,AU.pLo,.2,.7,dt);A.beatHi=sm(A.beatHi,AU.pHi,.2,.7,dt);A.beat=Math.max(A.beatLo,A.beatHi*.7);
+  // „скорост на музиката“: с нея тече времето на ефектите — реакцията е в темпото, не в скокове
+  const en=Math.min(2,Math.max(0,(A.bassA-1)*.8+(A.midA-1)*.5+A.vol*.9+A.beatLo*.6+A.beatHi*.3));
+  A.spd=sm(A.spd,.35+.37*Math.min(en,1.5),1.2,2,dt);
+  upload(dt);}
+function upload(dt){
+  gl.bindTexture(gl.TEXTURE_2D,AT);gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,512,4,gl.RED,gl.FLOAT,AU.data);
+  AU.hacc+=dt;if(AU.hacc>=1/60){AU.hacc=Math.min(AU.hacc-1/60,.1);AU.head=(AU.head+1)%128;
+    for(let i=0;i<256;i++)AU.row[i]=Math.max(AU.S[2*i],AU.S[2*i+1]);
+    gl.bindTexture(gl.TEXTURE_2D,HT);gl.texSubImage2D(gl.TEXTURE_2D,0,0,AU.head,256,1,gl.RED,gl.FLOAT,AU.row);}}
+
+/* ================= течност ================= */
+const FL={ok:HF,ready:false,frame:-1,
+  init(){const asp=iw/ih,s=160,d=Math.min(720,ih);
+    this.vel=dbl(Math.round(s*asp),s);this.p=dbl(Math.round(s*asp),s);this.div=rt(Math.round(s*asp),s);this.curl=rt(Math.round(s*asp),s);
+    this.dye=dbl(Math.round(d*asp),d);this.ready=true;},
+  free(){if(!this.ready)return;for(const k of ['vel','p','div','curl','dye'])this[k].del();this.ready=false;},
+  splat(x,y,dx,dy,col,rad){const r=rad*Math.max(1,iw/ih);
+    run(P.splat,{uSrc:this.vel.rd,uPt:[x,y],uCol:[dx,dy,0],uRad:r},this.vel.wr);this.vel.swap();
+    run(P.splat,{uSrc:this.dye.rd,uPt:[x,y],uCol:col,uRad:r},this.dye.wr);this.dye.swap();},
+  step(cfg,dt,t){
+    if(this.frame===frameNo)return;this.frame=frameNo;
+    // само непрекъснати струи: силата им следва плавните обвивки, въртенето — музикалното време
+    const asp=iw/ih,k=Math.min(dt*60,2),B=[A.bassA,A.midA,A.trebA],mt=MT;
+    for(let i=0;i<3;i++){const a=mt*.15*(i%2?-1:1)+i*2.094,e=Math.max(0,B[i]-.7)+.5*A.beatLo,X=Math.cos(a)*.3,Y=Math.sin(a)*.3,da=a+Math.PI/2+.7*Math.sin(mt*.3+i);
+      const f=(110+800*e*e)*k;
+      this.splat(.5+X/asp,.5+Y,Math.cos(da)*f,Math.sin(da)*f,hsl(t*.03+i*.33,.95,.5).map(c=>c*(.005+.05*e)*k),.0014);}
+    if(A.beatLo>.05){const a=mt*.2,f=550*A.beatLo*k;
+      for(let i=0;i<4;i++){const b=a+i*Math.PI/2;
+        this.splat(.5+Math.cos(b)*.04/asp,.5+Math.sin(b)*.04,Math.cos(b)*f,Math.sin(b)*f,hsl(t*.05+i*.12,.9,.5).map(c=>c*.03*A.beatLo*k),.0018);}}
+    if(cfg.ring){const amp=.12+.1*A.vol;
+      run(P.ring,{uSrc:this.vel.rd,uR0:.28,uAmpR:amp,uStr:50*k,uIsVel:1,uCol:[0,0,0]},this.vel.wr);this.vel.swap();
+      run(P.ring,{uSrc:this.dye.rd,uR0:.28,uAmpR:amp,uStr:.012*k,uIsVel:0,uCol:hsl(t*.04+.6,.9,.55)},this.dye.wr);this.dye.swap();}
+    const d=Math.min(dt,1/30)*.55,tx=this.vel.rd.tx;
+    run(P.curl,{uVel:this.vel.rd,uTxS:tx},this.curl);
+    run(P.vort,{uVel:this.vel.rd,uCurl:this.curl,uTxS:tx,uCurlK:cfg.curl||28,uDt:d},this.vel.wr);this.vel.swap();
+    run(P.div,{uVel:this.vel.rd,uTxS:tx},this.div);
+    run(P.mul,{uSrc:this.p.rd,uV:.8},this.p.wr);this.p.swap();
+    for(let i=0;i<20;i++){run(P.pres,{uP:this.p.rd,uDiv:this.div,uTxS:tx},this.p.wr);this.p.swap();}
+    run(P.grad,{uP:this.p.rd,uVel:this.vel.rd,uTxS:tx},this.vel.wr);this.vel.swap();
+    run(P.adv,{uVel:this.vel.rd,uSrc:this.vel.rd,uTxS:tx,uDt:d,uDis:.25},this.vel.wr);this.vel.swap();
+    run(P.adv,{uVel:this.vel.rd,uSrc:this.dye.rd,uTxS:tx,uDt:d,uDis:cfg.dis||.6},this.dye.wr);this.dye.swap();}};
+
+/* ================= сцени ================= */
+const hsl=(h,s,l)=>{h=((h%1)+1)%1;const f=n=>{const k=(n+h*12)%12,a=s*Math.min(l,1-l);return l-a*Math.max(-1,Math.min(k-3,9-k,1));};return [f(0),f(8),f(4)];};
+const SIM={},LR={};
+function simDbl(key,w,h,f,filt){let s=SIM[key];if(!s||s.w!==w||s.h!==h){if(s)s.del();s=SIM[key]=dbl(w,h,f,filt);s.fresh=1;}return s;}
+const aspSize=sh=>[Math.round(sh*iw/ih),sh],F32=[gl.RGBA32F,gl.RGBA,gl.FLOAT];
+function lowDraw(pr,U,dst,sc){const w=Math.round(iw*sc),h=Math.round(ih*sc);let r=LR[sc];if(!r||r.w!==w||r.h!==h){if(r)r.del();r=LR[sc]=rt(w,h);}run(pr,U,r);run(P.copy,{uSrc:r},dst);}
+const spAvg=()=>{let s=0;for(let i=0;i<512;i+=8)s+=AU.S[i];return s/64;};
+const CHM=[[1,2],[1,3],[2,3],[1,4],[3,4],[2,5],[3,5],[1,5],[4,5],[2,7],[3,7],[5,6],[4,7],[1,6],[5,8]];
+const RDP=[[.0545,.062],[.0367,.0649],[.039,.058],[.042,.0605],[.03,.057],[.025,.055]];
+const ease=x=>x*x*(3-2*x),rnd=(a,b)=>a+Math.random()*(b-a);
+const pick=(arr,not)=>{if(arr.length<2)return arr[0];let v;do v=arr[Math.floor(Math.random()*arr.length)];while(v===not);return v;};
+let NP=1<<17;
+const TY={
+  wave:{init:()=>({rot:0}),
+    draw(pr,st,dst,dt,t){const c=pr.cfg;st.rot+=dt*(c.spin||.2)*(.4+.6*A.spd);
+      for(const s of c.shapes||[]){const a=MT*s.orb+s.ph;
+        run(P.shape,{uPrev:FB.rd,uC:[Math.cos(a)*s.od*1.3,Math.sin(a)*s.od],uR:s.r*(1+.3*(A.bassA-1))+.03*A.beatLo,uN:s.n,uAng:MT*s.rs,uTh:s.th,uTex:s.tex,uFill:s.fill,uCol:hsl(t*.05+s.h,.85,.6)},dst,{blend:'over'});}
+      for(const w of c.waves)run(P.line,{uN:512,uMode:w.m,uAmp:w.amp*(1+.2*A.beat),uR:(w.r||0)*(1+.15*(A.bassA-1)),uW:w.w*dst.h/900,uRotW:st.rot*(w.rs||1)+(w.ro||0),uSpan:w.span||1.3,uC:w.c||[0,0],uCol:hsl(t*w.hs+w.h,w.sat||.9,.6),uBr:(w.br||1)*(.7+.6*A.vol)},dst,{blend:'add',mode:gl.TRIANGLE_STRIP,n:1024});}},
+  fluid:{init:()=>({}),
+    draw(pr,st,dst,dt,t){if(!FL.ready)FL.init();FL.step(pr.cfg,dt,t);run(P.fdisp,{uDye:FL.dye.rd,uTxD:FL.dye.rd.tx},dst);}},
+  tun:{init:()=>({z:Math.random()*100}),
+    draw(pr,st,dst,dt,t){st.z+=dt*(.5+1.6*A.spd);run(P.tun,{uZ:st.z,uRoll:.3*Math.sin(t*.045)+.08*Math.sin(t*.13)},dst);}},
+  blob:{init:()=>({a:0,b:pick([1,2,3,4,5]),m:0,next:5,ry:0}),
+    draw(pr,st,dst,dt,t){st.next-=dt;
+      if(st.m>=1&&(st.next<=0||(A.onLo>.5&&st.next<4))){st.a=st.b;st.b=pick([0,1,2,3,4,5],st.a);st.m=0;st.next=rnd(9,15);}
+      if(st.m<1)st.m=Math.min(1,st.m+dt/4);st.ry+=dt*(.05+.18*A.spd);
+      run(P.blob,{uA:st.a,uB:st.b,uM:ease(st.m),uMat:pr.cfg.mat,uRY:st.ry,uRX:.35*Math.sin(t*.07)},dst);}},
+  frac:{init:()=>({tc:rnd(0,40)}),
+    draw(pr,st,dst,dt,t){st.tc+=dt*(.035+.11*A.spd);run(P.frac,{uS:1.17+.07*Math.sin(t*.07),uTc:st.tc},dst);}},
+  part:{init:pr=>{const s=pr.cfg.shapes;const a=pick(s);return {a,b:a,m:1,next:rnd(3,5),hue:Math.random()};},
+    draw(pr,st,dst,dt,t){const c=pr.cfg;st.next-=dt;
+      if(c.shapes.length>1&&st.m>=1&&(st.next<=0||(A.onLo>.6&&st.next<2.5))){st.a=st.b;st.b=pick(c.shapes,st.a);st.m=0;st.next=rnd(11,17);}
+      if(st.m<1)st.m=Math.min(1,st.m+dt/5);st.hue+=dt*.01;
+      const cam=[{yaw:t*.07,pitch:.35*Math.sin(t*.045),d:3.3,lift:0},{yaw:.22*Math.sin(t*.03),pitch:-.55,d:3.3,lift:-.05},{yaw:t*.05,pitch:.6*Math.sin(t*.04),d:3,lift:0}][c.cam||0];
+      run(P.part,{uN:NP,uA:st.a,uB:st.b,uMM:st.m,uPS:c.ps||2.2,uBr:(c.br||1)*.075*Math.sqrt((1<<17)/NP),uHue:st.hue,uYaw:cam.yaw,uPitch:cam.pitch,uCamD:cam.d,uLift:cam.lift,
+        uHead:AU.head,uHist:HT,uSF:[3+5*(.5+.5*Math.sin(t*.045)),.35+1.2*(.5+.5*Math.sin(t*.03))+.2*(A.bassA-1),.3+1.6*(.5+.5*Math.sin(t*.055)),.3+1.6*(.5+.5*Math.cos(t*.04))]},
+        dst,{blend:'add',mode:gl.POINTS,n:NP});}},
+  chla:{init:()=>{const a=pick(CHM),b=pick(CHM,a);return {md:[...a,...b],k:0,next:rnd(10,14),rot:0,init:1};},
+    draw(pr,st,dst,dt,t){const S=simDbl('chla',512,256,F32,gl.NEAREST);st.next-=dt;
+      if(st.k>=1&&st.next<=0){let n;do n=pick(CHM);while(n[0]===st.md[2]&&n[1]===st.md[3]);st.md=[st.md[2],st.md[3],n[0],n[1]];st.k=0;st.next=rnd(12,18);}
+      if(st.k<1)st.k=Math.min(1,st.k+dt/6);const U={uMd:st.md,uMk:ease(st.k)};
+      for(let i=0;i<2;i++){run(P.chup,Object.assign({uP:S.rd,uAmp:.35+.5*A.spd,uSeed:Math.random(),uInit:st.init||S.fresh?1:0},U),S.wr);S.swap();st.init=S.fresh=0;}
+      st.rot+=dt*.008;const scl=.84*Math.min(1,iw/ih);
+      run(P.chpl,Object.assign({uScl:scl,uRotP:st.rot,uGlow:.4+.8*A.vol},U),dst);
+      run(P.chpt,{uP:S.rd,uSW:512,uScl:scl,uRotP:st.rot,uPS:Math.max(1,1.5*dst.h/1000),uBr:.3},dst,{blend:'add',mode:gl.POINTS,n:512*256});}},
+  ripl:{init:()=>({ph:0,acc:0,init:1}),
+    draw(pr,st,dst,dt,t){const [w,h]=aspSize(300),S=simDbl('ripl',w,h,TF,gl.LINEAR);if(st.init||S.fresh){clear(S.rd);clear(S.wr);st.init=S.fresh=0;}
+      const asp=w/h,B=[A.bassA,A.midA,A.trebA,.6+A.vol],src=k=>{const a=MT*.05*(k%2?-1:1)+k*1.5708+.4,r=.24+.07*Math.sin(MT*.06+k*2);
+        return [.5+Math.cos(a)*r/asp,.5+Math.sin(a)*r,.011*(.35+.65*Math.min(1.6,B[k])),st.ph];};
+      st.acc+=dt;let n=0;while(st.acc>=1/60&&n<3){st.acc-=1/60;n++;st.ph+=.17;
+        run(P.rpup,{uW:S.rd,uTxS:S.rd.tx,uS0:src(0),uS1:src(1),uS2:src(2),uS3:src(3),uDamp:.9985},S.wr);S.swap();}
+      run(P.rpdi,{uW:S.rd,uTxS:S.rd.tx,uGain:6,uS0:src(0),uS1:src(1),uS2:src(2),uS3:src(3)},dst);}},
+  rd:{init:()=>{const a=pick(RDP);return {a,b:a,k:1,next:rnd(18,26),acc:0,init:1,bt:Math.random()*6};},
+    draw(pr,st,dst,dt,t){const [w,h]=aspSize(280),S=simDbl('rd',w,h,F32,FL32?gl.LINEAR:gl.NEAREST);
+      if(st.init||S.fresh){run(P.rdin,{uSeed:Math.random()},S.rd);st.init=S.fresh=0;}
+      st.next-=dt;if(st.k>=1&&st.next<=0){st.a=st.b;st.b=pick(RDP,st.a);st.k=0;st.next=rnd(20,30);}
+      if(st.k<1)st.k=Math.min(1,st.k+dt/12);const e=ease(st.k),f=st.a[0]+(st.b[0]-st.a[0])*e,kk=st.a[1]+(st.b[1]-st.a[1])*e;
+      st.bt+=dt*(.04+.06*A.spd);const br=[.5+Math.cos(st.bt)*.3*h/w,.5+Math.sin(st.bt*1.3)*.3,.012+.01*A.beatLo,.6];
+      st.acc+=dt*60*(5+9*A.spd);let n=0;while(st.acc>=1&&n<24){st.acc-=1;n++;run(P.rdup,{uS:S.rd,uTxS:S.rd.tx,uF:f,uK:kk,uBr:br},S.wr);S.swap();}st.acc=Math.min(st.acc,2);
+      run(P.rddi,{uS:S.rd,uTxS:S.rd.tx},dst);}},
+  phys:{init:()=>({init:1,ph:Math.random()*10}),
+    draw(pr,st,dst,dt,t){const AG=simDbl('physA',512,256,F32,gl.NEAREST),[w,h]=aspSize(420),TR=simDbl('physT',w,h,TF,gl.LINEAR);
+      if(st.init||AG.fresh||TR.fresh){run(P.phin,{uSeed:Math.random()},AG.rd);clear(TR.rd);clear(TR.wr);st.init=AG.fresh=TR.fresh=0;}
+      st.ph+=dt*(.02+.03*A.spd);const k=Math.min(2,dt*60);
+      run(P.phup,{uA:AG.rd,uTr:TR.rd,uSeed:Math.random(),uSA:.5+.3*Math.sin(st.ph),uRA:.35+.15*Math.sin(st.ph*1.3+1),uSD:14+8*Math.sin(st.ph*.7+2),uSS:(.5+.9*A.spd)*k,uTxT:TR.rd.tx},AG.wr);AG.swap();
+      run(P.phdf,{uTr:TR.rd,uTxS:TR.rd.tx,uDec:Math.pow(.9,k)},TR.wr);
+      run(P.phdp,{uA:AG.rd,uSW:512,uDep:.12*k},TR.wr,{blend:'add',mode:gl.POINTS,n:512*256});TR.swap();
+      run(P.phdi,{uTr:TR.rd,uGain:1.4},dst);}},
+  attr:{init:()=>{const a=Math.floor(Math.random()*4);return {a,b:a,k:1,next:rnd(14,20),init:1};},
+    draw(pr,st,dst,dt,t){const S=simDbl('attr',512,256,F32,gl.NEAREST);st.next-=dt;
+      if(st.k>=1&&st.next<=0){st.a=st.b;do st.b=Math.floor(Math.random()*4);while(st.b===st.a);st.k=0;st.next=rnd(16,24);}
+      if(st.k<1)st.k=Math.min(1,st.k+dt/6);
+      run(P.atup,{uP:S.rd,uA:st.a,uB:st.b,uK:ease(st.k),uDt:.0045*(.6+A.spd)*Math.min(2,dt*60),uInit:st.init||S.fresh?1:0,uSeed:Math.random()},S.wr);S.swap();st.init=S.fresh=0;
+      run(P.atdr,{uP:S.rd,uSW:512,uYaw:t*.06,uPitch:.3*Math.sin(t*.04),uCamD:2.7,uPS:1.6,uBr:.09,uHue:t*.01},dst,{blend:'add',mode:gl.POINTS,n:512*256});}},
+  aur:{init:()=>({}),draw(pr,st,dst,dt,t){lowDraw(P.aur,{uHA:.3*Math.sin(t*.02)+spAvg()*.6},dst,.75);}},
+  neb:{init:()=>({}),draw(pr,st,dst,dt,t){lowDraw(P.neb,{uHN:.6*Math.sin(t*.015)},dst,.5);}},
+  sea:{init:()=>({}),draw(pr,st,dst,dt,t){run(P.sea,{},dst);}},
+  bulb:{init:()=>({ry:Math.random()*6}),draw(pr,st,dst,dt,t){st.ry+=dt*(.03+.06*A.spd);lowDraw(P.bulb,{uPw:6.5+2.5*Math.sin(t*.02),uRY:st.ry,uRX:.4*Math.sin(t*.03)},dst,.75);}},
+  lava:{init:()=>({lt:Math.random()*100}),draw(pr,st,dst,dt,t){st.lt+=dt*(.5+.7*A.spd);run(P.lava,{uLT:st.lt},dst);}},
+  marb:{init:()=>({}),draw(pr,st,dst,dt,t){run(P.marb,{uWK:3.4+.4*Math.sin(t*.05),uSc:2.4},dst);}}};
+
+// пресетите: сцена + параметри на обратната връзка и крайния образ (интерполират се при смяна)
+const DEF={zoom:1,zoomExp:1,rot:0,cx:0,cy:0,dx:0,dy:0,sx:1,sy:1,warp:0,warpS:1,warpSpd:.45,flow:0,flowS:2,decay:.96,hue:0,sat:1,blur:0,over:1,add:1,fold:6,foldA:0,rip:0,edge:0,
+  bloom:.6,echo:0,echoZ:1,echoO:0,kal:6,kalA:0,kalR:0,ca:.3,vig:.4,expo:1,grain:.03,flash:0,gam:1};
+const PR=[
+  {n:'Вихрушка',ty:'wave',cfg:{spin:.12,waves:[{m:0,r:.42,amp:.3,w:2.2,h:0,hs:.02},{m:0,r:.2,amp:.14,w:1.6,h:.5,hs:.02,rs:-1.3}]},
+    par:(a,t)=>({zoom:1.007+.006*(a.bassA-1),zoomExp:1.15,rot:.0025*Math.sin(t*.05),warp:.45+.3*a.midA,warpS:1.1,decay:.978,hue:.0018,blur:.35,bloom:.7,ca:.4})},
+  {n:'Калейдоскоп',ty:'wave',cfg:{spin:.07,waves:[{m:2,amp:1.1,w:2,h:.6,hs:.03},{m:3,r:.3,amp:.45,w:1.8,h:.1,hs:.05},{m:0,r:.12,amp:.1,w:1.4,h:.35,hs:.05,rs:-2}]},
+    par:(a,t)=>({zoom:1.005+.004*(a.bassA-1),rot:.003,flow:.5,flowS:2.5,decay:.965,hue:.003,kal:6,kalA:1,kalR:t*.015,bloom:.8,ca:.5})},
+  {n:'Ехо тунел',ty:'wave',cfg:{spin:.05,waves:[{m:1,amp:.5,span:1.5,w:2.4,h:.3,hs:.025},{m:0,r:.12,amp:.12,w:1.5,h:.8,hs:.025}]},
+    par:(a,t)=>({zoom:1.016+.01*(a.bassA-1),zoomExp:1.3,rot:.002*Math.sin(t*.08),warp:.35,decay:.965,blur:.5,hue:-.003,echo:.45,echoZ:1.35,echoO:1,bloom:.6})},
+  {n:'Мандала',ty:'wave',cfg:{spin:.12,waves:[{m:4,r:.55,amp:.25,w:2,h:.15,hs:.015}],shapes:[
+      {n:6,r:.16,od:.45,orb:.08,ph:0,rs:.12,th:2,tex:.85,fill:.05,h:0},{n:4,r:.12,od:.45,orb:.08,ph:2.094,rs:-.16,th:2,tex:.85,fill:.05,h:.33},{n:3,r:.14,od:.45,orb:.08,ph:4.189,rs:.2,th:2,tex:.85,fill:.05,h:.66}]},
+    par:(a,t)=>({zoom:1.006,rot:-.0022,fold:8,foldA:1,decay:.975,hue:.0015,warp:.2,bloom:.7})},
+  {n:'Мастило',ty:'fluid',cfg:{curl:30,dis:1.1},par:()=>({over:.85,zoom:1.003,decay:.9,bloom:.55,ca:.3})},
+  {n:'Звуков водовъртеж',ty:'fluid',cfg:{curl:20,dis:1.4,ring:1},par:(a,t)=>({over:.8,zoom:1.002,decay:.92,kal:4,kalA:1,kalR:t*.012,bloom:.6})},
+  {n:'Резонансен тунел',ty:'tun',par:a=>({over:.85,zoom:1.004+.004*a.beat,decay:.88,bloom:.8,ca:.8,vig:.5})},
+  {n:'Течен метал',ty:'blob',cfg:{mat:0},par:()=>({over:1,zoom:1.005,rot:.0015,warp:.3,decay:.92,hue:.005,blur:.25,bloom:.6})},
+  {n:'Кристал',ty:'blob',cfg:{mat:1},par:()=>({over:1,zoom:1.003,flow:1.2,decay:.92,hue:-.0025,echo:.22,echoZ:.7,bloom:.8})},
+  {n:'Фрактален храм',ty:'frac',par:()=>({over:.88,decay:.85,bloom:.55,ca:.4,vig:.5})},
+  {n:'Рояк',ty:'part',cfg:{shapes:[0,1,2,3,4,5],cam:0},par:()=>({add:1,zoom:1.003,rot:.0012,warp:.2,decay:.92,blur:.4,bloom:1})},
+  {n:'Спектрален пейзаж',ty:'part',cfg:{shapes:[6],cam:1,ps:1.8,br:1.6},par:()=>({add:1,decay:.7,bloom:.9})},
+  {n:'Фибри на Хопф',ty:'part',cfg:{shapes:[7,8,9],cam:2,br:1.1},par:(a,t)=>({add:1,zoom:.998,rot:-.001,decay:.93,blur:.3,bloom:1.1})},
+  {n:'Течен мрамор',ty:'marb',par:()=>({over:.45,flow:.8,zoom:1.002,decay:.95,bloom:.45,vig:.55})},
+  {n:'Фигури на Хладни',ty:'chla',par:()=>({bloom:.5,vig:.5})},
+  {n:'Кимоскоп',ty:'ripl',par:()=>({bloom:.45})},
+  {n:'Реакция–дифузия',ty:'rd',par:()=>({bloom:.35})},
+  {n:'Физарум',ty:'phys',par:()=>({bloom:.7})},
+  {n:'Странен атрактор',ty:'attr',par:()=>({add:1,decay:.9,blur:.2,bloom:1})},
+  {n:'Северно сияние',ty:'aur',par:()=>({bloom:.6,vig:.3})},
+  {n:'Мъглявина',ty:'neb',par:()=>({bloom:.7})},
+  {n:'Подводен свят',ty:'sea',par:()=>({bloom:.5})},
+  {n:'Мандълбулб',ty:'bulb',par:()=>({over:.9,decay:.8,bloom:.6})},
+  {n:'Лава лампа',ty:'lava',par:()=>({bloom:.7,vig:.5})}];
+for(const p of PR)if(!HF&&['fluid','chla','ripl','rd','phys','attr'].includes(p.ty))p.off=true;
+
+/* ================= цели за рисуване, качество ================= */
+const SL=[{k:0,fb:null,sc:null,i:0,st:null,wt:0},{k:1,fb:null,sc:null,i:-1,st:null,wt:0}];
+let iw=0,ih=0,FB=null,BL=[],BU=[],qMul=1,qMode=+lsGet('rzviz.q',0)||0;
+const QN=['авто','високо','средно','ниско'];
+function alloc(force){
+  const dpr=Math.min(devicePixelRatio||1,2),W=innerWidth,H=innerHeight;
+  const cw=Math.round(W*Math.min(dpr,1.5)),ch=Math.round(H*Math.min(dpr,1.5));if(cv.width!==cw||cv.height!==ch){cv.width=cw;cv.height=ch;}
+  const q=qMode?[1,1,.75,.55][qMode]:qMul,s=Math.min(dpr,Math.sqrt(2.1e6/(W*H)))*q;
+  const nw=Math.max(64,Math.round(W*s)),nh=Math.max(64,Math.round(H*s));
+  if(nw===iw&&nh===ih&&!force)return;
+  for(const sl of SL){const old=sl.fb;sl.fb=dbl(nw,nh);if(old){run(P.copy,{uSrc:old.rd},sl.fb.rd);old.del();}if(sl.sc)sl.sc.del();sl.sc=rt(nw,nh);}
+  for(const r of [...BL,...BU])r.del();BL=[];BU=[];
+  for(let i=0,w=nw>>1,h=nh>>1;i<6&&w>2&&h>2;i++,w>>=1,h>>=1){BL.push(rt(w,h));BU.push(rt(w,h));}
+  const asp=iw/ih;iw=nw;ih=nh;if(FL.ready&&Math.abs(asp-iw/ih)>.01)FL.free();
+  NP=qMode===3||(qMode===0&&qMul<.7)?1<<16:1<<17;}
+let adT=0,adN=0,adGood=0,adCool=0;
+function adapt(dt){if(qMode||!running)return;adT+=dt;adN++;adCool-=dt;
+  if(adT<1.5)return;const avg=adT/adN;adT=adN=0;
+  if(avg>1/42&&qMul>.42&&adCool<=0){qMul=Math.max(.42,qMul*.85);adGood=0;adCool=2;alloc();}
+  else if(avg<1/57){adGood++;if(adGood>=4&&qMul<1){qMul=Math.min(1,qMul*1.1);adGood=0;adCool=2;alloc();}}else adGood=0;}
+addEventListener('resize',()=>alloc());
+
+/* ================= надпис ================= */
+const TXT=gl.createTexture();let titleT=99,PAUSE=false;
+const TTL={in:.7,hold:2.3,out:1.6};   // надписът: появяване, задържане, изчезване (с)
+const ttlEnd=()=>TTL.in+TTL.hold+TTL.out;
+function makeTitle(){const c=document.createElement('canvas');c.width=1024;c.height=256;const x=c.getContext('2d');
+  x.font='500 132px Unbounded, "Exo 2", sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillStyle='#fff';
+  x.shadowColor='#fff';x.shadowBlur=18;x.fillText('РЕЗОНАНС',512,134);x.shadowBlur=0;x.fillText('РЕЗОНАНС',512,134);
+  gl.bindTexture(gl.TEXTURE_2D,TXT);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,c);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);}
+makeTitle();(document.fonts?document.fonts.load('500 132px Unbounded'):Promise.resolve()).then(makeTitle,()=>{});
+
+/* ================= режисьор: смяна на сцените ================= */
+// преливане за 1 с: текущата избледнява, докато следващата (от чист кадър) изсветлява — едновременно
+const XF=1;
+const DR={a:SL[0],b:null,m:0,q:-1,left:50,lock:false,order:[]};
+const live=()=>PR.map((p,i)=>i).filter(i=>!PR[i].off);
+const tgt=()=>DR.q>=0?DR.q:DR.b?DR.b.i:DR.a.i;
+function initSt(i){return TY[PR[i].ty].init(PR[i]);}
+function goTo(i){if(PR[i].off)return;DR.left=rnd(45,70);
+  if(DR.b){DR.q=i===DR.b.i?-1:i;osd();return;}   // по време на преливане — следващата се нарежда след него
+  if(i===DR.a.i)return;
+  const s=SL[1-DR.a.k];if(PR[i].ty==='fluid'&&PR[DR.a.i].ty!=='fluid')FL.free();
+  s.i=i;s.st=initSt(i);s.wt=0;clear(s.fb.rd);clear(s.fb.wr);DR.b=s;DR.m=0;osd();
+  if(RZM&&MS.auto===1)musRandom();else if(RZM&&MS.auto===2)musLevel();}
+function step(d){const n=PR.length;let i=tgt();do i=(i+d+n)%n;while(PR[i].off);goTo(i);}   // по номер, след последната — първата
+function rndNext(){if(!DR.order.length){DR.order=live().filter(i=>i!==tgt());for(let i=DR.order.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[DR.order[i],DR.order[j]]=[DR.order[j],DR.order[i]];}}
+  let i=DR.order.pop();if(i===tgt()&&DR.order.length)i=DR.order.pop();return i;}
+function drUpdate(dt){
+  if(DR.b){DR.m+=dt/XF;if(DR.m>=1){DR.a=DR.b;DR.b=null;if(DR.q>=0){const q=DR.q;DR.q=-1;goTo(q);}}}
+  else if(!DR.lock&&running){DR.left-=dt;if(DR.left<=0&&(A.onLo||DR.left<-4))goTo(rndNext());}}
+SL[0].st=initSt(0);
+function params(i,st,t){return Object.assign({},DEF,PR[i].par(A,t,st));}
+
+/* ================= кадър ================= */
+let RAF=0,last=performance.now(),T=0,MT=0,frameNo=0,running=false,fpsS=60;
+function frame(now){
+  RAF=0;if(SLP.on)return;RAF=requestAnimationFrame(frame);if(PAUSE){last=now;return;}
+  const dt=Math.min(.05,Math.max(.001,(now-last)/1000));last=now;T+=dt;frameNo++;fpsS+=(1/dt-fpsS)*.05;
+  audioUpdate(dt,T);
+  MT+=dt*A.spd;
+  Object.assign(G,{uT:T,uMT:MT,uBass:A.bassA,uMid:A.midA,uTreb:A.trebA,uBassA:A.bassA,uMidA:A.midA,uTrebA:A.trebA,uBeat:A.beat,uBeatLo:A.beatLo,uBeatHi:A.beatHi,uVol:A.vol,uAud:AT,uNT:NT});
+  drUpdate(dt);
+  const slots=DR.b?[DR.a,DR.b]:[DR.a],wB=DR.b?ease(Math.min(1,DR.m)):0,k=Math.min(3,Math.max(.25,dt*60));
+  if(titleT<ttlEnd()+.4)titleT+=dt;
+  slots.forEach((sl,j)=>{
+    FB=sl.fb;clear(sl.sc);TY[PR[sl.i].ty].draw(PR[sl.i],sl.st,sl.sc,dt,T);
+    const p=params(sl.i,sl.st,T);sl.wt+=dt*p.warpSpd;
+    run(P.warp,{uPrev:FB.rd,uSc1:sl.sc,uTx:FB.rd.tx,uZoom:Math.pow(p.zoom,k),uZoomExp:p.zoomExp,uRot:p.rot*k,uCx:p.cx,uCy:p.cy,uDx:p.dx*k,uDy:p.dy*k,
+      uSx:Math.pow(p.sx,k),uSy:Math.pow(p.sy,k),uWarp:p.warp*k,uWarpT:sl.wt,uWarpS:p.warpS,uFlow:p.flow*k,uFlowS:p.flowS,uDecay:Math.pow(p.decay,k),uHue:p.hue*k,uSat:p.sat,
+      uBlur:p.blur,uOver:1-Math.pow(1-Math.min(1,p.over),k),uAdd:p.add,uFold:p.fold,uFoldA:p.foldA,uRip:0,uRipT:9,uEdge:p.edge},FB.wr);
+    if(titleT<ttlEnd()&&j===slots.length-1){const a=Math.min(1,titleT/Math.max(.01,TTL.in))*Math.min(1,Math.max(0,(ttlEnd()-titleT)/Math.max(.01,TTL.out)));
+      run(P.text,{uTxt:TXT,uA:a*.55*k,uSc:(.82+titleT*.05)*Math.min(1,iw/ih/1.25),uCol:hsl(T*.05,.5,.75)},FB.wr,{blend:'add'});}
+    FB.swap();
+    run(P.bpre,{uSrc:FB.rd,uTx:FB.rd.tx,uThr:.55},BL[0]);
+    for(let i=1;i<BL.length;i++)run(P.bdown,{uSrc:BL[i-1],uTx:BL[i-1].tx},BL[i]);
+    let src=BL[BL.length-1];for(let i=BL.length-2;i>=0;i--){run(P.bup,{uSrc:src,uTx:src.tx,uAdd:BL[i]},BU[i]);src=BU[i];}
+    run(P.comp,{uFB:FB.rd,uBl:src,uFade:j?wB:1-wB,uBloom:p.bloom*.3,uEcho:p.echo,uEchoZ:p.echoZ,uEchoO:p.echoO,uKal:p.kal,uKalA:p.kalA,uKalR:p.kalR,uCA:p.ca*(1+.5*A.beat),uVig:p.vig,
+      uExpo:p.expo*(running?1:.55),uGrain:p.grain,uFlash:0,uGam:p.gam},null,j?{blend:'add'}:null);});
+  adapt(dt);if(infoOn&&frameNo%10===0)info();}
+
+/* ================= интерфейс ================= */
+let osdT=0,infoOn=false,idleT=0,digBuf='',digT=0;
+function osd(extra){const i=tgt(),el=$('#osd');
+  el.innerHTML=String(i+1).padStart(2,'0')+' · '+PR[i].n+(DR.lock?' 🔒':'')+(extra?'<small>'+extra+'</small>':'');el.classList.add('on');clearTimeout(osdT);osdT=setTimeout(()=>el.classList.remove('on'),3800);}
+function info(){const bar=v=>'█'.repeat(Math.max(0,Math.min(20,Math.round(v*8))));
+  $('#info').textContent=`кадри/с  ${fpsS.toFixed(0)}\nизобр.   ${iw}×${ih} (${QN[qMode]}${qMode?'':' '+Math.round(qMul*100)+'%'})\nизточник ${AU.mode||'—'}\nниски    ${bar(A.bassA)}\nсредни   ${bar(A.midA)}\nвисоки   ${bar(A.trebA)}\nудар     ${bar(A.beat*2.5)}\nсцена    ${tgt()+1}/${PR.length}${DR.lock?' (заключена)':''}`;}
+function full(){if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});else document.documentElement.requestFullscreen().catch(()=>{});}
+const fr0=document.getElementById('game');fr0.addEventListener('focus',()=>{fr0.blur();window.focus();});
+addEventListener('keydown',e=>{
+  if(!running){if(e.code==='Enter'||e.code==='Space'){e.preventDefault();start();}return;}
+  if(e.metaKey||e.ctrlKey||e.altKey)return;
+  const c=e.code;let h=true;
+  if(SLP.on){if(c==='KeyZ'||c==='Escape')sleepOff();else sleepShowUi();e.preventDefault();return;}
+  if(c==='KeyZ'){sleepOn();e.preventDefault();return;}
+  if(e.target.closest&&e.target.closest('#mus')){if(c==='Escape'||c==='KeyS'){musToggle();e.target.blur();e.preventDefault();}return;}
+  if(c==='KeyS'){musToggle();e.preventDefault();return;}
+  if(c==='ArrowRight'||c==='KeyN')step(1);
+  else if(c==='ArrowLeft'||c==='KeyP')step(-1);
+  else if(c==='Space'){DR.lock=!DR.lock;osd(DR.lock?'сцената е заключена':'автоматична смяна');}
+  else if(c==='KeyF')full();
+  else if(c==='KeyH'||e.key==='?')$('#help').classList.toggle('on');
+  else if(c==='KeyI'){infoOn=!infoOn;$('#info').classList.toggle('on',infoOn);if(infoOn)info();}
+  else if(c==='KeyM'){AU.mute=!AU.mute;setVol();osd(AU.mute?'звукът е изключен':'звукът е включен');}
+  else if(e.key==='+'||e.key==='='||c==='NumpadAdd'||c==='ArrowUp'){AU.vol=Math.min(1,AU.vol+.05);AU.mute=false;setVol();osd('сила на звука '+Math.round(AU.vol*100)+'%');}
+  else if(e.key==='-'||c==='NumpadSubtract'||c==='ArrowDown'){AU.vol=Math.max(0,AU.vol-.05);setVol();osd('сила на звука '+Math.round(AU.vol*100)+'%');}
+  else if(c==='KeyQ'){qMode=(qMode+1)%4;lsSet('rzviz.q',qMode);if(!qMode)qMul=1;alloc(true);osd('качество: '+QN[qMode]);}
+  else if(c==='KeyT')titleT=0;
+  else if(/^(Digit|Numpad)\d$/.test(c)){digBuf+=c.slice(-1);clearTimeout(digT);const go=()=>{const n=digBuf==='0'?10:+digBuf;digBuf='';if(n>=1&&n<=PR.length)goTo(n-1);};
+    if(digBuf.length>=2)go();else digT=setTimeout(go,650);}
+  else h=false;
+  if(h)e.preventDefault();});
+cv.addEventListener('dblclick',full);
+addEventListener('pointermove',()=>{document.body.classList.remove('idle');idleT=performance.now();},{passive:true});
+setInterval(()=>{if(running&&performance.now()-idleT>2200&&!$('#mus').classList.contains('on'))document.body.classList.add('idle');},500);
+
+/* ================= пускане на музиката ================= */
+// Музиката идва направо от звуковия двигател на играта (../index.html — сайтът е в docs/, тази страница в docs/audio/; част r1, началното меню) —
+// безкрайна и точно същата като в играта. Резервно: аудио файл, въртян без шев.
+const fr=$('#game'),goBtn=$('#go');let RZ=null,RZM=null;
+async function startLive(){
+  // зарежда се копие на играта с малка връзка към синтезатора (самата игра не се променя)
+  let html=null;try{html=await (await fetch('../index.html')).text();}catch(e){}
+  const HOOK='window.__rzMus={set:setMusic,get tr(){return mTr},get bpm(){return mBpm},get alien(){return mAlien},get prog(){return GAME.prog},get int(){return mInt},set int(v){mInt=v},get boss(){return bossMusic},set boss(v){bossMusic=v},set prog(v){GAME.prog=v}};';
+  await new Promise((ok,no)=>{const to=setTimeout(()=>no(Error('timeout')),15000);fr.onload=()=>{clearTimeout(to);ok();};
+    if(html&&html.split('window.__rz={').length===2)fr.srcdoc=html.replace('<head>','<head><base href="../">').replace('window.__rz={',HOOK+'window.__rz={');
+    else fr.src='../index.html';});
+  let w,rz;try{w=fr.contentWindow;rz=w.__rz;}catch(e){throw Error('file');}
+  if(!rz)throw Error('Играта се зареди, но звуковият ѝ двигател не се намери.');
+  const AN=w.AudioNode.prototype,orig=AN.connect;let out=null;
+  AN.connect=function(to,...a){if(!out&&to instanceof w.AudioDestinationNode)out=this;return orig.call(this,to,...a);};
+  const ls=w.localStorage,keep={};try{for(let i=0;i<ls.length;i++){const k=ls.key(i);if(/audio/.test(k))keep[k]=ls.getItem(k);}}catch(e){}
+  try{
+    rz.enterGame('r1');
+    try{w.document.querySelector('canvas').dispatchEvent(new w.PointerEvent('pointerdown',{bubbles:true}));}catch(e){}
+    if(!rz.AC){w.dispatchEvent(new w.KeyboardEvent('keydown',{code:'KeyN',bubbles:true}));w.dispatchEvent(new w.KeyboardEvent('keyup',{code:'KeyN',bubbles:true}));}
+  }finally{AN.connect=orig;}
+  if(!rz.AC||!out)throw Error('Звуковият двигател на играта не стартира.');
+  if(!rz.musOn)rz.toggleMus();
+  try{for(let i=ls.length-1;i>=0;i--){const k=ls.key(i);if(/audio/.test(k)&&!(k in keep))ls.removeItem(k);}for(const k in keep)ls.setItem(k,keep[k]);}catch(e){}  // настройките на играта остават както са били
+  try{rz.sfxBus.disconnect();}catch(e){}
+  const ctx=rz.AC;if(ctx.state!=='running')await ctx.resume().catch(()=>{});
+  out.disconnect();hook(ctx,out);RZ=rz;GW=w;RZM=w.__rzMus||null;AU.mode='играта (r1, начален екран)';musApply();musUI();
+  // играта фокусира своето платно — връщаме клавиатурата на визуализатора и не я пускаме повече в iframe
+  try{w.document.activeElement&&w.document.activeElement.blur();}catch(e){}fr.blur();fr.inert=true;window.focus();}
+let fileSrc=null,ownCtx=null;
+async function startFile(f){
+  statusEl.textContent='Чета „'+f.name+'“…';
+  ownCtx=ownCtx||new (window.AudioContext||window.webkitAudioContext)();await ownCtx.resume();
+  const buf=await ownCtx.decodeAudioData(await f.arrayBuffer());
+  if(RZ&&RZ.AC)RZ.AC.suspend();if(fileSrc)try{fileSrc.stop();}catch(e){}
+  const s=ownCtx.createBufferSource();s.buffer=buf;s.loop=true;s.start();fileSrc=s;hook(ownCtx,s);AU.mode='файл: '+f.name;RZM=null;musUI();go2();}
+function go2(){if(running)return;running=true;document.body.classList.add('run');statusEl.textContent='';$('#cover').classList.add('gone');idleT=performance.now();titleT=0;DR.left=rnd(45,60);osd('музика: '+AU.mode);}
+async function start(){if(running||goBtn.disabled)return;goBtn.disabled=true;goBtn.textContent='ЗАРЕЖДАНЕ…';
+  try{await startLive();go2();}
+  catch(e){goBtn.disabled=false;goBtn.textContent='▶ ОПИТАЙ ПАК';
+    statusEl.textContent=(location.protocol==='file:'||e.message==='file')
+      ?'Браузърът не дава достъп до играта, когато страницата е отворена като файл.\nПусни локален сървър в папката на проекта:\npython3 -m http.server 8766 --directory docs\nи отвори http://localhost:8766/audio/\n— или избери аудио файл (напр. rezonans-1-exact.wav).'
+      :'Не успях да пусна музиката от играта: '+e.message+'\nМожеш да избереш аудио файл.';}}
+goBtn.addEventListener('click',start);
+$('#pick').addEventListener('click',()=>$('#file').click());
+$('#file').addEventListener('change',e=>{const f=e.target.files[0];if(f)startFile(f).catch(er=>statusEl.textContent='Файлът не може да се пусне: '+er.message);});
+addEventListener('dragover',e=>e.preventDefault());
+addEventListener('drop',e=>{e.preventDefault();const f=e.dataTransfer.files[0];if(f&&/^audio\//.test(f.type||'audio/'))startFile(f).catch(er=>statusEl.textContent='Файлът не може да се пусне: '+er.message);});
+
+/* ================= настройки на музиката ================= */
+// границите са тези, които се срещат в играта: транспониране −12…+6, темпо 60…150; бос — 132
+const PROGS=[['Резонанс 1',[{b:38,ch:[62,65,69]},{b:34,ch:[58,62,65]},{b:36,ch:[60,64,67]},{b:33,ch:[57,61,64]}]],
+  ['Резонанс 2',[{b:33,ch:[57,60,64]},{b:31,ch:[55,59,62]},{b:29,ch:[53,57,60]},{b:28,ch:[52,56,59]}]],
+  ['Резонанс 3',[{b:26,ch:[50,53,57]},{b:24,ch:[48,51,55]},{b:22,ch:[46,50,53]},{b:21,ch:[45,48,52]}]],
+  ['Резонанс 4',[{b:29,ch:[53,57,60]},{b:26,ch:[50,53,57]},{b:31,ch:[55,58,62]},{b:24,ch:[48,52,55]}]],
+  ['Резонанс 5',[{b:31,ch:[55,59,62]},{b:28,ch:[52,55,59]},{b:33,ch:[57,60,64]},{b:26,ch:[50,54,57]}]],
+  ['Резонанс 6',[{b:28,ch:[52,55,59]},{b:31,ch:[55,59,62]},{b:26,ch:[50,53,57]},{b:33,ch:[57,61,64]}]],
+  ['Резонанс 7',[{b:33,ch:[57,60,64]},{b:31,ch:[55,59,62]},{b:29,ch:[53,57,60]},{b:31,ch:[55,59,62]}]]];
+// [част (0 = Резонанс 1; Резонанс 8 ползва акордите на 1), име, транспониране, темпо, извънземен]
+const LVLS=[[0,'Аварията',0,108],[0,'Мрак',-3,96],[0,'Под обстрел',2,116],[0,'Складът',0,118],[0,'Пречиствателната',-4,100],[0,'Курс по безопасност',-2,100],
+  [0,'Товарната линия',1,120],[0,'Шахтите',-6,104],[0,'Биолабораторията',-1,98],[0,'Охладителната',3,112],[0,'Ядрото',-2,100],[0,'Антената',-1,112],
+  [0,'Границата',5,96,1],[0,'Кошерът',3,92,1],[0,'Фабриката',-2,124,1],[0,'Пазителят',0,110,1],[0,'Кристалните пещери',2,88,1],[0,'Мостовете',6,100,1],
+  [0,'Гробището',-3,92,1],[0,'Цитаделата',-5,116,1],[0,'Отвъд',4,96,1],[0,'Карантина',-1,110],[0,'Проходът',2,118],[0,'Лифтът',-3,104],
+  [0,'Ледените пещери',3,92,1],[0,'Резонаторът',-2,122],
+  [1,'Меню',-3,92,1],[1,'Приливът',-2,126],[1,'Калибриране на костюма',-4,96],[1,'Машинният свят',-3,126,1],[1,'Роякът',-3,126,1],[1,'Газовият гигант',4,96,1],[1,'Бурята',4,104,1],[1,'Мъртвият град',-4,88,1],
+  [2,'Меню',-7,84],[2,'Полигонът',-6,100],[2,'Изборът',-12,66,1],[3,'Меню',-9,76],[3,'Летният театър',-6,96],[3,'Диригентът',-12,72,1],[3,'Вратата',-12,60,1],
+  [4,'Меню',-5,80],[4,'Гражданска защита',-4,96],[4,'Третият резонатор',-10,72,1],[5,'Меню',-7,72,1],[5,'Първият тон',-12,66,1],[5,'Акордът',-7,60,1],
+  [6,'Меню',-5,112],[6,'Нулата',-10,150,1],[6,'Run',-5,80],
+  [7,'Меню',-4,92],[7,'Центърът',-2,100],[7,'Гарата',0,112],[7,'Университетът',-4,96],[7,'Музеят',-6,92],[7,'Училището',2,104],[7,'Дворът',4,108],[7,'Бос',-7,126]];
+const MDEF={tr:0,bpm:108,alien:false,int:0,boss:false,prog:0,auto:0,lvl:''};
+const MS=Object.assign({},MDEF);try{Object.assign(MS,JSON.parse(lsGet('rzviz.mus','{}')));}catch(e){}
+const ri=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const NOTE=['до','до♯','ре','ми♭','ми','фа','фа♯','сол','ла♭','ла','си♭','си'];
+function musApply(){lsSet('rzviz.mus',JSON.stringify(MS));if(!RZM)return;
+  try{RZM.set({tr:MS.tr,bpm:MS.bpm,alien:MS.alien});RZM.int=MS.int;RZM.boss=MS.boss;RZM.prog=PROGS[MS.prog][1];}catch(e){}}
+function musUI(){const ok=!!RZM,P0=PROGS[MS.prog][1][0],root=((P0.b+MS.tr)%12+12)%12,minor=P0.ch[1]-P0.ch[0]===3;
+  $('#iTr').value=MS.tr;$('#vTr').textContent=(MS.tr>0?'+':MS.tr<0?'−':'')+Math.abs(MS.tr)+' пт. · '+NOTE[root]+(minor?' минор':' мажор');
+  $('#iBpm').value=MS.bpm;$('#vBpm').textContent=MS.boss?'132 (бос)':MS.bpm+' удара/мин';
+  $('#iAl').checked=MS.alien;$('#iBoss').checked=MS.boss;$('#iProg').value=MS.prog;$('#iAuto').value=MS.auto;
+  document.querySelectorAll('#iInt button').forEach(b=>b.classList.toggle('on',+b.dataset.v===MS.int));
+  document.querySelectorAll('#mus input,#mus select:not(#iAuto),#mus .seg button,#mus .btns button').forEach(e=>e.disabled=!ok);
+  $('#iBpm').disabled=!ok||MS.boss;$('#musLvl').textContent=MS.lvl?'Ниво: '+MS.lvl:'';
+  $('#musNote').textContent=ok?'':(AU.mode?'Настройките действат само на музиката от играта, не на аудио файл.':'Пусни музиката, за да я настройваш.');}
+function musSet(o){Object.assign(MS,o);if('tr' in o||'bpm' in o||'alien' in o||'prog' in o)if(!('lvl' in o))MS.lvl='';musApply();musUI();}
+function musRandom(){const int=ri(0,2);musSet({tr:ri(-12,6),bpm:ri(60,150),alien:Math.random()<.5,int,boss:int===2||Math.random()<.2,prog:ri(0,6),lvl:''});}
+function musLevel(){const L=LVLS[ri(0,LVLS.length-1)];musSet({tr:L[2],bpm:L[3],alien:!!L[4],int:0,boss:false,prog:L[0]<7?L[0]:0,lvl:L[1]+' ('+['Резонанс 1','Резонанс 2','Резонанс 3','Резонанс 4','Резонанс 5','Резонанс 6','Резонанс 7','Резонанс 8'][L[0]]+')'});}
+$('#iProg').innerHTML=PROGS.map((p,i)=>'<option value="'+i+'">'+p[0]+'</option>').join('');
+$('#iTr').addEventListener('input',e=>musSet({tr:+e.target.value}));
+$('#iBpm').addEventListener('input',e=>musSet({bpm:+e.target.value}));
+$('#iAl').addEventListener('change',e=>musSet({alien:e.target.checked}));
+$('#iBoss').addEventListener('change',e=>musSet({boss:e.target.checked}));
+$('#iProg').addEventListener('change',e=>musSet({prog:+e.target.value}));
+$('#iAuto').addEventListener('change',e=>{MS.auto=+e.target.value;lsSet('rzviz.mus',JSON.stringify(MS));});
+// „Бос“ включва темпото на боса, „Спокойно“ и „Битка“ го изключват
+document.querySelectorAll('#iInt button').forEach(b=>b.addEventListener('click',()=>{const v=+b.dataset.v;musSet({int:v,boss:v===2});}));
+$('#bRnd').addEventListener('click',musRandom);$('#bLvl').addEventListener('click',musLevel);
+$('#bDef').addEventListener('click',()=>musSet(Object.assign({},MDEF,{auto:MS.auto})));
+const musToggle=()=>{const on=$('#mus').classList.toggle('on');if(on)musUI();};
+$('#musBtn').addEventListener('click',musToggle);$('#musX').addEventListener('click',musToggle);
+musUI();
+
+// вграден режим (?embed): без начален екран и подсказки — за демото на интрото (intro-demo.html)
+const EMBED=new URLSearchParams(location.search).has('embed');
+if(EMBED){document.body.classList.add('embed','run');$('#cover').remove();running=true;DR.lock=true;}
+function setScene(i){const s=DR.a;if(PR[i].ty==='fluid')FL.free();s.i=i;s.st=initSt(i);s.wt=0;clear(s.fb.rd);clear(s.fb.wr);DR.b=null;DR.q=-1;}
+function showTitle(o){Object.assign(TTL,o||{});titleT=0;}
+function hideTitle(){titleT=1e9;}
+function attach(ctx,node,mode){AU.vol=1;AU.mute=false;hook(ctx,node);AU.mode=mode;}   // чужд звуков изход (демото на интрото)
+
+/* ================= режим сън ================= */
+// Черен екран: спира WebGL, анализа на всеки кадър и рисуването на скритата игра (музиката продължава).
+// Остава само едва видима „дишаща“ точка, рисувана 10 пъти в секунда на малко платно (или напълно черно).
+const SLP={on:false,blank:lsGet('rzviz.blank','0')==='1',mins:0,end:0,iv:0,lvl:0,pk:.02,ph:0,uiT:0,faded:false,drawn:true};
+let GW=null,gRaf=null,gCb=null;
+function gameRaf(on){if(!GW)return;try{
+  if(!on){if(!gRaf){gRaf=GW.requestAnimationFrame;GW.requestAnimationFrame=cb=>{gCb=cb;return 0;};}}
+  else if(gRaf){GW.requestAnimationFrame=gRaf;gRaf=null;if(gCb){const c=gCb;gCb=null;GW.requestAnimationFrame(c);}}}catch(e){}}
+const slx=$('#slc').getContext('2d');
+function sleepTick(){
+  if(SLP.end&&!SLP.faded&&Date.now()>=SLP.end&&AU.out){SLP.faded=true;AU.out.gain.cancelScheduledValues(AU.ctx.currentTime);AU.out.gain.setTargetAtTime(0,AU.ctx.currentTime,12);   // ~1 мин плавно затихване
+    setTimeout(()=>{if(SLP.on&&SLP.faded&&AU.ctx)AU.ctx.suspend();},60000);}
+  if(SLP.end)$('#slLeft').textContent=SLP.faded?'· музиката затихва':'· остават '+Math.max(1,Math.ceil((SLP.end-Date.now())/60000))+' мин';
+  if(SLP.blank||SLP.faded){if(SLP.drawn){slx.clearRect(0,0,200,200);SLP.drawn=false;}return;}
+  if(AU.an){AU.an.getFloatTimeDomainData(AU.td);let r=0;for(let i=0;i<2048;i+=4)r+=AU.td[i]*AU.td[i];r=Math.sqrt(r/512);SLP.lvl+=(r-SLP.lvl)*.06;SLP.pk=Math.max(SLP.lvl,SLP.pk*.9995,.002);}
+  SLP.ph+=.1;const b=.5+.5*Math.sin(SLP.ph*Math.PI/4),n=Math.min(1,SLP.lvl/SLP.pk),R=4+3*b+4*n,a=.05+.06*b+.07*n;   // дишане ~8 с
+  slx.clearRect(0,0,200,200);const g=slx.createRadialGradient(100,100,0,100,100,R*6);
+  g.addColorStop(0,'rgba(140,200,255,'+a+')');g.addColorStop(.18,'rgba(90,160,240,'+a*.5+')');g.addColorStop(1,'rgba(40,80,160,0)');
+  slx.fillStyle=g;slx.fillRect(0,0,200,200);SLP.drawn=true;}
+function sleepUI(){document.querySelectorAll('#sleepUi [data-t]').forEach(b=>b.classList.toggle('on',+b.dataset.t===SLP.mins));
+  $('#slDot').textContent=SLP.blank?'напълно черно':'точка';if(!SLP.end)$('#slLeft').textContent='';}
+function sleepShowUi(){$('#sleep').classList.add('ui');clearTimeout(SLP.uiT);SLP.uiT=setTimeout(()=>$('#sleep').classList.remove('ui'),3000);}
+function sleepOn(){if(SLP.on||!running)return;SLP.on=true;
+  for(const id of ['#help','#info','#mus'])$(id).classList.remove('on');infoOn=false;
+  cv.style.display='none';$('#sleep').classList.add('on');gameRaf(false);SLP.drawn=true;SLP.iv=setInterval(sleepTick,100);sleepUI();sleepShowUi();}
+function sleepOff(){if(!SLP.on)return;SLP.on=false;clearInterval(SLP.iv);clearTimeout(SLP.uiT);$('#sleep').classList.remove('on','ui');cv.style.display='';gameRaf(true);
+  if(SLP.faded&&AU.ctx){AU.ctx.resume();SLP.faded=false;}SLP.end=0;SLP.mins=0;setVol();last=performance.now();if(!RAF)RAF=requestAnimationFrame(frame);}
+document.querySelectorAll('#sleepUi [data-t]').forEach(b=>b.addEventListener('click',()=>{SLP.mins=+b.dataset.t;SLP.end=SLP.mins?Date.now()+SLP.mins*60000:0;
+  if(SLP.faded&&AU.ctx){AU.ctx.resume();SLP.faded=false;setVol();}sleepUI();sleepTick();sleepShowUi();}));
+$('#slDot').addEventListener('click',()=>{SLP.blank=!SLP.blank;lsSet('rzviz.blank',SLP.blank?'1':'0');sleepUI();sleepShowUi();});
+$('#slOut').addEventListener('click',sleepOff);
+$('#sleep').addEventListener('pointermove',sleepShowUi);
+
+alloc(true);RAF=requestAnimationFrame(frame);
+window.__viz={PR,DR,SL,A,AU,SLP,sleepOn,sleepOff,goTo,step,frame,get raf(){return RAF},get frames(){return frameNo},setScene,showTitle,hideTitle,attach,TTL,pause(b){PAUSE=!!b;},get iw(){return iw},get ih(){return ih},get fps(){return fpsS},get qMul(){return qMul}};
+</script>
