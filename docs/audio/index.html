@@ -34,7 +34,7 @@ body.idle,body.idle *{cursor:none!important}
 #osd small{display:block;margin-top:3px;font-size:11px;color:#9cc;opacity:.8}
 #help,#info{position:fixed;z-index:4;background:#02060bd0;border:1px solid #ffffff22;border-radius:10px;padding:14px 18px;font-size:12.5px;line-height:1.7;color:#cfe7f3;display:none;backdrop-filter:blur(6px)}
 #help{right:20px;top:18px}#help b{color:#8ff0ff;display:inline-block;min-width:74px}
-#info{left:20px;bottom:18px;white-space:pre;font-size:12px}
+#info{left:16px;bottom:56px;white-space:pre;font-size:12px}
 #help.on,#info.on{display:block}
 #hint{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:3;font-size:12px;color:#ffffffa0;text-shadow:0 0 6px #000;transition:opacity .6s;pointer-events:none;white-space:nowrap}
 body.embed #hint,body.embed #musBtn,body.embed #osd,body.embed #help,body.embed #info,body.embed #mus{display:none!important}
@@ -56,10 +56,11 @@ body.idle #hint{opacity:0}body:not(.run) #hint{display:none}
 #mus input:disabled,#mus select:disabled,#mus button:disabled{opacity:.4;cursor:default}
 #musNote{margin-top:12px;color:#ffd38a;min-height:16px;line-height:1.5}
 #musLvl{margin-top:10px;color:#9ff0ff;min-height:16px}
-#musBtn,#slpBtn{position:fixed;right:16px;bottom:14px;z-index:3;padding:6px 12px;border-radius:20px;border:1px solid #ffffff40;background:#03080eb0;color:#dff;font:12px 'IBM Plex Mono',monospace;cursor:pointer;transition:opacity .6s}
+#musBtn,#slpBtn,#infBtn{position:fixed;right:16px;bottom:14px;z-index:3;padding:6px 12px;border-radius:20px;border:1px solid #ffffff40;background:#03080eb0;color:#dff;font:12px 'IBM Plex Mono',monospace;cursor:pointer;transition:opacity .6s}
 #slpBtn{right:118px}
 @media (pointer:coarse){#hint{bottom:58px;white-space:normal;text-align:center;width:calc(100vw - 32px)}}
-body.idle #musBtn,body:not(.run) #musBtn,body.idle #slpBtn,body:not(.run) #slpBtn,body.embed #slpBtn{opacity:0;pointer-events:none}
+#infBtn{right:auto;left:16px}
+body.idle #musBtn,body:not(.run) #musBtn,body.idle #slpBtn,body:not(.run) #slpBtn,body.embed #slpBtn,body.idle #infBtn,body:not(.run) #infBtn,body.embed #infBtn{opacity:0;pointer-events:none}
 #sleep{position:fixed;inset:0;z-index:20;background:#000;display:none;cursor:none}
 #sleep.on{display:block}#sleep.ui{cursor:default}
 #slTxt{position:absolute;left:0;top:0;white-space:nowrap;font:400 clamp(18px,2.3vw,30px) Comfortaa,'Exo 2',sans-serif;color:#b4c8ff;text-shadow:0 0 14px #6f8fff66;opacity:0;will-change:transform,opacity;pointer-events:none}
@@ -90,7 +91,7 @@ iframe{position:fixed;width:1px;height:1px;left:-10px;top:-10px;border:0;opacity
 <div id="sleep"><div id="slTxt">Приятна почивка</div>
 <div id="sleepUi"><span>сън · спиране след</span><button data-t="0">никога</button><button data-t="30">30 мин</button><button data-t="60">1 ч</button><button data-t="120">2 ч</button><span>·</span><button id="slDot">надпис</button><button id="slMute">звук вкл. (M)</button><button id="slFs">цял екран (F)</button><button id="slOut">изход (Z)</button><span id="slLeft"></span></div></div>
 <div id="hint">H — помощ · → следваща сцена · S — музика · Z — сън · F — цял екран</div>
-<button id="musBtn">♪ Музика</button><button id="slpBtn">☾ Сън</button>
+<button id="musBtn">♪ Музика</button><button id="slpBtn">☾ Сън</button><button id="infBtn" title="Сведения (I)">ⓘ</button>
 <div id="mus">
 <h3>МУЗИКА <button id="musX" title="Затвори (S)">×</button></h3>
 <label>Тоналност <b id="vTr"></b></label><input type="range" id="iTr" min="-12" max="6" step="1">
@@ -981,6 +982,7 @@ function osd(extra){const i=tgt(),el=$('#osd');
   el.innerHTML=String(i+1).padStart(2,'0')+' · '+PR[i].n+(DR.lock?' 🔒':'')+(extra?'<small>'+extra+'</small>':'');el.classList.add('on');clearTimeout(osdT);osdT=setTimeout(()=>el.classList.remove('on'),3800);}
 function info(){const bar=v=>'█'.repeat(Math.max(0,Math.min(20,Math.round(v*8))));
   $('#info').textContent=`кадри/с  ${fpsS.toFixed(0)}\nекран    ${WL&&!WL.released?'буден':'wakeLock' in navigator?'може да угасне':'(не се поддържа)'}\nизобр.   ${iw}×${ih} (${QN[qMode]}${qMode?'':' '+Math.round(qMul*100)+'%'})\nизточник ${AU.mode||'—'}\nниски    ${bar(A.bassA)}\nсредни   ${bar(A.midA)}\nвисоки   ${bar(A.trebA)}\nудар     ${bar(A.beat*2.5)}\nсцена    ${tgt()+1}/${PR.length}${DR.lock?' (заключена)':''}`;}
+function infoToggle(){infoOn=!infoOn;$('#info').classList.toggle('on',infoOn);if(infoOn)info();}
 function full(){if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});else document.documentElement.requestFullscreen().catch(()=>{});}
 const fr0=document.getElementById('game');fr0.addEventListener('focus',()=>{fr0.blur();window.focus();});
 addEventListener('keydown',e=>{
@@ -996,7 +998,7 @@ addEventListener('keydown',e=>{
   else if(c==='Space'){DR.lock=!DR.lock;osd(DR.lock?'сцената е заключена':'автоматична смяна');}
   else if(c==='KeyF')full();
   else if(c==='KeyH'||e.key==='?')$('#help').classList.toggle('on');
-  else if(c==='KeyI'){infoOn=!infoOn;$('#info').classList.toggle('on',infoOn);if(infoOn)info();}
+  else if(c==='KeyI')infoToggle();
   else if(c==='KeyM'){AU.mute=!AU.mute;setVol();osd(AU.mute?'звукът е изключен':'звукът е включен');}
   else if(e.key==='+'||e.key==='='||c==='NumpadAdd'||c==='ArrowUp'){AU.vol=Math.min(1,AU.vol+.05);AU.mute=false;setVol();osd('сила на звука '+Math.round(AU.vol*100)+'%');}
   else if(e.key==='-'||c==='NumpadSubtract'||c==='ArrowDown'){AU.vol=Math.max(0,AU.vol-.05);setVol();osd('сила на звука '+Math.round(AU.vol*100)+'%');}
@@ -1152,7 +1154,7 @@ function sleepOff(){if(!SLP.on)return;SLP.on=false;wakeOn();clearInterval(SLP.iv
 document.querySelectorAll('#sleepUi [data-t]').forEach(b=>b.addEventListener('click',()=>{SLP.mins=+b.dataset.t;SLP.end=SLP.mins?Date.now()+SLP.mins*60000:0;
   if(SLP.faded&&AU.ctx){AU.ctx.resume();SLP.faded=false;setVol();wakeOn();}sleepUI();sleepTick();sleepShowUi();}));
 $('#slDot').addEventListener('click',()=>{SLP.blank=!SLP.blank;lsSet('rzviz.blank',SLP.blank?'1':'0');sleepUI();sleepShowUi();});
-$('#slOut').addEventListener('click',sleepOff);$('#slpBtn').addEventListener('click',sleepOn);
+$('#slOut').addEventListener('click',sleepOff);$('#infBtn').addEventListener('click',infoToggle);$('#slpBtn').addEventListener('click',sleepOn);
 // M в съня: изключва/включва музиката; изключена — звуковият двигател спира изцяло (нула натоварване), включена — продължава
 function sleepMute(){if(!AU.ctx)return;
   if(SLP.faded){SLP.faded=false;SLP.end=0;SLP.mins=0;AU.mute=false;wakeOn();}else AU.mute=!AU.mute;
