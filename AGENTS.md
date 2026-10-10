@@ -49,6 +49,7 @@ python3 src/win/make_exe.py            # dist/Rezonans-windows/ (Rezonans-x64.ex
   и сборката не го пипа. Зарежда играта от `../index.html` и свири музиката от нейния синтезатор.
   До него са `manifest.webmanifest` (на ръка) и иконите `apple-touch-icon.png`, `icon-*.png` — рисуват се с
   `python3 src/audio/icon.py` (пуска се на ръка при промяна на иконата; отпечатва и SVG пътя за вградената фавикона).
+  При всяка промяна на визуализатора се сменя `VER` в него (дата.номер) — показва се в панела ⓘ.
 - **`src/fonts/fonts.css`, `src/fonts/files/`, `src/fonts/licenses/`** — генерират се от `src/fonts/fetch.py`, но се commit-ват
   (офлайн сборката не трябва да зависи от мрежата). Лицензите (SIL OFL) остават до шрифтовете.
 

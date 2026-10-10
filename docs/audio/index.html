@@ -986,11 +986,13 @@ function frame(now){
   adapt(dt);if(infoOn&&frameNo%10===0)info();}
 
 /* ================= интерфейс ================= */
+// версия на визуализатора — сменя се при всяка промяна (видима в ⓘ; така се познава стара версия от кеша на телефона)
+const VER='2026-10-11.1';
 let osdT=0,infoOn=false,idleT=0,digBuf='',digT=0;
 function osd(extra){const i=tgt(),el=$('#osd');
   el.innerHTML=String(i+1).padStart(2,'0')+' · '+PR[i].n+(DR.lock?' 🔒':'')+(extra?'<small>'+extra+'</small>':'');el.classList.add('on');clearTimeout(osdT);osdT=setTimeout(()=>el.classList.remove('on'),3800);}
 function info(){const bar=v=>'█'.repeat(Math.max(0,Math.min(20,Math.round(v*8))));
-  $('#info').textContent=`кадри/с  ${fpsS.toFixed(0)}\nекран    ${WL&&!WL.released?'буден':'wakeLock' in navigator?'може да угасне':'(не се поддържа)'}\nизобр.   ${iw}×${ih} (${QN[qMode]}${qMode?'':' '+Math.round(qMul*100)+'%'})\nизточник ${AU.mode||'—'}\nниски    ${bar(A.bassA)}\nсредни   ${bar(A.midA)}\nвисоки   ${bar(A.trebA)}\nудар     ${bar(A.beat*2.5)}\nсцена    ${tgt()+1}/${PR.length}${DR.lock?' (заключена)':''}`;}
+  $('#info').textContent=`кадри/с  ${fpsS.toFixed(0)}\nекран    ${WL&&!WL.released?'буден':'wakeLock' in navigator?'може да угасне':'(не се поддържа)'}\nизобр.   ${iw}×${ih} (${QN[qMode]}${qMode?'':' '+Math.round(qMul*100)+'%'})\nизточник ${AU.mode||'—'}\nниски    ${bar(A.bassA)}\nсредни   ${bar(A.midA)}\nвисоки   ${bar(A.trebA)}\nудар     ${bar(A.beat*2.5)}\nсцена    ${tgt()+1}/${PR.length}${DR.lock?' (заключена)':''}\nверсия   ${VER} · ${APP?'приложение':'браузър'}`;}
 function infoToggle(){infoOn=!infoOn;$('#info').classList.toggle('on',infoOn);if(infoOn)info();}
 // цял екран: винаги се пробва (iPhone може да казва, че не поддържа, а пак да го прави); ако не стане — обяснение
 const D=document,APP=matchMedia('(display-mode: fullscreen),(display-mode: standalone)').matches||navigator.standalone===true;
