@@ -5,7 +5,7 @@
 <title>Резонанс · Визуализатор</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Unbounded:wght@500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400&family=IBM+Plex+Mono:wght@400;600&family=Unbounded:wght@500&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;overflow:hidden;background:#000;color:#e9f6ff;font:14px 'IBM Plex Mono',ui-monospace,monospace}
@@ -53,7 +53,7 @@ body.idle #hint{opacity:0}body:not(.run) #hint{display:none}
 body.idle #musBtn,body:not(.run) #musBtn{opacity:0;pointer-events:none}
 #sleep{position:fixed;inset:0;z-index:20;background:#000;display:none;cursor:none}
 #sleep.on{display:block}#sleep.ui{cursor:default}
-#slc{position:absolute;left:50%;top:50%;width:200px;height:200px;transform:translate(-50%,-50%)}
+#slTxt{position:absolute;left:0;top:0;white-space:nowrap;font:400 clamp(18px,2.3vw,30px) Comfortaa,'Exo 2',sans-serif;letter-spacing:.06em;color:#b4c8ff;text-shadow:0 0 14px #6f8fff66;opacity:0;will-change:transform,opacity;pointer-events:none}
 #sleepUi{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);display:flex;flex-wrap:wrap;justify-content:center;gap:6px;align-items:center;width:max-content;max-width:calc(100vw - 32px);font:12px 'IBM Plex Mono',monospace;color:#7f9aa6;opacity:0;transition:opacity .8s;pointer-events:none}
 #sleep.ui #sleepUi{opacity:.85;pointer-events:auto}
 #sleepUi button{background:#05080c;color:#8fa9b4;border:1px solid #ffffff1c;border-radius:14px;padding:5px 10px;font:inherit;cursor:pointer}
@@ -78,8 +78,8 @@ iframe{position:fixed;width:1px;height:1px;left:-10px;top:-10px;border:0;opacity
 <b>H</b> тази помощ
 </div>
 <div id="info"></div>
-<div id="sleep"><canvas id="slc" width="200" height="200"></canvas>
-<div id="sleepUi"><span>сън · спиране след</span><button data-t="0">никога</button><button data-t="30">30 мин</button><button data-t="60">1 ч</button><button data-t="120">2 ч</button><span>·</span><button id="slDot">точка</button><button id="slOut">изход (Z)</button><span id="slLeft"></span></div></div>
+<div id="sleep"><div id="slTxt">Приятна почивка :)</div>
+<div id="sleepUi"><span>сън · спиране след</span><button data-t="0">никога</button><button data-t="30">30 мин</button><button data-t="60">1 ч</button><button data-t="120">2 ч</button><span>·</span><button id="slDot">надпис</button><button id="slFs">цял екран (F)</button><button id="slOut">изход (Z)</button><span id="slLeft"></span></div></div>
 <div id="hint">H — помощ · → следваща сцена · S — музика · Z — сън · F — цял екран</div>
 <button id="musBtn">♪ Музика</button>
 <div id="mus">
@@ -978,7 +978,7 @@ addEventListener('keydown',e=>{
   if(!running){if(e.code==='Enter'||e.code==='Space'){e.preventDefault();start();}return;}
   if(e.metaKey||e.ctrlKey||e.altKey)return;
   const c=e.code;let h=true;
-  if(SLP.on){if(c==='KeyZ'||c==='Escape')sleepOff();else sleepShowUi();e.preventDefault();return;}
+  if(SLP.on){if(c==='KeyZ'||c==='Escape')sleepOff();else if(c==='KeyF')full();else sleepShowUi();e.preventDefault();return;}
   if(c==='KeyZ'){sleepOn();e.preventDefault();return;}
   if(e.target.closest&&e.target.closest('#mus')){if(c==='Escape'||c==='KeyS'){musToggle();e.target.blur();e.preventDefault();}return;}
   if(c==='KeyS'){musToggle();e.preventDefault();return;}
@@ -1112,25 +1112,26 @@ function attach(ctx,node,mode){AU.vol=1;AU.mute=false;hook(ctx,node);AU.mode=mod
 
 /* ================= режим сън ================= */
 // Черен екран: спира WebGL, анализа на всеки кадър и рисуването на скритата игра (музиката продължава).
-// Остава само едва видима „дишаща“ точка, рисувана 10 пъти в секунда на малко платно (или напълно черно).
+// Остава само бледият надпис „Приятна почивка :)“, който бавно се носи по екрана — местен 10 пъти в секунда (или напълно черно).
 const SLP={on:false,blank:lsGet('rzviz.blank','0')==='1',mins:0,end:0,iv:0,lvl:0,pk:.02,ph:0,uiT:0,faded:false,drawn:true};
 let GW=null,gRaf=null,gCb=null;
 function gameRaf(on){if(!GW)return;try{
   if(!on){if(!gRaf){gRaf=GW.requestAnimationFrame;GW.requestAnimationFrame=cb=>{gCb=cb;return 0;};}}
   else if(gRaf){GW.requestAnimationFrame=gRaf;gRaf=null;if(gCb){const c=gCb;gCb=null;GW.requestAnimationFrame(c);}}}catch(e){}}
-const slx=$('#slc').getContext('2d');
+const slt=$('#slTxt');
 function sleepTick(){
   if(SLP.end&&!SLP.faded&&Date.now()>=SLP.end&&AU.out){SLP.faded=true;AU.out.gain.cancelScheduledValues(AU.ctx.currentTime);AU.out.gain.setTargetAtTime(0,AU.ctx.currentTime,12);   // ~1 мин плавно затихване
     setTimeout(()=>{if(SLP.on&&SLP.faded&&AU.ctx)AU.ctx.suspend();},60000);}
   if(SLP.end)$('#slLeft').textContent=SLP.faded?'· музиката затихва':'· остават '+Math.max(1,Math.ceil((SLP.end-Date.now())/60000))+' мин';
-  if(SLP.blank||SLP.faded){if(SLP.drawn){slx.clearRect(0,0,200,200);SLP.drawn=false;}return;}
+  if(SLP.blank||SLP.faded){if(SLP.drawn){slt.style.opacity=0;SLP.drawn=false;}return;}
   if(AU.an){AU.an.getFloatTimeDomainData(AU.td);let r=0;for(let i=0;i<2048;i+=4)r+=AU.td[i]*AU.td[i];r=Math.sqrt(r/512);SLP.lvl+=(r-SLP.lvl)*.06;SLP.pk=Math.max(SLP.lvl,SLP.pk*.9995,.002);}
-  SLP.ph+=.1;const b=.5+.5*Math.sin(SLP.ph*Math.PI/4),n=Math.min(1,SLP.lvl/SLP.pk),R=4+3*b+4*n,a=.05+.06*b+.07*n;   // дишане ~8 с
-  slx.clearRect(0,0,200,200);const g=slx.createRadialGradient(100,100,0,100,100,R*6);
-  g.addColorStop(0,'rgba(140,200,255,'+a+')');g.addColorStop(.18,'rgba(90,160,240,'+a*.5+')');g.addColorStop(1,'rgba(40,80,160,0)');
-  slx.fillStyle=g;slx.fillRect(0,0,200,200);SLP.drawn=true;}
+  // надписът бавно се носи по целия екран (обиколки от ~2–3 мин) и леко „диша“ (~10 с)
+  SLP.ph+=.1;const t=SLP.ph,W=innerWidth-slt.offsetWidth,H=innerHeight-slt.offsetHeight,
+    x=W*(.5+.46*Math.sin(t*.041+.6)*Math.cos(t*.013)),y=H*(.5+.44*Math.sin(t*.031+1.9)),
+    b=.5+.5*Math.sin(t*Math.PI/5),n=Math.min(1,SLP.lvl/SLP.pk);
+  slt.style.transform='translate('+x.toFixed(1)+'px,'+y.toFixed(1)+'px)';slt.style.opacity=(.1+.08*b+.05*n).toFixed(3);SLP.drawn=true;}
 function sleepUI(){document.querySelectorAll('#sleepUi [data-t]').forEach(b=>b.classList.toggle('on',+b.dataset.t===SLP.mins));
-  $('#slDot').textContent=SLP.blank?'напълно черно':'точка';if(!SLP.end)$('#slLeft').textContent='';}
+  $('#slDot').textContent=SLP.blank?'напълно черно':'надпис';if(!SLP.end)$('#slLeft').textContent='';}
 function sleepShowUi(){$('#sleep').classList.add('ui');clearTimeout(SLP.uiT);SLP.uiT=setTimeout(()=>$('#sleep').classList.remove('ui'),3000);}
 function sleepOn(){if(SLP.on||!running)return;SLP.on=true;
   for(const id of ['#help','#info','#mus'])$(id).classList.remove('on');infoOn=false;
@@ -1140,8 +1141,8 @@ function sleepOff(){if(!SLP.on)return;SLP.on=false;clearInterval(SLP.iv);clearTi
 document.querySelectorAll('#sleepUi [data-t]').forEach(b=>b.addEventListener('click',()=>{SLP.mins=+b.dataset.t;SLP.end=SLP.mins?Date.now()+SLP.mins*60000:0;
   if(SLP.faded&&AU.ctx){AU.ctx.resume();SLP.faded=false;setVol();}sleepUI();sleepTick();sleepShowUi();}));
 $('#slDot').addEventListener('click',()=>{SLP.blank=!SLP.blank;lsSet('rzviz.blank',SLP.blank?'1':'0');sleepUI();sleepShowUi();});
-$('#slOut').addEventListener('click',sleepOff);
-$('#sleep').addEventListener('pointermove',sleepShowUi);
+$('#slOut').addEventListener('click',sleepOff);$('#slFs').addEventListener('click',full);
+$('#sleep').addEventListener('pointermove',sleepShowUi);$('#sleep').addEventListener('dblclick',full);
 
 alloc(true);RAF=requestAnimationFrame(frame);
 window.__viz={PR,DR,SL,A,AU,SLP,sleepOn,sleepOff,goTo,step,frame,get raf(){return RAF},get frames(){return frameNo},setScene,showTitle,hideTitle,attach,TTL,pause(b){PAUSE=!!b;},get iw(){return iw},get ih(){return ih},get fps(){return fpsS},get qMul(){return qMul}};
