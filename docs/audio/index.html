@@ -53,6 +53,7 @@ body.idle #hint{opacity:0}body:not(.run) #hint{display:none}
 body.idle #musBtn,body:not(.run) #musBtn{opacity:0;pointer-events:none}
 #sleep{position:fixed;inset:0;z-index:20;background:#000;display:none;cursor:none}
 #sleep.on{display:block}#sleep.ui{cursor:default}
+#slTxt .moon{display:inline-block;margin-left:.4em;font-size:1.6em;line-height:0;vertical-align:-.12em;color:#d2dcff;text-shadow:0 0 10px #9fb4ff99,0 0 22px #6f8fff55;font-family:'Apple Symbols','Segoe UI Symbol','DejaVu Sans',serif}
 #slTxt{position:absolute;left:0;top:0;white-space:nowrap;font:400 clamp(18px,2.3vw,30px) Comfortaa,'Exo 2',sans-serif;letter-spacing:.06em;color:#b4c8ff;text-shadow:0 0 14px #6f8fff66;opacity:0;will-change:transform,opacity;pointer-events:none}
 #sleepUi{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);display:flex;flex-wrap:wrap;justify-content:center;gap:6px;align-items:center;width:max-content;max-width:calc(100vw - 32px);font:12px 'IBM Plex Mono',monospace;color:#7f9aa6;opacity:0;transition:opacity .8s;pointer-events:none}
 #sleep.ui #sleepUi{opacity:.85;pointer-events:auto}
@@ -78,7 +79,7 @@ iframe{position:fixed;width:1px;height:1px;left:-10px;top:-10px;border:0;opacity
 <b>H</b> тази помощ
 </div>
 <div id="info"></div>
-<div id="sleep"><div id="slTxt">Приятна почивка :)</div>
+<div id="sleep"><div id="slTxt">Приятна почивка<span class="moon">☾&#xFE0E;</span></div>
 <div id="sleepUi"><span>сън · спиране след</span><button data-t="0">никога</button><button data-t="30">30 мин</button><button data-t="60">1 ч</button><button data-t="120">2 ч</button><span>·</span><button id="slDot">надпис</button><button id="slFs">цял екран (F)</button><button id="slOut">изход (Z)</button><span id="slLeft"></span></div></div>
 <div id="hint">H — помощ · → следваща сцена · S — музика · Z — сън · F — цял екран</div>
 <button id="musBtn">♪ Музика</button>
@@ -1112,7 +1113,7 @@ function attach(ctx,node,mode){AU.vol=1;AU.mute=false;hook(ctx,node);AU.mode=mod
 
 /* ================= режим сън ================= */
 // Черен екран: спира WebGL, анализа на всеки кадър и рисуването на скритата игра (музиката продължава).
-// Остава само бледият надпис „Приятна почивка :)“, който бавно се носи по екрана — местен 10 пъти в секунда (или напълно черно).
+// Остава само бледият надпис „Приятна почивка ☾“, който бавно се носи по екрана — местен 10 пъти в секунда (или напълно черно).
 const SLP={on:false,blank:lsGet('rzviz.blank','0')==='1',mins:0,end:0,iv:0,lvl:0,pk:.02,ph:0,uiT:0,faded:false,drawn:true};
 let GW=null,gRaf=null,gCb=null;
 function gameRaf(on){if(!GW)return;try{
