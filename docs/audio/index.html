@@ -3,13 +3,22 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Резонанс · Визуализатор</title>
+<meta name="description" content="Музиката от началния екран на „Резонанс“ с визуални ефекти, които реагират на нея, и режим за сън.">
+<meta name="theme-color" content="#000000">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Cdefs%3E%3ClinearGradient id=%22g%22 x1=%220%22 y1=%221%22 x2=%221%22 y2=%220%22%3E%3Cstop offset=%220%22 stop-color=%22%23eb78dc%22/%3E%3Cstop offset=%22.5%22 stop-color=%22%23968cff%22/%3E%3Cstop offset=%221%22 stop-color=%22%235ae6ff%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width=%2232%22 height=%2232%22 rx=%226%22 fill=%22%230a0d1a%22/%3E%3Cpath d=%22M25.9 16.0 26.1 16.7 26.1 17.3 25.8 17.9 25.4 18.5 25.0 19.1 24.7 19.6 24.4 20.1 24.0 20.6 23.5 21.0 23.0 21.4 22.4 21.7 21.9 21.9 21.6 22.3 21.3 22.9 21.1 23.6 20.8 24.4 20.5 25.1 20.0 25.6 19.3 25.8 18.6 25.7 17.9 25.5 17.2 25.2 16.6 25.0 16.0 24.9 15.4 24.9 14.8 24.8 14.3 24.6 13.7 24.4 13.2 24.2 12.7 24.1 12.0 24.1 11.3 24.1 10.5 24.2 9.8 24.1 9.1 23.8 8.7 23.3 8.5 22.6 8.5 21.8 8.5 21.0 8.5 20.3 8.3 19.8 8.0 19.3 7.7 18.8 7.4 18.3 7.2 17.8 7.0 17.2 6.9 16.6 6.7 16.0 6.5 15.4 6.2 14.7 6.0 14.0 6.0 13.3 6.4 12.7 6.9 12.3 7.7 11.9 8.4 11.6 9.0 11.3 9.4 10.9 9.7 10.4 9.8 9.8 10.0 9.2 10.3 8.6 10.7 8.1 11.2 7.7 11.8 7.4 12.3 7.0 12.8 6.7 13.4 6.3 14.0 6.1 14.7 6.2 15.4 6.5 16.0 6.9 16.6 7.4 17.1 7.8 17.6 8.0 18.2 7.9 18.8 7.7 19.5 7.4 20.3 7.4 20.9 7.5 21.5 7.8 22.0 8.2 22.4 8.7 22.9 9.1 23.3 9.6 23.7 10.1 24.0 10.7 24.1 11.3 24.0 12.1 23.9 12.7 23.8 13.3 24.0 13.9 24.3 14.3 24.9 14.8 25.5 15.4Z%22 fill=%22none%22 stroke=%22url%28%23g%29%22 stroke-width=%222.6%22 stroke-linejoin=%22round%22/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-title" content="Визуализатор">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400&family=IBM+Plex+Mono:wght@400;600&family=Unbounded:wght@500&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;overflow:hidden;background:#000;color:#e9f6ff;font:14px 'IBM Plex Mono',ui-monospace,monospace}
-canvas{display:block;width:100vw;height:100vh}
+canvas{display:block;width:100vw;height:100vh;touch-action:none}
 body.idle,body.idle *{cursor:none!important}
 #cover{position:fixed;inset:0;display:grid;place-items:center;background:radial-gradient(ellipse at center,#0a142080 0%,#000000d8 75%);z-index:5;transition:opacity .8s}
 #cover.gone{opacity:0;pointer-events:none}
@@ -49,8 +58,10 @@ body.idle #hint{opacity:0}body:not(.run) #hint{display:none}
 #mus input:disabled,#mus select:disabled,#mus button:disabled{opacity:.4;cursor:default}
 #musNote{margin-top:12px;color:#ffd38a;min-height:16px;line-height:1.5}
 #musLvl{margin-top:10px;color:#9ff0ff;min-height:16px}
-#musBtn{position:fixed;right:16px;bottom:14px;z-index:3;padding:6px 12px;border-radius:20px;border:1px solid #ffffff40;background:#03080eb0;color:#dff;font:12px 'IBM Plex Mono',monospace;cursor:pointer;transition:opacity .6s}
-body.idle #musBtn,body:not(.run) #musBtn{opacity:0;pointer-events:none}
+#musBtn,#slpBtn{position:fixed;right:16px;bottom:14px;z-index:3;padding:6px 12px;border-radius:20px;border:1px solid #ffffff40;background:#03080eb0;color:#dff;font:12px 'IBM Plex Mono',monospace;cursor:pointer;transition:opacity .6s}
+#slpBtn{right:118px}
+@media (pointer:coarse){#hint{bottom:58px;white-space:normal;text-align:center;width:calc(100vw - 32px)}}
+body.idle #musBtn,body:not(.run) #musBtn,body.idle #slpBtn,body:not(.run) #slpBtn,body.embed #slpBtn{opacity:0;pointer-events:none}
 #sleep{position:fixed;inset:0;z-index:20;background:#000;display:none;cursor:none}
 #sleep.on{display:block}#sleep.ui{cursor:default}
 #slTxt{position:absolute;left:0;top:0;white-space:nowrap;font:400 clamp(18px,2.3vw,30px) Comfortaa,'Exo 2',sans-serif;color:#b4c8ff;text-shadow:0 0 14px #6f8fff66;opacity:0;will-change:transform,opacity;pointer-events:none}
@@ -79,9 +90,9 @@ iframe{position:fixed;width:1px;height:1px;left:-10px;top:-10px;border:0;opacity
 </div>
 <div id="info"></div>
 <div id="sleep"><div id="slTxt">Приятна почивка</div>
-<div id="sleepUi"><span>сън · спиране след</span><button data-t="0">никога</button><button data-t="30">30 мин</button><button data-t="60">1 ч</button><button data-t="120">2 ч</button><span>·</span><button id="slDot">надпис</button><button id="slFs">цял екран (F)</button><button id="slOut">изход (Z)</button><span id="slLeft"></span></div></div>
+<div id="sleepUi"><span>сън · спиране след</span><button data-t="0">никога</button><button data-t="30">30 мин</button><button data-t="60">1 ч</button><button data-t="120">2 ч</button><span>·</span><button id="slDot">надпис</button><button id="slMute">звук вкл. (M)</button><button id="slFs">цял екран (F)</button><button id="slOut">изход (Z)</button><span id="slLeft"></span></div></div>
 <div id="hint">H — помощ · → следваща сцена · S — музика · Z — сън · F — цял екран</div>
-<button id="musBtn">♪ Музика</button>
+<button id="musBtn">♪ Музика</button><button id="slpBtn">☾ Сън</button>
 <div id="mus">
 <h3>МУЗИКА <button id="musX" title="Затвори (S)">×</button></h3>
 <label>Тоналност <b id="vTr"></b></label><input type="range" id="iTr" min="-12" max="6" step="1">
@@ -404,8 +415,9 @@ void main(){
   if(t<11.){vec3 p=ro+rd*t;vec2 k=vec2(1.,-1.)*.0015;
     vec3 n=normalize(k.xyy*map(p+k.xyy)+k.yyx*map(p+k.yyx)+k.yxy*map(p+k.yxy)+k.xxx*map(p+k.xxx));
     float fr=pow(1.-max(dot(n,-rd),0.),5.),ao=clamp(map(p+n*.18)/.18,0.,1.);vec3 rf=reflect(rd,n),col;
-    if(uMat<.5)col=env(rf)*mix(vec3(.55,.5,.48),vec3(1.),fr)*(.6+.4*ao);
-    else{vec3 ir=pal(fr*1.6+dot(n,vec3(.3,.5,.2))+uT*.05);col=env(refract(rd,n,.72))*ir*.7+env(rf)*(.12+fr)+ir*fr*.7;col*=.55+.45*ao;}
+    vec3 er=env(rf),cm=er*mix(vec3(.55,.5,.48),vec3(1.),fr)*(.6+.4*ao);   // течен метал
+    vec3 ir=pal(fr*1.6+dot(n,vec3(.3,.5,.2))+uT*.05),cc=(env(refract(rd,n,.72))*ir*.7+er*(.12+fr)+ir*fr*.7)*(.55+.45*ao);   // кристал
+    col=mix(cm,cc,uMat);
     col+=pal(uT*.05)*uBeat*.2*fr;o=vec4(col,1.);}
   else o=vec4(pal(uT*.04+.3)*exp(-md*8.)*(.02+.06*uBeat),0.);}`;
 
@@ -558,11 +570,11 @@ const mat2 m2=mat2(.95534,.29552,-.29552,.95534);
 float tri(float x){return clamp(abs(fract(x)-.5),.01,.49);}
 vec2 tri2(vec2 p){return vec2(tri(p.x)+tri(p.y),tri(p.y+tri(p.x)));}
 float triN(vec2 p){float z=1.8,z2=2.5,rz=0.;p*=rot(p.x*.06);vec2 bp=p;
-  for(int i=0;i<5;i++){vec2 dg=tri2(bp*1.85)*.75;dg*=rot(uMT*.07);p-=dg/z2;bp*=1.3;z2*=.45;z*=.42;p*=1.21+(rz-1.)*.02;rz+=tri(p.x+tri(p.y))*z;p*=-m2;}
+  for(int i=0;i<5;i++){vec2 dg=tri2(bp*1.85)*.75;dg*=rot(uMT*.25);p-=dg/z2;bp*=1.3;z2*=.45;z*=.42;p*=1.21+(rz-1.)*.02;rz+=tri(p.x+tri(p.y))*z;p*=-m2;}
   return clamp(1./pow(rz*29.,1.3),0.,.55);}
 vec4 aur(vec3 ro,vec3 rd){vec4 col=vec4(0.),av=vec4(0.);float jt=.006*h21(gl_FragCoord.xy);
   for(int j=0;j<44;j++){float i=float(j),pt=((.8+pow(i,1.4)*.002)-ro.y)/(rd.y*2.+.4)-jt*smoothstep(0.,15.,i);
-    float rz=triN((ro+pt*rd).zx);vec4 c2=vec4((sin(1.-vec3(2.15,-.5,1.2)+i*.043+uHA)*.5+.5)*rz,rz);
+    float rz=triN((ro+pt*rd).zx+vec2(uMT*.12,uMT*.04));vec4 c2=vec4((sin(1.-vec3(2.15,-.5,1.2)+i*.043+uHA)*.5+.5)*rz,rz);
     av=mix(av,c2,.5);col+=av*exp2(-i*.065-2.5)*smoothstep(0.,5.,i);}
   col*=clamp(rd.y*15.+.4,0.,1.);return col*1.8;}
 float ridge(float az){return .02+.05*noise(vec3(az*3.,1.,0.))+.025*noise(vec3(az*9.,2.,0.));}
@@ -777,6 +789,7 @@ function lowDraw(pr,U,dst,sc){const w=Math.round(iw*sc),h=Math.round(ih*sc);let 
 const spAvg=()=>{let s=0;for(let i=0;i<512;i+=8)s+=AU.S[i];return s/64;};
 const CHM=[[1,2],[1,3],[2,3],[1,4],[3,4],[2,5],[3,5],[1,5],[4,5],[2,7],[3,7],[5,6],[4,7],[1,6],[5,8]];
 const RDP=[[.0545,.062],[.0367,.0649],[.039,.058],[.042,.0605],[.03,.057],[.025,.055]];
+const blobMat=st=>{const c=st.mp;return c<15?0:c<20?ease((c-15)/5):c<35?1:1-ease((c-35)/5);};
 const ease=x=>x*x*(3-2*x),rnd=(a,b)=>a+Math.random()*(b-a);
 const pick=(arr,not)=>{if(arr.length<2)return arr[0];let v;do v=arr[Math.floor(Math.random()*arr.length)];while(v===not);return v;};
 let NP=1<<17;
@@ -790,11 +803,12 @@ const TY={
     draw(pr,st,dst,dt,t){if(!FL.ready)FL.init();FL.step(pr.cfg,dt,t);run(P.fdisp,{uDye:FL.dye.rd,uTxD:FL.dye.rd.tx},dst);}},
   tun:{init:()=>({z:Math.random()*100}),
     draw(pr,st,dst,dt,t){st.z+=dt*(.5+1.6*A.spd);run(P.tun,{uZ:st.z,uRoll:.3*Math.sin(t*.045)+.08*Math.sin(t*.13)},dst);}},
-  blob:{init:()=>({a:0,b:pick([1,2,3,4,5]),m:0,next:5,ry:0}),
+  blob:{init:()=>({a:0,b:pick([1,2,3,4,5]),m:0,next:5,ry:0,mp:Math.random()*40}),
     draw(pr,st,dst,dt,t){st.next-=dt;
       if(st.m>=1&&(st.next<=0||(A.onLo>.5&&st.next<4))){st.a=st.b;st.b=pick([0,1,2,3,4,5],st.a);st.m=0;st.next=rnd(9,15);}
       if(st.m<1)st.m=Math.min(1,st.m+dt/4);st.ry+=dt*(.05+.18*A.spd);
-      run(P.blob,{uA:st.a,uB:st.b,uM:ease(st.m),uMat:pr.cfg.mat,uRY:st.ry,uRX:.35*Math.sin(t*.07)},dst);}},
+      st.mp=(st.mp+dt)%40;
+      run(P.blob,{uA:st.a,uB:st.b,uM:ease(st.m),uMat:blobMat(st),uRY:st.ry,uRX:.35*Math.sin(t*.07)},dst);}},
   frac:{init:()=>({tc:rnd(0,40)}),
     draw(pr,st,dst,dt,t){st.tc+=dt*(.035+.11*A.spd);run(P.frac,{uS:1.17+.07*Math.sin(t*.07),uTc:st.tc},dst);}},
   part:{init:pr=>{const s=pr.cfg.shapes;const a=pick(s);return {a,b:a,m:1,next:rnd(3,5),hue:Math.random()};},
@@ -865,8 +879,8 @@ const PR=[
   {n:'Мастило',ty:'fluid',cfg:{curl:30,dis:1.1},par:()=>({over:.85,zoom:1.003,decay:.9,bloom:.55,ca:.3})},
   {n:'Звуков водовъртеж',ty:'fluid',cfg:{curl:20,dis:1.4,ring:1},par:(a,t)=>({over:.8,zoom:1.002,decay:.92,kal:4,kalA:1,kalR:t*.012,bloom:.6})},
   {n:'Резонансен тунел',ty:'tun',par:a=>({over:.85,zoom:1.004+.004*a.beat,decay:.88,bloom:.8,ca:.8,vig:.5})},
-  {n:'Течен метал',ty:'blob',cfg:{mat:0},par:()=>({over:1,zoom:1.005,rot:.0015,warp:.3,decay:.92,hue:.005,blur:.25,bloom:.6})},
-  {n:'Кристал',ty:'blob',cfg:{mat:1},par:()=>({over:1,zoom:1.003,flow:1.2,decay:.92,hue:-.0025,echo:.22,echoZ:.7,bloom:.8})},
+  {n:'Течен кристал',ty:'blob',par:(a,t,st)=>{const m=blobMat(st);   // обратната връзка също преминава от единия материал към другия
+    return {over:1,zoom:1.005-.002*m,rot:.0015*(1-m),warp:.3*(1-m),flow:1.2*m,decay:.92,hue:.005-.0075*m,blur:.25*(1-m),echo:.22*m,echoZ:.7,bloom:.6+.2*m};}},
   {n:'Фрактален храм',ty:'frac',par:()=>({over:.88,decay:.85,bloom:.55,ca:.4,vig:.5})},
   {n:'Рояк',ty:'part',cfg:{shapes:[0,1,2,3,4,5],cam:0},par:()=>({add:1,zoom:1.003,rot:.0012,warp:.2,decay:.92,blur:.4,bloom:1})},
   {n:'Спектрален пейзаж',ty:'part',cfg:{shapes:[6],cam:1,ps:1.8,br:1.6},par:()=>({add:1,decay:.7,bloom:.9})},
@@ -891,7 +905,7 @@ const QN=['авто','високо','средно','ниско'];
 function alloc(force){
   const dpr=Math.min(devicePixelRatio||1,2),W=innerWidth,H=innerHeight;
   const cw=Math.round(W*Math.min(dpr,1.5)),ch=Math.round(H*Math.min(dpr,1.5));if(cv.width!==cw||cv.height!==ch){cv.width=cw;cv.height=ch;}
-  const q=qMode?[1,1,.75,.55][qMode]:qMul,s=Math.min(dpr,Math.sqrt(2.1e6/(W*H)))*q;
+  const q=qMode?[1,1,.75,.55][qMode]:qMul,s=Math.min(dpr,Math.sqrt((matchMedia('(pointer:coarse)').matches?1e6:2.1e6)/(W*H)))*q;
   const nw=Math.max(64,Math.round(W*s)),nh=Math.max(64,Math.round(H*s));
   if(nw===iw&&nh===ih&&!force)return;
   for(const sl of SL){const old=sl.fb;sl.fb=dbl(nw,nh);if(old){run(P.copy,{uSrc:old.rd},sl.fb.rd);old.del();}if(sl.sc)sl.sc.del();sl.sc=rt(nw,nh);}
@@ -978,7 +992,7 @@ addEventListener('keydown',e=>{
   if(!running){if(e.code==='Enter'||e.code==='Space'){e.preventDefault();start();}return;}
   if(e.metaKey||e.ctrlKey||e.altKey)return;
   const c=e.code;let h=true;
-  if(SLP.on){if(c==='KeyZ'||c==='Escape')sleepOff();else if(c==='KeyF')full();else sleepShowUi();e.preventDefault();return;}
+  if(SLP.on){if(c==='KeyZ'||c==='Escape')sleepOff();else if(c==='KeyF')full();else if(c==='KeyM')sleepMute();else sleepShowUi();e.preventDefault();return;}
   if(c==='KeyZ'){sleepOn();e.preventDefault();return;}
   if(e.target.closest&&e.target.closest('#mus')){if(c==='Escape'||c==='KeyS'){musToggle();e.target.blur();e.preventDefault();}return;}
   if(c==='KeyS'){musToggle();e.preventDefault();return;}
@@ -998,6 +1012,9 @@ addEventListener('keydown',e=>{
   else h=false;
   if(h)e.preventDefault();});
 cv.addEventListener('dblclick',full);
+{let sx=0,sy=0,st=0;   // телефон: плъзгане наляво/надясно — следваща/предишна сцена
+  cv.addEventListener('pointerdown',e=>{sx=e.clientX;sy=e.clientY;st=performance.now();document.body.classList.remove('idle');idleT=performance.now();});
+  cv.addEventListener('pointerup',e=>{const dx=e.clientX-sx,dy=e.clientY-sy;if(running&&!EMBED&&Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5&&performance.now()-st<800)step(dx<0?1:-1);});}
 addEventListener('pointermove',()=>{document.body.classList.remove('idle');idleT=performance.now();},{passive:true});
 setInterval(()=>{if(running&&performance.now()-idleT>2200&&!$('#mus').classList.contains('on'))document.body.classList.add('idle');},500);
 
@@ -1102,6 +1119,7 @@ const musToggle=()=>{const on=$('#mus').classList.toggle('on');if(on)musUI();};
 $('#musBtn').addEventListener('click',musToggle);$('#musX').addEventListener('click',musToggle);
 musUI();
 
+if(matchMedia('(pointer:coarse)').matches)$('#hint').textContent='плъзни ← → за друга сцена · двоен допир — цял екран';
 // вграден режим (?embed): без начален екран и подсказки — за демото на интрото (intro-demo.html)
 const EMBED=new URLSearchParams(location.search).has('embed');
 if(EMBED){document.body.classList.add('embed','run');$('#cover').remove();running=true;DR.lock=true;}
@@ -1131,18 +1149,24 @@ function sleepTick(){
     b=.5+.5*Math.sin(t*Math.PI/5),n=Math.min(1,SLP.lvl/SLP.pk);
   slt.style.transform='translate('+x.toFixed(1)+'px,'+y.toFixed(1)+'px)';slt.style.opacity=(.1+.08*b+.05*n).toFixed(3);SLP.drawn=true;}
 function sleepUI(){document.querySelectorAll('#sleepUi [data-t]').forEach(b=>b.classList.toggle('on',+b.dataset.t===SLP.mins));
-  $('#slDot').textContent=SLP.blank?'напълно черно':'надпис';if(!SLP.end)$('#slLeft').textContent='';}
+  $('#slDot').textContent=SLP.blank?'напълно черно':'надпис';$('#slMute').textContent=(AU.mute||SLP.faded?'звук изкл.':'звук вкл.')+' (M)';$('#slMute').classList.toggle('on',AU.mute||SLP.faded);if(!SLP.end)$('#slLeft').textContent='';}
 function sleepShowUi(){$('#sleep').classList.add('ui');clearTimeout(SLP.uiT);SLP.uiT=setTimeout(()=>$('#sleep').classList.remove('ui'),3000);}
 function sleepOn(){if(SLP.on||!running)return;SLP.on=true;
   for(const id of ['#help','#info','#mus'])$(id).classList.remove('on');infoOn=false;
   cv.style.display='none';$('#sleep').classList.add('on');gameRaf(false);SLP.drawn=true;SLP.iv=setInterval(sleepTick,100);sleepUI();sleepShowUi();}
 function sleepOff(){if(!SLP.on)return;SLP.on=false;clearInterval(SLP.iv);clearTimeout(SLP.uiT);$('#sleep').classList.remove('on','ui');cv.style.display='';gameRaf(true);
-  if(SLP.faded&&AU.ctx){AU.ctx.resume();SLP.faded=false;}SLP.end=0;SLP.mins=0;setVol();last=performance.now();if(!RAF)RAF=requestAnimationFrame(frame);}
+  if(SLP.faded){SLP.faded=false;AU.mute=false;}if(AU.ctx&&AU.ctx.state==='suspended')AU.ctx.resume();SLP.end=0;SLP.mins=0;setVol();last=performance.now();if(!RAF)RAF=requestAnimationFrame(frame);}
 document.querySelectorAll('#sleepUi [data-t]').forEach(b=>b.addEventListener('click',()=>{SLP.mins=+b.dataset.t;SLP.end=SLP.mins?Date.now()+SLP.mins*60000:0;
   if(SLP.faded&&AU.ctx){AU.ctx.resume();SLP.faded=false;setVol();}sleepUI();sleepTick();sleepShowUi();}));
 $('#slDot').addEventListener('click',()=>{SLP.blank=!SLP.blank;lsSet('rzviz.blank',SLP.blank?'1':'0');sleepUI();sleepShowUi();});
-$('#slOut').addEventListener('click',sleepOff);$('#slFs').addEventListener('click',full);
-$('#sleep').addEventListener('pointermove',sleepShowUi);$('#sleep').addEventListener('dblclick',full);
+$('#slOut').addEventListener('click',sleepOff);$('#slpBtn').addEventListener('click',sleepOn);
+// M в съня: изключва/включва музиката; изключена — звуковият двигател спира изцяло (нула натоварване), включена — продължава
+function sleepMute(){if(!AU.ctx)return;
+  if(SLP.faded){SLP.faded=false;SLP.end=0;SLP.mins=0;AU.mute=false;}else AU.mute=!AU.mute;
+  setVol();if(AU.mute)setTimeout(()=>{if(SLP.on&&AU.mute&&AU.ctx)AU.ctx.suspend();},300);else AU.ctx.resume();
+  sleepUI();sleepShowUi();}
+$('#slMute').addEventListener('click',sleepMute);$('#slFs').addEventListener('click',full);
+$('#sleep').addEventListener('pointermove',sleepShowUi);$('#sleep').addEventListener('pointerdown',sleepShowUi);$('#sleep').addEventListener('dblclick',full);
 
 alloc(true);RAF=requestAnimationFrame(frame);
 window.__viz={PR,DR,SL,A,AU,SLP,sleepOn,sleepOff,goTo,step,frame,get raf(){return RAF},get frames(){return frameNo},setScene,showTitle,hideTitle,attach,TTL,pause(b){PAUSE=!!b;},get iw(){return iw},get ih(){return ih},get fps(){return fpsS},get qMul(){return qMul}};
