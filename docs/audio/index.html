@@ -1021,7 +1021,7 @@ const fr=$('#game'),goBtn=$('#go');let RZ=null,RZM=null,PREP=null;
 //    Рисуването на играта се спира веднага — нужен е само синтезаторът (той върви на setInterval, не на кадрите).
 async function prepLive(){
   let html=null;try{html=await (await fetch('../index.html')).text();}catch(e){}
-  const HOOK='window.__rzMus={set:setMusic,get tr(){return mTr},get bpm(){return mBpm},get alien(){return mAlien},get prog(){return GAME.prog},get int(){return mInt},set int(v){mInt=v},get boss(){return bossMusic},set boss(v){bossMusic=v},set prog(v){GAME.prog=v}};';
+  const HOOK='window.__rzMus={sched:mSched,set:setMusic,get tr(){return mTr},get bpm(){return mBpm},get alien(){return mAlien},get prog(){return GAME.prog},get int(){return mInt},set int(v){mInt=v},get boss(){return bossMusic},set boss(v){bossMusic=v},set prog(v){GAME.prog=v}};';
   await new Promise((ok,no)=>{const to=setTimeout(()=>no(Error('timeout')),15000);fr.onload=()=>{clearTimeout(to);ok();};
     if(html&&html.split('window.__rz={').length===2)fr.srcdoc=html.replace('<head>','<head><base href="../">').replace('window.__rz={',HOOK+'window.__rz={');
     else fr.src='../index.html';});
@@ -1041,6 +1041,8 @@ function armAudio(){
   try{rz.sfxBus.disconnect();}catch(e){}
   const ctx=rz.AC;if(ctx.state!=='running')ctx.resume().catch(()=>{});
   out.disconnect();hook(ctx,out);RZ=rz;RZM=w.__rzMus||null;AU.mode='играта (r1, начален екран)';musApply();musUI();
+  // планировчикът на нотите се вика и оттук: iOS силно забавя таймерите в скрития кадър с играта — тогава се чуват само отделни звуци
+  if(RZM&&RZM.sched)setInterval(()=>{try{RZM.sched();}catch(e){}},25);
   try{w.document.activeElement&&w.document.activeElement.blur();}catch(e){}window.focus();}
 function go2(){if(running)return;running=true;goBtn.blur();document.body.classList.add('run');statusEl.textContent='';$('#cover').classList.add('gone');idleT=performance.now();titleT=0;DR.left=rnd(45,60);osd('музика: '+AU.mode);}
 function failMsg(e){return (location.protocol==='file:'||e.message==='file')
