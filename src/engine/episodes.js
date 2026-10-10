@@ -13,6 +13,7 @@
          pre         [[дял от пътя, сцена], …] — готови сцени по пътя
          beats       [[дял, кой, текст], …] — кой: 'radio' (GAME.radioWho), 'msg' или име от GAME.voices
          weap        [[оръжие, дял], …] — оръжията по сюжета, на основния път
+         zones       [[дял от пътя, тема], …] — темата се сменя по пътя (плочките, сегментите, враговете, декорът); темите — с еднакво небе
          foes        колко врагове да разположи генераторът (иначе — по дължината и трудността; тренировката — малко)
          sign        надписът в началото, music — друга музика}
    Семето: epFix (проверките) или Math.random (в проверките е семенен) — window.__rz.epSeed пази последното. */
@@ -22,6 +23,8 @@ const epSeedNew=()=>epFix!=null?epFix:1+Math.floor(Math.random()*999999999);
 function epGen(i,seed){
   const R=GLV[i], E=R.gen; epSeed=seed!=null?seed:epSeedNew();
   const L=svGenBy(E.k||0,{theme:E.theme,muts:(E.muts||[]).slice(),boss:E.boss||null,seed:epSeed,ep:E,memory:!!R.memory});
+  const fits=s=>!(DIMS[s[0]]&&!FOES[s[0]].fly&&(s[2]+1)*T-DIMS[s[0]][1]<0);   // враг на земята с глава над картата (горе е стена) — не се слага
+  L.spawns=L.spawns.filter(fits); if(L.spawnsB) L.spawnsB=L.spawnsB.filter(fits);
   for(const f of EP_COPY) if(R[f]!==undefined) L[f]=R[f];
   if(E.music) L.music=Object.assign({},E.music);
   L.surv=false; L.seed=epSeed; return L;

@@ -3,7 +3,8 @@ const makeBoss=()=>BOSSES[LVL.arena.type].make();
 const bossSfx=t=>(BOSSES[t]||{}).sfx||'roar';
 function startBoss(){
   const a=LVL.arena; setCp(a.cp!=null?a.cp:a.door+2); bossActive=true;
-  if(a.door!=null){ setDoor([a.door,a.r0,a.r1],'D'); SFX.door(); shake=6; }
+  if(a.door!=null){ setDoor([a.door,a.r0,a.r1],'D'); SFX.door(); shake=6;
+    const dr={x:a.door*T,y:a.r0*T,w:T,h:(a.r1-a.r0+1)*T}; for(const e of enemies) if(!e.dead&&ov(e,dr)) hurtEnemy(e,999,0,true); }   // затворената врата не оставя враг в себе си
   boss=makeBoss(); boss.hp*=bossMul; boss.max*=bossMul;
   if(BOSSES[a.type].portal) portals.push({x:boss.x+boss.w/2,y:boss.y+boss.h/2,t:0,spawned:true,type:'boss',big:true});
   SFX.alarm(3); sfxAt(bossSfx(boss.type),boss); bossMusic=true;
