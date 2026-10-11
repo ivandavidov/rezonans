@@ -52,7 +52,11 @@ defMech('level',{   // куките на самото ниво: край по в
 defMech('foes',{ lights(L){
   for(const e of enemies) if(!e.dead&&FOES[e.type].glow) L.push([e.x+e.w/2,e.y+e.h/2,40,0.6]);
 } });
-function mechSpawn(t,x){ x=clamp(x,3*T,(COLS-3)*T); const tx=Math.floor(x/T); if(!DIMS[t]) return; const fl=!!FOES[t].fly; const e=makeEnemy(t,tx*T+8,fl?groundY(tx)-4*T:groundY(tx)); e.alert=true; e.summoned=true; enemies.push(e); for(let i=0;i<14;i++) part(tx*T+8,(fl?groundY(tx)-4*T:groundY(tx))-12,rnd(-60,60),rnd(-90,10),0.5,'#ff3b4f',2,0); if(AC) SFX.portal&&SFX.portal(0.5); }
+// подкрепление: колоната е суха и с под — иначе най-близката такава до 6 плочки (първо по-далеч от играча); няма — не се появява
+const mechDry=c=>{ if(c<3||c>COLS-3) return false; const gy=groundY(c); return gy<16*T&&!isWater(c*T+8,gy-8); };
+function mechSpawn(t,x){ x=clamp(x,3*T,(COLS-3)*T); const t0=Math.floor(x/T), dir=player&&x<player.x?-1:1; if(!DIMS[t]) return; let tx=-1;
+  for(let d=0;d<=6&&tx<0;d++) for(const c of d?[t0+d*dir,t0-d*dir]:[t0]) if(mechDry(c)){ tx=c; break; }
+  if(tx<0) return; const fl=!!FOES[t].fly; const e=makeEnemy(t,tx*T+8,fl?groundY(tx)-4*T:groundY(tx)); e.alert=true; e.summoned=true; enemies.push(e); for(let i=0;i<14;i++) part(tx*T+8,(fl?groundY(tx)-4*T:groundY(tx))-12,rnd(-60,60),rnd(-90,10),0.5,'#ff3b4f',2,0); if(AC) SFX.portal&&SFX.portal(0.5); }
 function mechAlarm(l){ if(LVL.onAlarm){ LVL.onAlarm(); return; } if(ALARM<=0){ showMsg('ТРЕВОГА! Засякоха те.',2); shake=4; if(MST.alarmN<6){ const p=player; for(const s of [-1,1]){ mechSpawn(LVL.alarmFoe||'soldier',p.x+s*rnd(7,10)*T); MST.alarmN++; } } } ALARM=7; }
 /* ---------- клавиш E: едно действие на кадър ----------
    Решава се в eras.update (преди всички механики, които го ползват). Приоритет: курсор до играча → епохи (в ниво с епохи E е само за тях) → ехо (GAME.echo) → сонар → тон-честота → ракета → тон. */
