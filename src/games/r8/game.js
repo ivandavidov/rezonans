@@ -12,14 +12,14 @@ function r8Logo(){
 function r8Win(){ const e=parseInt(store.get('rz8.ending','0'),10)||0, E=R8_END[e]||R8_END[1], all=memCount()>=memTotal(), t=titleT;
   overlay(0.9); ctx.save(); ctx.strokeStyle=ACCA(0.25); for(let i=0;i<13;i++){ const a=i/13*Math.PI*2+t*0.05; ctx.beginPath(); ctx.moveTo(W/2+Math.cos(a)*60,84+Math.sin(a)*60); ctx.lineTo(W/2+Math.cos(a)*70,84+Math.sin(a)*70); ctx.stroke(); } ctx.restore();
   centerText('ПРЕНАРЕЖДАНЕ',70,'700 30px '+DFONT(),'#fff4e0'); centerText(E.t,96,'600 10px "IBM Plex Mono",monospace',ACC());
-  E.win.concat(e===2?[all?'В джоба ѝ шумоли стара пощенска картичка. Не помни откъде е.':'Камбаната на кулата бие точно един път.']:[]).forEach((l,i)=>centerText(l,128+i*14,'600 8px "IBM Plex Mono",monospace','#e8e0cc'));
-  centerText('„Резонанс 8: Пренареждане“ е преминат на трудност „'+D.name+'“ · картички: '+memCount()+' / '+memTotal(),196,'600 8px "IBM Plex Mono",monospace','#cfd8dc');
-  if(!all) centerText('Събери всичките 20 картички — има и трети край.',210,'600 7px "IBM Plex Mono",monospace',GAME.accent2);
-  if(winT>2&&blink()) centerText('Z — към менюто',236,'600 10px "IBM Plex Mono",monospace','#fff4e0'); }
+  const y=Math.max(196,centerLines(E.win.concat(e===2?[all?'В джоба ѝ шумоли стара пощенска картичка. Не помни откъде е.':'Камбаната на кулата бие точно един път.']:[]),128,'600 8px "IBM Plex Mono",monospace','#e8e0cc')+12);   // пренесените редове бутат долната част надолу
+  centerText('„Резонанс 8: Пренареждане“ е преминат на трудност „'+D.name+'“ · картички: '+memCount()+' / '+memTotal(),y,'600 8px "IBM Plex Mono",monospace','#cfd8dc');
+  const y2=all?y+12:centerLines(['Събери всичките 20 картички — има и трети край.'],y+14,'600 7px "IBM Plex Mono",monospace',GAME.accent2,12);
+  if(winT>2&&blink()) centerText('Z — към менюто',Math.max(236,y2+8),'600 10px "IBM Plex Mono",monospace','#fff4e0'); }
 registerGame({
   id:'r8', order:8, title:'РЕЗОНАНС 8', subtitle:'Пренареждане', name:'РЕЗОНАНС 8', key:'rz8',
   radioWho:'ПЕТЪР', voices:{'ПЕТЪР':'#ffd27a','Д-Р ГАНЧЕВА':'#b48cff','ШЕФЪТ':'#9ad8e8'}, memLabel:'КАРТИЧКА', eraHint:'E — СЕГА / СПОМЕН', eraGhost:true,
-  blurb:'Осмата част — „Резонанс 8: Пренареждане“. Плевен, 2029 г.',
+  blurb:'Осмата част — „Пренареждане“. Плевен, 2029 г. Градът се разпада и сглобява наново.',
   desc:{intro:'Нощен Плевен: часовниковата кула бие тринадесет пъти.', training:'Първият курс на Вела — уроци в постоянно променящия се град.',
         campaign:'Пет глави, 20 епизода — различен маршрут при всяко изиграване.', survival:'Безкрайни сектори из пренаредения Плевен.'},
   controls:'← → движение · Z стрелба · X скок · C клякане · E спомен · P / Esc пауза',

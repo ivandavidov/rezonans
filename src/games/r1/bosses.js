@@ -4,14 +4,14 @@ function makeWarden(){ const a=LVL.arena; return {type:'warden',x:a.bx*T-28,y:-6
 function hurtColossus(d,blast){
   const b=boss; if(!b||b.dead||b.state==='intro') return;
   b.hp-=d*(b.state==='stun'?2:1.15); b.hitT=0.08; blood(b.x+b.w/2+rnd(-12,12),b.y+rnd(10,40),true,blast?14:3);
-  if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; b.state='roar'; b.t=1.4; b.vx=0; sfxAt('roar',b); shake=8; if(DI>0) portalSpawn('crab',LVL.arena.crab*T,15*T,0.4,'boss'); if(DI===2) portalSpawn('crab',(LVL.arena.door+3)*T,15*T,0.7,'boss'); showMsg('Колосът побесня!'); }
+  if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; b.state='roar'; b.t=1.4; b.vx=0; sfxAt('roar',b); shake=8; if(DI>0) portalSpawn('crab',LVL.arena.crab*T,15*T,0.4,'boss'); if(DI===2) portalSpawn('crab',(LVL.arena.door+3)*T,15*T,0.7,'boss'); showMsg('Колосът се разяри!'); }
   if(b.hp<=0) bossDie();
 }
 function hurtWarden(d,blast){
   const b=boss; if(!b||b.dead||b.state==='intro') return;
   b.hp-=d*(b.state==='grounded'?2:1); b.hitT=0.08; blood(b.x+b.w/2+rnd(-14,14),b.y+b.h/2+rnd(-14,14),true,blast?12:2);
-  if(b.phase===1&&b.hp<b.max*0.6){ b.phase=2; sfxAt('warden',b); shake=8; showMsg('Надзирателят се събуди напълно!'); }
-  else if(b.phase===2&&b.hp<b.max*0.25){ b.phase=3; sfxAt('warden',b); shake=10; showMsg('Последни сили — довърши го!'); }
+  if(b.phase===1&&b.hp<b.max*0.6){ b.phase=2; sfxAt('warden',b); shake=8; showMsg('Надзирателят отвори напълно окото си!'); }
+  else if(b.phase===2&&b.hp<b.max*0.25){ b.phase=3; sfxAt('warden',b); shake=10; showMsg('Чудовището отпада — довърши го!'); }
   if(b.hp<=0) bossDie();
 }
 function updColossus(dt){
@@ -77,7 +77,7 @@ function makeHeli(){ const a=LVL.arena; return {type:'heli',x:(a.maxX+3)*T,y:30,
 function hurtHeli(d,blast){
   const b=boss; if(!b||b.dead||b.state==='intro') return;
   b.hp-=blast?d:d*(DI===0?0.6:DI===2?0.2:0.3); b.hitT=0.06; sparks(b.x+b.w/2+rnd(-20,20),b.y+b.h/2+rnd(-6,6),blast?10:2,'#ffd36b');
-  if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Хеликоптерът е повреден — още малко!',2.5); }
+  if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Хеликоптерът пуши тежко — продължавай огъня!',2.5); }
   if(b.hp<=0){ bossDie(); b.vx=-b.face*70; b.vy=-20; }
 }
 function updHeli(dt){
@@ -279,7 +279,7 @@ function hurtExo(d,blast){
   const pcx=player.x+player.w/2, bcx=b.x+b.w/2, front=sgn(pcx-bcx)===b.face;
   if(!blast&&b.shield&&front){ sparks(bcx+b.face*12,b.y+rnd(6,28),3,'#ffd36b'); if(Math.random()<0.3) sfxAt('deflect',b); return; }
   b.hp-=d*(blast||front?1:1.5)*(b.state==='cool'?1.4:1); b.hitT=0.08; sparks(bcx+rnd(-8,8),b.y+rnd(6,28),blast?10:3,'#ffd36b'); if(!blast) blood(bcx,b.y+rnd(8,26),false,2);
-  if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Бронята прегрява, а командирът побесня!',2.5); }
+  if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Сервомоторите прегряват — командирът губи контрол!',2.5); }
   if(b.hp<=0) bossDie();
 }
 function updExo(dt){
@@ -335,7 +335,7 @@ function drawExo(){
 function makeTank(){ const a=LVL.arena; return {type:'tank',mech:true,x:a.bx*T-32,y:15*T-34,w:64,h:34,hp:700*D.bhp,max:700*D.bhp,face:-1,state:'intro',t:2,vx:0,vy:0,hitT:0,phase:1,anim:0,dead:false,deathT:0,boomT:0,contactCd:0,marks:[],tread:0,onTopT:0,flashT:0}; }
 function hurtTank(d,blast){ const b=boss; if(!b||b.dead||b.state==='intro') return;
   b.hp-=blast?d:d*(DI===0?0.55:DI===2?0.2:0.3); b.hitT=0.06; sparks(b.x+b.w/2+rnd(-24,24),b.y+rnd(4,26),blast?10:2,'#ffd36b');
-  if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Танкът е повреден — още малко!',2.5); }
+  if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Бронята на танка поддава — не спирай обстрела!',2.5); }
   if(b.hp<=0) bossDie(); }
 const tankTop=(b,x)=>(x>b.x+20&&x<b.x+44)?b.y:b.y+12;
 function updTank(dt){
@@ -384,7 +384,7 @@ function drawTank(){
 function makeHunter(){ const a=LVL.arena; return {type:'hunter',x:(a.maxX-2)*T,y:-40,w:40,h:20,hp:650*D.bhp,max:650*D.bhp,face:-1,state:'intro',t:2.2,vx:0,vy:0,hitT:0,phase:1,anim:0,dead:false,deathT:0,boomT:0,contactCd:0}; }
 function hurtHunter(d,blast){ const b=boss; if(!b||b.dead||b.state==='intro') return;
   b.hp-=d*(b.state==='rest'?1.6:1); b.hitT=0.08; blood(b.x+b.w/2+rnd(-12,12),b.y+rnd(4,16),true,blast?12:3);
-  if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; sfxAt('screech',b); showMsg('Ловецът побесня!',2); }
+  if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; sfxAt('screech',b); showMsg('Ловецът изпада в бясна ярост!',2); }
   if(b.hp<=0) bossDie(); }
 function updHunter(dt){
   const b=boss,p=player,a=LVL.arena,R_=D.react; b.anim+=dt; b.hitT-=dt; b.contactCd-=dt;
@@ -434,7 +434,7 @@ function hurtQueen(d,blast){ const b=boss; if(!b||b.dead||b.state==='intro') ret
   const open=b.state==='open';
   if(!open&&!blast){ sparks(b.x+rnd(10,50),b.y+rnd(10,50),2,'#bfe8ff'); if(Math.random()<0.2) sfxAt('deflect',b); b.hp-=d*0.15; b.hitT=0.04; }
   else { b.hp-=d*(open?1.3:0.5); b.hitT=0.08; blood(b.x+b.w/2+rnd(-14,14),b.y+rnd(16,48),true,blast?12:4); }
-  if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; sfxAt('roar',b); showMsg('Майката побесня!',2); }
+  if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; sfxAt('roar',b); showMsg('Майката се спуска в отчаяна ярост!',2); }
   if(b.hp<=0) bossDie(); }
 function updQueen(dt){
   const b=boss,p=player,a=LVL.arena,R_=D.react; b.anim+=dt; b.hitT-=dt; b.contactCd-=dt;
@@ -447,7 +447,7 @@ function updQueen(dt){
   switch(b.state){
     case 'intro': b.t-=dt; if(b.t<=0){ b.state='idle'; b.t=1; } break;
     case 'idle': b.t-=dt; if(b.t<=0){
-        if(b.atk>=(fast?3:2)){ b.atk=0; b.state='open'; b.t=DI===0?3.4:DI===2?2.0:2.6; sfxAt('roar',b); showMsg('Черупката се отвори — стреляй!',1.6); break; }
+        if(b.atk>=(fast?3:2)){ b.atk=0; b.state='open'; b.t=DI===0?3.4:DI===2?2.0:2.6; sfxAt('roar',b); showMsg('Черупката се разтвори — стреляй в плътта!',1.6); break; }
         b.atk++; const r=Math.random(), brood=enemies.filter(e=>e.summoned&&!e.dead).length;
         if(r<0.35&&brood<(DI===0?2:DI===2?5:4)){ b.state='lay'; b.t=0.8*R_; }
         else if(r<0.68){ b.state='spitW'; b.t=0.7*R_; }
@@ -494,8 +494,8 @@ function drawQueen(){
 function makeTitan(){ const a=LVL.arena, hp=1600*(DI===0?0.33:D.bhp); return {type:'titan',mech:true,x:a.bx*T-28,y:15*T-80,w:56,h:80,hp,max:hp,face:-1,state:'intro',t:2.6,vx:0,vy:0,hitT:0,phase:1,anim:0,dead:false,deathT:0,boomT:0,contactCd:0,onGround:true,flashT:0,lift:0}; }
 function hurtTitan(d,blast){ const b=boss; if(!b||b.dead||b.state==='intro') return;
   b.hp-=d*(b.phase===3?1.4:1); b.hitT=0.06; sparks(b.x+b.w/2+rnd(-16,16),b.y+rnd(10,50),blast?10:2,'#ffd36b');
-  if(b.phase===1&&b.hp<b.max*0.6){ b.phase=2; shake=8; sfxAt('warden',b); showMsg('„Титан“ минава на пълна бойна мощност!',2.5); }
-  else if(b.phase===2&&b.hp<b.max*0.3){ b.phase=3; shake=10; sfxAt('boom',b); showMsg('Кабината е пробита — стреляй в нея!',2.5); }
+  if(b.phase===1&&b.hp<b.max*0.6){ b.phase=2; shake=8; sfxAt('warden',b); showMsg('„Титан“ превключва на максимална бойна мощ!',2.5); }
+  else if(b.phase===2&&b.hp<b.max*0.3){ b.phase=3; shake=10; sfxAt('boom',b); showMsg('Бронестъклото е разбито — стреляй право в кабината!',2.5); }
   if(b.hp<=0) bossDie(); }
 function updTitan(dt){
   const b=boss,p=player,a=LVL.arena,R_=D.react; b.anim+=dt; b.hitT-=dt; b.contactCd-=dt; b.flashT-=dt;
@@ -516,7 +516,7 @@ function updTitan(dt){
     case 'laserW': b.vx=0; b.t-=dt; if(b.t<=0){ b.state='laser'; b.t=0.45; b.hit=false; sfxAt('zap',b); shake=5; } break;
     case 'laser': b.vx=0; b.t-=dt; if(!b.hit&&!p.dead&&p.y<b.beamY+4&&p.y+p.h>b.beamY-4){ b.hit=true; hurtPlayer(22,b.face*200); } if(b.t<=0){ if(b.phase>=2&&!b.second&&Math.random()<(DI===0?0.3:0.6)){ b.second=true; b.low=!b.low; b.beamY=b.low?15*T-6:15*T-20; b.state='laserW'; b.t=(DI===0?1.0:DI===2?0.55:0.75); sfxAt('charge',b); } else { b.second=false; b.state='walk'; b.t=(b.phase===3?0.9:1.3)*R_; } } break;
     case 'stompW': b.vx=0; b.t-=dt; b.lift=Math.min(8,b.lift+dt*24); if(b.t<=0){ b.lift=0; sfxAt('stomp',b); shake=12; for(const sd of [-1,1]) orbs.push({x:bcx+sd*30,y:15*T-8,vx:sd*150*D.bspd,r:8,life:5}); if(p.onGround&&dist<80){ hurtPlayer(16,sgn(pcx-bcx||1)*260); p.vy=-220; } b.state='walk'; b.t=1.4*R_; } break;
-    case 'call': b.vx=0; b.t-=dt; if(b.t<=0){ for(let i=0;i<(DI===2?2:1);i++){ const e=makeEnemy('soldier',clamp(pcx+(i?-1:1)*rnd(80,130),x0+16,x1-16),4*T+12); e.alert=true; e.summoned=true; e.cd=0.9*D.react; enemies.push(e); bark(e,'Прикриваме ви, полковник!',1.8); } b.state='walk'; b.t=1.2*R_; } break;
+    case 'call': b.vx=0; b.t-=dt; if(b.t<=0){ for(let i=0;i<(DI===2?2:1);i++){ const e=makeEnemy('soldier',clamp(pcx+(i?-1:1)*rnd(80,130),x0+16,x1-16),4*T+12); e.alert=true; e.summoned=true; e.cd=0.9*D.react; enemies.push(e); bark(e,'Прикриваме ви, господин полковник!',1.8); } b.state='walk'; b.t=1.2*R_; } break;
     case 'mgW': b.vx=0; b.t-=dt; if(b.t<=0){ b.state='mg'; b.t=DI===0?1.0:DI===2?1.8:1.4; b.gt=0; } break;
     case 'mg': b.vx=0; b.t-=dt; b.gt-=dt; if(b.gt<=0){ b.gt=DI===0?0.15:0.09; const ox=bcx+b.face*40, oy=b.y+38, ang=Math.atan2(p.y+p.h/2-oy,pcx-ox)+rnd(-0.08,0.08); ebullets.push({x:ox,y:oy,vx:Math.cos(ang)*340*D.bspd,vy:Math.sin(ang)*340*D.bspd,life:1.5,dmg:5}); sfxAt('soldierShot',b); b.flashT=0.05; } if(b.t<=0){ b.state='walk'; b.t=1.2*R_; } break;
   }
@@ -559,12 +559,12 @@ defBosses('make',{colossus:makeColossus,warden:makeWarden,heli:makeHeli,worm:mak
 defBosses('hurt',{colossus:hurtColossus,heli:hurtHeli,warden:hurtWarden,worm:hurtWorm,guardian:hurtGuardian,exo:hurtExo,tank:hurtTank,hunter:hurtHunter,queen:hurtQueen,titan:hurtTitan});
 defBosses('upd',{colossus:updColossus,warden:updWarden,heli:updHeli,worm:updWorm,guardian:updGuardian,exo:updExo,tank:updTank,hunter:updHunter,queen:updQueen,titan:updTitan});
 defBosses('draw',{colossus:drawColossus,warden:drawWarden,heli:drawHeli,worm:drawWorm,guardian:drawGuardian,exo:drawExo,tank:drawTank,hunter:drawHunter,queen:drawQueen,titan:drawTitan});
-defBosses('intro',{worm:'Червеят! Стреляй по него, докато е над киселината. Варелите на брега ще помогнат.',guardian:'Пазителят! Щитът му се захранва от трите пилона. Унищожи ги, после стреляй по него.',colossus:'Колосът! Прескачай зелените вълни и взривявай варелите около него.',warden:'Надзирателят! Стреляй в окото и бягай от сферите.',heli:'Боен хеликоптер! Куршумите почти не му вредят — стреляй с ракетомета.',
-  exo:'Командирът в бойна броня! Щитът спира куршумите отпред — стреляй в гърба му или докато бронята е прегряла.',
-  tank:'Танк! Куршумите не го пробиват — използвай ракети и гранати. Прескачай го и клякай под картечницата.',
-  hunter:'Ловецът! Пунктирът показва височината на атаката: ниско — скачай, високо — клекни.',
-  queen:'Майката на гнездото! Унищожавай яйцата и стреляй, когато черупката ѝ се отвори.',
-  titan:'Полковник Стратев в „Титан“! Стреляй по ракетите му, за да ги сваляш. Пунктирът показва лазера: ниско — скачай, високо — клекни.'});
+defBosses('intro',{worm:'Гигантският червей! Стреляй, докато се подава над киселината. Варелите по мостика нанасят тежки поражения.',guardian:'Пазителят! Енергийният му щит черпи сила от трите пилона. Срини първо тях, за да го уязвиш.',colossus:'Колосът! Прескачай плазмените ударни вълни и взривявай варелите с гориво около него.',warden:'Надзирателят! Концентрирай огъня право в окото и избягвай енергийните сфери.',heli:'Боен хеликоптер! Лекото оръжие рикошира от бронята — използвай ракетомета.',
+  exo:'Командирът в боен екзоскелет! Щитът отбива фронталните изстрели — заобиколи го или изчакай прегряване.',
+  tank:'Танк! Бронята удържа на обикновени куршуми — засипи го с ракети и гранати. Прескачай корпуса и клякай под картечния огън.',
+  hunter:'Ловецът! Червеният маркер издава височината на пикиране: при нисък полет скачай, при висок — клякай.',
+  queen:'Майката на рояка! Стривай яйцата навреме и стреляй в уязвимата плът, щом разтвори черупката.',
+  titan:'Полковник Стратев в щурмовия робот „Титан“! Сваляй ракетите му във въздуха и следи лазерния мерник: ниско — скачай, високо — залегни.'});
 defBosses('name',{warden:'НАДЗИРАТЕЛЯТ',colossus:'КОЛОС',heli:'БОЕН ХЕЛИКОПТЕР',worm:'ЧЕРВЕЯТ',guardian:'ПАЗИТЕЛЯТ',exo:'КОМАНДИРЪТ',tank:'ТАНКЪТ',hunter:'ЛОВЕЦЪТ',queen:'МАЙКАТА',titan:'„ТИТАН“'});
 defBosses('col',{warden:'#c77dff',heli:'#ffb53a',colossus:'#9dff5a',worm:'#a6ff6a',guardian:'#8ad8ff',exo:'#c9c3b4',tank:'#ffb53a',hunter:'#7fd8ff',queen:'#ff6ad5',titan:'#ff5a45'});
 defBosses('sfx',{warden:'warden',heli:'chop',tank:'engine',titan:'warden',exo:'stomp',hunter:'screech'});

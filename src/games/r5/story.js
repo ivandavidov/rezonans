@@ -2,7 +2,7 @@
 let GRADE5=null;
 function r5Finale(){ if(MST.fin) return; MST.fin=1; store.set('rz5.done','1'); flash=1; flashCol='#ffffff'; shake=8;
   if(AC){ for(let i=0;i<4;i++) osc({type:'sine',f:880+i*110,f2:660,t:0.6,v:0.06,when:i*0.35}); osc({type:'sine',f:196,t:3,v:0.08,when:1.4}); }
-  LVL.end=['Иван е буден. Не плаче — гледа към прозореца, към платото.','После поема дъх и проплаква — високо и чисто, като камбана.','Лампите спират да мигат. Под Деветашкото плато нещо огромно замлъква.'];
+  LVL.end=['Малкият Иван е буден. Не плаче — погледът му е прикован към прозореца, към тъмното плато.','Сетне поема дъх с пълни гърди и заплаква — звънко и чисто, като сребърна камбана.','Крушките спират да примигват. Дълбоко под скалния масив колосалното бучене най-сетне замлъква.'];
   MST.endAt=lvT+2.8; }
 function r5DrawCrib(){ const x=Math.round(67*T+7-cam), y=15*T-14; if(x<-40||x>W+40) return; const k=MST.fin?Math.max(0,1-(lvT-(MST.endAt-2.8))/2.5):0.5+0.2*Math.sin(titleT*4.9);
   ctx.save(); ctx.globalCompositeOperation='lighter'; const g=ctx.createRadialGradient(x,y,2,x,y,50); g.addColorStop(0,`rgba(255,240,200,${0.5*k+(MST.fin?0.4:0)})`); g.addColorStop(1,'rgba(63,208,160,0)'); ctx.fillStyle=g; ctx.fillRect(x-50,y-50,100,100);
@@ -13,11 +13,12 @@ function renderWin5(){
   ctx.save(); ctx.globalCompositeOperation='lighter'; for(let i=0;i<3;i++){ const k=((t*0.2+i/3)%1); ctx.strokeStyle=`rgba(63,208,160,${(1-k)*0.3})`; ctx.beginPath(); ctx.arc(W/2,90,20+k*240,0,7); ctx.stroke(); } ctx.restore();
   centerText('ИЗВОР',70,'700 30px '+DFONT(),'#fff4d8');
   centerText('КРАЙ НА ПЕТАТА ЧАСТ',96,'600 10px "IBM Plex Mono",monospace',ACC());
-  ['„Камертон-3“ замлъкна. Деветашката пещера отново е само пещера.','В доклада си Илиева пише: „Мисията е изпълнена. Детето е добре.“','После добавя ред, който никой няма да прочете повече от четирийсет години: „Детето чува тона.“']
-    .forEach((l,i)=>centerText(l,128+i*14,'600 8px "IBM Plex Mono",monospace','#e8e0cc'));
-  centerText('„Резонанс 5: Извор“ е преминат на трудност „'+D.name+'“ · страници: '+memCount()+' / '+memTotal(),184,'600 8px "IBM Plex Mono",monospace','#cfd8dc');
-  centerText(all?'Последната страница: „Иване, ако някога прочетеш това — ние не бягахме. Ние те пазехме.“':'Събери всички страници от дневника — последната пази още една тайна.',204,'600 7px "IBM Plex Mono",monospace','#ffcf6a');
-  if(winT>2&&blink()) centerText('Z — към менюто',236,'600 10px "IBM Plex Mono",monospace','#fff4d8');
+  const y=Math.max(184,centerLines(['Комплексът „Камертон-3“ замлъкна завинаги. Деветашката пещера отново е просто пещера.',
+   'В строго секретния си доклад Илиева отбелязва лаконично: „Задачата е изпълнена. Детето е живо и здраво.“',
+   'Сетне с трепереща ръка дописва ред, който никой няма да види цели четири десетилетия: „Момчето чува резонанса.“'],128,'600 8px "IBM Plex Mono",monospace','#e8e0cc')+14);
+  centerText('„Резонанс 5: Извор“ е преминат на трудност „'+D.name+'“ · страници: '+memCount()+' / '+memTotal(),y,'600 8px "IBM Plex Mono",monospace','#cfd8dc');
+  const y2=centerLines([all?'Последната страница от дневника: „Иване, ако някой ден четеш тези редове — ние никога не сме бягали. Просто те пазехме от тях.“':'Открий всички страници от дневника — финалната крие още една съкровена тайна.'],y+20,'600 7px "IBM Plex Mono",monospace','#ffcf6a',12);
+  if(winT>2&&blink()) centerText('Z — към менюто',Math.max(236,y2+8),'600 10px "IBM Plex Mono",monospace','#fff4d8');
 }
 function r5PostFx(){
   if(!GRADE5){ GRADE5=[0,1,2].map(()=>{ const c=document.createElement('canvas'); c.width=W; c.height=H; const g=c.getContext('2d');

@@ -11,7 +11,7 @@ python3 src/build.py
 До него сборката записва иконите за начален екран (`apple-touch-icon.png` за iPhone, `icon-*.png` за Android —
 рисуват се от `src/icon.py`) и `manifest.webmanifest` (Android: инсталиране като приложение).
 За проба с част от игрите: `python3 src/build.py r1 r3 --out /tmp/proba.html`.
-По подразбиране (`games/series.json`) се публикува само `r1`; всички части: `python3 src/build.py r1 r2 r3 r4 r5 r6 r7 r8`.
+По подразбиране (`games/series.json`) се сглобяват и публикуват всички части `r1` … `r8`.
 
 ## Mac / Windows приложения и офлайн сборка
 ```

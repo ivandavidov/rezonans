@@ -107,7 +107,7 @@ defFoe('imp',{upd:(e,dt)=>{
   const dx=tx-(e.x+e.w/2); e.face=sgn(dx)||e.face;
   if(e.onGround){ e.vx=Math.abs(dx)>6?sgn(dx)*72*D.bspd:0; if(e.vx&&wallAhead(e,e.face)) e.vy=-300; }
   physics(e,dt);
-  if(tg&&ov(e,tg)){ tg.hp-=dt*D.burn; tg.hitT=0.1; if(Math.random()<dt*6) sparks(tg.x+14,tg.y+8,2,'#bfe8ff'); if(tg.hp<=0){ tg.hp=0; sfxAt('boom',tg); explode(tg.x+14,tg.y+10,40,0,0,true); showMsg('Генератор е унищожен!',2); } }
+  if(tg&&ov(e,tg)){ tg.hp-=dt*D.burn; tg.hitT=0.1; if(Math.random()<dt*6) sparks(tg.x+14,tg.y+8,2,'#bfe8ff'); if(tg.hp<=0){ tg.hp=0; sfxAt('boom',tg); explode(tg.x+14,tg.y+10,40,0,0,true); showMsg('Генераторът беше унищожен!',2); } }
   if(!p.dead&&ov(e,p)&&e.bite<=0){ hurtPlayer(8,e.face*90); e.bite=0.8; }
 }});
 defFoe('imp',{draw:e=>{ begin(e); tint=e.hitT>0?'#fff':null; const s=Math.sin(e.anim)>0?1:0;

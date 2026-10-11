@@ -24,11 +24,11 @@ function renderWin7(){
   ctx.fillStyle='rgba(138,255,154,0.05)'; for(let y=0;y<H;y+=3) ctx.fillRect(0,y,W,1);
   centerText('ПРАВЕЦ',70,'700 30px '+DFONT(),'#8aff9a');
   centerText('КРАЙ НА СЕДМАТА ЧАСТ',96,'600 10px "IBM Plex Mono",monospace','#ffd84a');
-  ['В сервизния дневник Пешо вписва: „Повреда: зловреден код. Отстранена. Причина: необяснима.“','В клуба децата още се чудят защо един от компютрите ги поздравява сутрин с „Добро утро“.','А върху дискетата с надпис „НЕ ПУСКАЙ“ с червен флумастер е дописано: „ПУСКАЙ СМЕЛО — М.“']
-    .forEach((l,i)=>centerText(l,128+i*14,'600 8px "IBM Plex Mono",monospace','#d8f0d8'));
-  centerText('„Резонанс 7: Правец“ е преминат на трудност „'+D.name+'“ · редове: '+memCount()+' / '+memTotal(),184,'600 8px "IBM Plex Mono",monospace','#cfd8dc');
-  centerText(all?'Програмата е пълна. Последният ред: 200 END : REM КРАЙ? НЕ. САМО НАЧАЛО.':'Събери всички редове — програмата на Мира още не е пълна.',204,'600 7px "IBM Plex Mono",monospace','#8aff9a');
-  if(winT>2&&blink()) centerText('Z — към менюто',236,'600 10px "IBM Plex Mono",monospace','#ffffff');
+  const y=Math.max(184,centerLines(['В сервизния дневник Пешо вписва: „Повреда: зловреден код. Отстранена. Причина: необяснима.“','В клуба децата още се чудят защо един от компютрите ги поздравява сутрин с „Добро утро“.','А върху дискетата с надпис „НЕ ПУСКАЙ“ с червен флумастер е дописано: „ПУСКАЙ СМЕЛО — М.“'],
+    128,'600 8px "IBM Plex Mono",monospace','#d8f0d8')+14);   // пренесените редове бутат долната част надолу
+  centerText('„Резонанс 7: Правец“ е преминат на трудност „'+D.name+'“ · редове: '+memCount()+' / '+memTotal(),y,'600 8px "IBM Plex Mono",monospace','#cfd8dc');
+  const y2=centerLines([all?'Програмата е пълна. Последният ред: 200 END : REM КРАЙ? НЕ. САМО НАЧАЛО.':'Събери всички редове — програмата на Мира още не е пълна.'],y+20,'600 7px "IBM Plex Mono",monospace','#8aff9a',12);
+  if(winT>2&&blink()) centerText('Z — към менюто',Math.max(236,y2+8),'600 10px "IBM Plex Mono",monospace','#ffffff');
 }
 function r7PostFx(fxo){
   if(!CRT7){ CRT7=[0,1].map(k=>{ const c=document.createElement('canvas'); c.width=W; c.height=H; const g=c.getContext('2d');

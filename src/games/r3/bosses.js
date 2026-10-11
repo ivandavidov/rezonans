@@ -1,10 +1,10 @@
 /* ================= РЕЗОНАНС 3 · БОСОВЕ ================= */
 defBosses('intro',{
-  wolf:'Вълкът! Брониран е отвсякъде. Накарай го да се блъсне в стената — тогава ядрото му е открито.',
-  beacon:'Прожекторът! Унищожи трите захранващи възела. Когато лъчът те търси, се крий зад бетона.',
-  mirror:'Ехото! То повтаря движенията ти със закъснение. Не стой на едно място.',
-  stalker:'Ловецът! Вижда само звука. Стреляй и се мести — когато не те намери, е уязвим.',
-  fork:'Камертонът! Удряй кристалите на зъбите. Прескачай вълните по пода.'});
+  wolf:'Тежкобронираният „Вълк“! Челната му броня е непробиваема — подмами го да се забие в стената и стреляй в оголеното ядро!',
+  beacon:'Охранителният прожектор! Прекъсни захранващите възли на щита и се крий зад бетона, щом лъчът тръгне към теб!',
+  mirror:'Квантовото ехо! Повтаря движенията ти със закъснение — не стой на едно място и го изненадай с маневра!',
+  stalker:'Ловецът на честоти! Сляп е и се ориентира единствено по звука. Стреляй и бързо сменяй позицията си — щом изгуби следата, бронята му пада!',
+  fork:'Резонансният камертон! Унищожи синхронизиращите кристали на вилицата. Прескачай ударните вълни по пода!'});
 defBosses('name',{wolf:'ВЪЛКЪТ',beacon:'ПРОЖЕКТОРЪТ',mirror:'ЕХОТО',stalker:'ЛОВЕЦЪТ НА ЧЕСТОТИ',fork:'КАМЕРТОНЪТ'});
 defBosses('col',{wolf:'#ffb04a',beacon:'#fff0b0',mirror:'#ff3b4f',stalker:'#c86aff',fork:'#ffffff'});
 defBosses('norm',{wolf:1,beacon:1,mirror:1,stalker:1,fork:0.85});
@@ -13,8 +13,8 @@ const bHitFx=(b,col)=>{ b.hitT=0.08; sparks(b.x+b.w/2+rnd(-10,10),b.y+b.h/2+rnd(
 /* ---------- 1. ВЪЛКЪТ ---------- */
 defBoss('wolf',{make:()=>({type:'wolf',x:AX()+20*T,y:15*T-34,w:58,h:34,hp:900*D.bhp,max:900*D.bhp,state:'intro',t:2,face:-1,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,vol:0,hintT:0})});
 defBoss('wolf',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
-  if(b.state==='stun'){ b.hp-=d*1.25; bHitFx(b,'#ffb04a'); } else { b.hp-=d*0.12; sparks(b.x+b.w/2+rnd(-14,14),b.y+rnd(4,20),2,'#c8c8c8'); b.hintT-=1; if(b.hintT<=0){ b.hintT=30; showMsg('Бронята е твърде дебела. Накарай го да се блъсне в стената!',1.8); } }
-  if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Вълкът превключва на пълна мощност!',2); shake=8; }
+  if(b.state==='stun'){ b.hp-=d*1.25; bHitFx(b,'#ffb04a'); } else { b.hp-=d*0.12; sparks(b.x+b.w/2+rnd(-14,14),b.y+rnd(4,20),2,'#c8c8c8'); b.hintT-=1; if(b.hintT<=0){ b.hintT=30; showMsg('Челната броня не поддава! Подмами го да се блъсне в стената!',1.8); } }
+  if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('„Вълкът“ форсира двигателите на пределна мощност!',2); shake=8; }
   if(b.hp<=0) bossDie(); }});
 defBoss('wolf',{upd:dt=>{
   const b=boss, p=player; b.anim+=dt; b.hitT-=dt;
@@ -41,8 +41,8 @@ defBoss('wolf',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; const 
 defBoss('beacon',{make:()=>{ const ax=AX(); const nodes=[]; for(const [tx,row] of [[33,12],[37,9],[44,9]]){ const e=makeEnemy('node',(tx)*T+8,(row+1)*T); e.summoned=true; e.tag='bnode'; enemies.push(e); nodes.push(e); }
   return {type:'beacon',x:ax+25*T,y:3*T,w:3*T,h:12*T,hp:1000*D.bhp,max:1000*D.bhp,state:'intro',t:2,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,ang:2.3,seen:0,fireT:0,spawnT:9,hintT:0}; }});
 defBoss('beacon',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return; const alive=enemies.some(e=>e.tag==='bnode'&&!e.dead);
-  if(alive){ sparks(b.x+b.w/2+rnd(-8,8),b.y+20+rnd(-8,8),3,'#9fd8ff'); b.hintT-=1; if(b.hintT<=0){ b.hintT=30; showMsg('Щитът е активен — първо унищожи възлите!',1.8); } return; }
-  b.hp-=d; bHitFx(b,'#fff0b0'); if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Кулата насочва и втория прожектор!',2); shake=8; } if(b.hp<=0) bossDie(); }});
+  if(alive){ sparks(b.x+b.w/2+rnd(-8,8),b.y+20+rnd(-8,8),3,'#9fd8ff'); b.hintT-=1; if(b.hintT<=0){ b.hintT=30; showMsg('Енергийният щит е активен — първо свали трите генератора!',1.8); } return; }
+  b.hp-=d; bHitFx(b,'#fff0b0'); if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Кулата активира и втория насочен прожектор!',2); shake=8; } if(b.hp<=0) bossDie(); }});
 defBoss('beacon',{upd:dt=>{
   const b=boss, p=player; b.anim+=dt; b.hitT-=dt;
   if(b.dead){ bossDeathFx(b,dt); return; }
@@ -71,7 +71,7 @@ defFoe('node',{draw:e=>{ if(e.dead&&e.deadT>0.6) return; begin(e,false); tint=e.
 defBoss('mirror',{make:()=>{ MST.hist=[]; return {type:'mirror',x:AX()+22*T,y:15*T-26,w:12,h:26,hp:700*D.bhp,max:700*D.bhp,state:'intro',t:2,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,fireT:1.4,fakes:[],face:-1}; }});
 defBoss('mirror',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return; b.hp-=d; bHitFx(b,'#ff3b4f');
   if(b.phase===1&&b.hp<b.max*0.66){ b.phase=2; b.fakes=[1.0]; showMsg('Ехото се раздвоява!',1.8); shake=6; }
-  else if(b.phase===2&&b.hp<b.max*0.33){ b.phase=3; b.fakes=[0.7,2.2]; showMsg('Колко са?!',1.5); shake=6; }
+  else if(b.phase===2&&b.hp<b.max*0.33){ b.phase=3; b.fakes=[0.7,2.2]; showMsg('Пространството се разпада — проекциите са навсякъде!',1.5); shake=6; }
   if(b.hp<=0) bossDie(); }});
 defBoss('mirror',{upd:dt=>{
   const b=boss, p=player; b.anim+=dt; b.hitT-=dt; const H_=MST.hist||(MST.hist=[]);
@@ -93,8 +93,8 @@ defBoss('mirror',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; cons
 /* ---------- 4. ЛОВЕЦЪТ НА ЧЕСТОТИ ---------- */
 defBoss('stalker',{make:()=>({type:'stalker',x:AX()+18*T,y:15*T-40,w:64,h:40,hp:800*D.bhp,max:800*D.bhp,state:'intro',t:2,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,face:-1,tx:0,lastT:-1,confT:0,hintT:0})});
 defBoss('stalker',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
-  if(b.state==='confused'){ b.hp-=d*1.3; bHitFx(b,'#c86aff'); } else { b.hp-=d*0.1; sparks(b.x+b.w/2+rnd(-14,14),b.y+rnd(6,30),2,'#7a5a8a'); b.hintT-=1; if(b.hintT<=0){ b.hintT=30; showMsg('Козината му спира куршумите. Удряй, когато е объркан!',1.8); } }
-  if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Ловецът чува и стъпките ти!',2); shake=8; } if(b.hp<=0) bossDie(); }});
+  if(b.state==='confused'){ b.hp-=d*1.3; bHitFx(b,'#c86aff'); } else { b.hp-=d*0.1; sparks(b.x+b.w/2+rnd(-14,14),b.y+rnd(6,30),2,'#7a5a8a'); b.hintT-=1; if(b.hintT<=0){ b.hintT=30; showMsg('Плътната броня отбива изстрелите! Атакувай само докато е дезориентиран!',1.8); } }
+  if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Хищникът изостря слуха си — вече улавя и най-леките ти стъпки!',2); shake=8; } if(b.hp<=0) bossDie(); }});
 defBoss('stalker',{upd:dt=>{
   const b=boss, p=player; b.anim+=dt; b.hitT-=dt;
   if(b.dead){ bossDeathFx(b,dt); return; }
@@ -105,7 +105,7 @@ defBoss('stalker',{upd:dt=>{
   if(fresh&&b.state!=='confused'&&b.state!=='hunt'){ b.lastT=N.t; b.state='hunt'; b.tx=N.x; sfxAt('roar',b); }
   if(b.state==='wander'){ b.t-=dt; if(b.t<=0){ b.t=rnd(1.5,3); b.face=Math.random()<0.5?-1:1; } b.x=clamp(b.x+b.face*40*dt,minX,maxX); if(b.x<=minX||b.x>=maxX) b.face=-b.face; }
   else if(b.state==='hunt'){ const dx=b.tx-bcx; b.face=sgn(dx)||b.face; const sp=(b.phase>1?340:290)*D.bspd; b.x=clamp(b.x+sgn(dx)*Math.min(Math.abs(dx),sp*dt),minX,maxX);
-    if(Math.abs(b.tx-(b.x+b.w/2))<8||b.x<=minX||b.x>=maxX){ if(!p.dead&&Math.abs(pcx-(b.x+b.w/2))<44&&p.y+p.h>b.y-10){ b.state='wander'; b.t=0.6; } else { b.state='confused'; b.t=b.phase>1?2.2:2.8; b.confT=lvT; showMsg('Ловецът е объркан!',1); } } }
+    if(Math.abs(b.tx-(b.x+b.w/2))<8||b.x<=minX||b.x>=maxX){ if(!p.dead&&Math.abs(pcx-(b.x+b.w/2))<44&&p.y+p.h>b.y-10){ b.state='wander'; b.t=0.6; } else { b.state='confused'; b.t=b.phase>1?2.2:2.8; b.confT=lvT; showMsg('Ловецът изгуби следата!',1); } } }
   else if(b.state==='confused'){ b.t-=dt; if(b.t<=0){ b.state='wander'; b.t=0.5; const M=NOISE[NOISE.length-1]; if(M&&M.t>b.confT){ b.state='hunt'; b.tx=M.x; b.lastT=M.t; } } }
   if(!p.dead&&ov(b,p)&&b.state!=='confused'){ b.bite=(b.bite||0)-dt; if(b.bite<=0){ b.bite=1; hurtPlayer(b.state==='hunt'?28:12,sgn(pcx-bcx||1)*280); p.vy=-220; } }
 }});
@@ -132,8 +132,8 @@ defBoss('fork',{upd:dt=>{
   if(!b.prox){ b.prox=b.crys.map((c,i)=>{ const e=makeEnemy('crys',c.x,6*T); e.summoned=true; e.tag='fcrys'; e.hp=c.hp; e.ci=i; enemies.push(e); return e; }); }
   const alive=b.prox.filter(e=>!e.dead); const cryHp=alive.reduce((s,e)=>s+Math.max(0,e.hp),0);
   if(b.phase<3){ b.hp=Math.max(b.max*0.34,b.max*0.34+cryHp/(1000*D.bhp)*b.max*0.66); }
-  if(b.phase===1&&alive.length<2){ b.phase=2; showMsg('Камертонът ускорява ритъма!',2); shake=8; }
-  if(b.phase<3&&!alive.length){ b.phase=3; b.hp=b.max*0.34; showMsg('Ядрото е открито! Стреляй в сърцевината!',2.4); shake=12; flash=0.6; flashCol='#ffffff'; }
+  if(b.phase===1&&alive.length<2){ b.phase=2; showMsg('Камертонът форсира честотата на трептене!',2); shake=8; }
+  if(b.phase<3&&!alive.length){ b.phase=3; b.hp=b.max*0.34; showMsg('Защитният контур рухна! Стреляй право в оголеното ядро!',2.4); shake=12; flash=0.6; flashCol='#ffffff'; }
   const fast=b.phase===1?1:b.phase===2?1.35:1.6;
   b.waveT-=dt*fast; if(b.waveT<=0){ b.waveT=2.6; for(const s of [-1,1]) b.waves.push({x:b.cx,dir:s,life:3}); sfxAt('stomp',{x:b.cx,y:15*T,w:0}); shake=4; }
   for(const w of b.waves){ w.x+=w.dir*170*fast*D.bspd*dt; w.life-=dt; if(!p.dead&&Math.abs(p.x+p.w/2-w.x)<8&&p.y+p.h>15*T-14&&!w.hit){ w.hit=true; hurtPlayer(14,w.dir*200); p.vy=-200; } }

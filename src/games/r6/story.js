@@ -26,11 +26,11 @@ function renderWin6(){
   ctx.save(); ctx.globalCompositeOperation='lighter'; for(let i=0;i<4;i++){ const k=((t*0.18+i/4)%1); ctx.strokeStyle=`rgba(${['232,194,90','255,180,200','138,180,255','180,255,200'][i]},${(1-k)*0.3})`; ctx.beginPath(); ctx.arc(W/2,90,20+k*240,0,7); ctx.stroke(); } ctx.restore();
   centerText('АКОРД',70,'700 30px '+DFONT(),'#fff4d8');
   centerText('КРАЙ НА ШЕСТАТА ЧАСТ',96,'600 10px "IBM Plex Mono",monospace',ACC());
-  ['Наблюдателите се оттеглиха. Корабът под Белинташ отново притихна като обикновена скала.','Румяна и Деян чакат в колата в подножието. За първи път от четирийсет години насам не крият нищо.','Тази нощ спиш дълбоко, без кошмари. Само на сутринта Александър си тананика — тихо, чисто и в тон.']
-    .forEach((l,i)=>centerText(l,128+i*14,'600 8px "IBM Plex Mono",monospace','#efe6d0'));
-  centerText('„Резонанс 6: Акорд“ е преминат на трудност „'+D.name+'“ · ноти: '+memCount()+' / '+memTotal(),184,'600 8px "IBM Plex Mono",monospace','#cfd8dc');
-  centerText(all?'Последната нота от Марина: „Бях изпратена да те пазя. Останах, защото те обикнах.“':'Събери всички ноти — последната крие още една тайна.',204,'600 7px "IBM Plex Mono",monospace','#e8c25a');
-  if(winT>2&&blink()) centerText('Z — към менюто',236,'600 10px "IBM Plex Mono",monospace','#fff4d8');
+  const y=Math.max(184,centerLines(['Наблюдателите се оттеглиха. Корабът под Белинташ отново притихна като обикновена скала.','Румяна и Деян чакат в колата в подножието. За първи път от четирийсет години насам не крият нищо.','Тази нощ спиш дълбоко, без кошмари. Само на сутринта Александър си тананика — тихо, чисто и в тон.'],
+    128,'600 8px "IBM Plex Mono",monospace','#efe6d0')+14);   // пренесените редове бутат долната част надолу
+  centerText('„Резонанс 6: Акорд“ е преминат на трудност „'+D.name+'“ · ноти: '+memCount()+' / '+memTotal(),y,'600 8px "IBM Plex Mono",monospace','#cfd8dc');
+  const y2=centerLines([all?'Последната нота от Марина: „Бях изпратена да те пазя. Останах, защото те обикнах.“':'Събери всички ноти — последната крие още една тайна.'],y+20,'600 7px "IBM Plex Mono",monospace','#e8c25a',12);
+  if(winT>2&&blink()) centerText('Z — към менюто',Math.max(236,y2+8),'600 10px "IBM Plex Mono",monospace','#fff4d8');
 }
 function r6PostFx(){
   if(!GRADE6){ GRADE6=[0,1,2].map(()=>{ const c=document.createElement('canvas'); c.width=W; c.height=H; const g=c.getContext('2d');

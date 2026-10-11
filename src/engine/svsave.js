@@ -19,7 +19,7 @@ function svApply(o){
 function svClear(i=DI){ for(const k of [KEY('best')+i,KEY('bestK')+i,svKey(i)]) store.del(k); svClrT=titleT; }
 function svItems(){
   if(svConf) return [{t:'НЕ, ЗАПАЗИ ГИ',k:'no'},{t:'ДА, ИЗЧИСТИ',k:'yes'}];
-  const o=svLoad(); return (o?[{t:'ПРОДЪЛЖИ · СЕКТОР '+(o.k+1),k:'cont'}]:[]).concat([{t:'НОВО НАЧАЛО',k:'new'},{t:'ИЗЧИСТИ ПРОГРЕСА',k:'clr'}]);
+  const o=svLoad(); return (o?[{t:'ПРОДЪЛЖИ · СЕКТОР '+(o.k+1),k:'cont'}]:[]).concat([{t:'НОВО НАЧАЛО',k:'new'},{t:'ИЗЧИСТИ НАПРЕДЪКА',k:'clr'}]);
 }
 /* след избор на трудност: без запис и рекорд — направо в сектор 1 */
 function svEnter(){ if(!svLoad()&&!survBest()) return startSurv(chtSector(),false); state='svmenu'; svSel=0; svConf=false; }
@@ -40,7 +40,7 @@ function renderSvMenu(){
   menuList(it,svSel,100,24);
   const k=it[svSel].k, y=100+it.length*24+12;
   const d=svConf?['Рекордът и запазеният напредък на трудност „'+D.name+'“ ще бъдат изтрити.','Това не може да се отмени.']
-    :k==='cont'?['Продължаваш от началото на сектор '+(o.k+1)+' с '+o.score+' точки и екипировката от тогава.','Животи: '+'♥'.repeat(D.lives)+' (пълни)']
+    :k==='cont'?['Продължаваш от началото на сектор '+(o.k+1)+' с '+o.score+' точки и тогавашната екипировка.','Животи: '+'♥'.repeat(D.lives)+' (пълни)']
     :k==='new'?['Започваш от сектор 1 с нови сектори.','Запазеният напредък остава, докато не стигнеш по-далеч.']
     :['Изтрива рекорда и запазения напредък на тази трудност.','Следващото оцеляване започва начисто.'];
   centerText(d[0],y,f,'#cfd8dc'); centerText(d[1],y+13,f,'#cfd8dc');
@@ -49,6 +49,6 @@ function renderSvMenu(){
 }
 /* ред под екрана за трудност */
 function svDiffNote(i){
-  if(titleT-svClrT<2.5&&i===DI) return centerText('Прогресът е изчистен.',227,'600 8px "IBM Plex Mono",monospace',ACC());
+  if(titleT-svClrT<2.5&&i===DI) return centerText('Напредъкът беше изчистен.',227,'600 8px "IBM Plex Mono",monospace',ACC());
   const o=svLoad(i); if(o) centerText('Запазен напредък: сектор '+(o.k+1)+' · '+o.score+' точки',227,'600 8px "IBM Plex Mono",monospace','#cfd8dc');
 }

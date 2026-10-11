@@ -1,10 +1,10 @@
 /* ================= РЕЗОНАНС 4 · БОСОВЕ ================= */
 defBosses('intro',{
-  puppeteer:'Кукловодът! Докато куклите са на сцената, той е недостижим. Свали ги — тогава ще слезе.',
-  canvas:'Платното! Затвори разкъсванията — тогава окото му ще се отвори. Спреш ли, спира и времето.',
-  legion:'Стражът! Щитът спира всичко отпред. Удряй в гръб или когато вдигне копието.',
-  silent:'Безмълвният! Движи се само когато ти се движиш. Сонарът ще ти го покаже — и ще те издаде.',
-  conductor:'Диригентът! Удряй всеки тон в неговия цвят. Нотите в твоя тон минават през теб.'});
+  puppeteer:'Кукловодът! Докато марионетките са на сцената, той е недостижим. Свали ги — чак тогава ще слезе.',
+  canvas:'Живото платно! Заший разкъсванията на реалността — само тогава окото му ще се разтвори. Спреш ли, времето замръзва.',
+  legion:'Стражът на Сторгозия! Щитът му отбива всяка атака отпред. Търси гърба му или дебни мига, в който вдига копието.',
+  silent:'Безмълвният! Не вижда нищо, но усеща всяка вибрация. Сонарът ще ти го освети — но звукът ще го настърви право към теб.',
+  conductor:'Диригентът! Удряй всяка резонансна нота в съответния ѝ спектър. Вълните, настроени на твоя тон, минават безопасно през теб.'});
 defBosses('name',{puppeteer:'КУКЛОВОДЪТ',canvas:'ПЛАТНОТО',legion:'СТРАЖЪТ НА СТОРГОЗИЯ',silent:'БЕЗМЪЛВНИЯТ',conductor:'ДИРИГЕНТЪТ'});
 defBosses('col',{puppeteer:'#e0a050',canvas:'#e8d8b0',legion:'#c8b890',silent:'#8adcff',conductor:'#b48cff'});
 defBosses('norm',{puppeteer:1,canvas:1,legion:1,silent:1,conductor:0.8});
@@ -16,8 +16,8 @@ function summ4(type,tx,row,tag,o={}){ const e=makeEnemy(type,tx*T+8,(row+1)*T); 
 /* ---------- 1. КУКЛОВОДЪТ ---------- */
 defBoss('puppeteer',{make:()=>({type:'puppeteer',x:AX()+13*T,y:2.4*T,w:44,h:30,hp:1000*D.bhp,max:1000*D.bhp,state:'intro',t:2,dir:1,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,dropT:3,wave:0,mech:true})});
 defBoss('puppeteer',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
-  if(b.state!=='low'){ sparks(b.x+b.w/2+rnd(-12,12),b.y+b.h,3,'#e8d8b0'); hint4(b,'Конците го пазят. Първо свали куклите!'); return; }
-  b.hp-=d; bHit4(b,'#e0a050'); if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Кукловодът дърпа всички конци наведнъж!',2); shake=6; } if(b.hp<=0) bossDie(); }});
+  if(b.state!=='low'){ sparks(b.x+b.w/2+rnd(-12,12),b.y+b.h,3,'#e8d8b0'); hint4(b,'Конците го държат високо. Първо очисти марионетките!'); return; }
+  b.hp-=d; bHit4(b,'#e0a050'); if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Кукловодът дръпна рязко всички конци наведнъж!',2); shake=6; } if(b.hp<=0) bossDie(); }});
 defBoss('puppeteer',{upd:dt=>{
   const b=boss, p=player; b.anim+=dt; b.hitT-=dt;
   if(b.dead){ b.y=Math.min(b.y+60*dt,12*T); bossDeathFx(b,dt); return; }
@@ -27,7 +27,7 @@ defBoss('puppeteer',{upd:dt=>{
   else if(b.state==='puppets'){ b.x+=b.dir*(b.phase>1?70:50)*dt; if(b.x<minX){ b.x=minX; b.dir=1; } if(b.x>maxX){ b.x=maxX; b.dir=-1; }
     b.dropT-=dt; if(b.dropT<=0){ b.dropT=b.phase>1?1.7:2.5; const tx=clamp(p.x+p.w/2+rnd(-20,20),AX()+2*T,AX()+28*T); b.mark={x:tx,t:0.8}; }
     if(b.mark){ b.mark.t-=dt; if(b.mark.t<=0){ bossOrb(b.mark.x,2*T,0,40,{grav:true,dmg:16,r:7}); sfxAt('throwG',b); b.mark=null; } }
-    if(!mySumm('pp').length){ b.state='lower'; b.t=0; showMsg('Конците отслабнаха — Кукловодът слиза!',1.6); } }
+    if(!mySumm('pp').length){ b.state='lower'; b.t=0; showMsg('Конците се скъсаха — Кукловодът слиза на сцената!',1.6); } }
   else if(b.state==='lower'){ b.y=Math.min(b.y+140*dt,9.6*T); if(b.y>=9.6*T){ b.state='low'; b.t=b.phase>1?3.2:4; } }
   else if(b.state==='low'){ b.t-=dt; if(Math.random()<dt*2) part(b.x+rnd(b.w),b.y+rnd(b.h),rnd(-20,20),rnd(-40,0),0.5,'#c8a070',1.5,200); if(b.t<=0) b.state='raise'; }
   else if(b.state==='raise'){ b.y=Math.max(b.y-120*dt,2.4*T); if(b.y<=2.4*T){ b.state='spawn'; } }
@@ -51,8 +51,8 @@ defFoe('rip',{draw:e=>{ if(e.dead&&e.deadT>0.5) return; const x=Math.round(e.x+e
   ctx.fillStyle=e.hitT>0?'#ffffff':'#2a1a30'; ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x+4,y+8); ctx.lineTo(x+2,y+14); ctx.lineTo(x+5,y+22); ctx.lineTo(x-1,y+16); ctx.lineTo(x-4,y+8); ctx.closePath(); ctx.fill(); }});
 defBoss('canvas',{make:()=>{ for(const [tx,row] of [[31,11],[40,8],[49,11]]) summ4('rip',tx,row,'rip'); return {type:'canvas',x:AX()+11*T,y:1.2*T,w:7*T,h:4*T,hp:1100*D.bhp,max:1100*D.bhp,state:'intro',t:2,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,fireT:2.5,spawnT:6,open:0}; }});
 defBoss('canvas',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
-  if(b.state!=='open'){ sparks(b.x+b.w/2+rnd(-20,20),b.y+b.h/2,3,'#e8d8b0'); hint4(b,'Окото е затворено. Затвори разкъсванията!'); return; }
-  b.hp-=d; bHit4(b,'#fff0d0'); if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Платното се разкъсва още по-силно!',2); shake=6; } if(b.hp<=0) bossDie(); }});
+  if(b.state!=='open'){ sparks(b.x+b.w/2+rnd(-20,20),b.y+b.h/2,3,'#e8d8b0'); hint4(b,'Окото е плътно затворено. Трябва да зашиеш процепите!'); return; }
+  b.hp-=d; bHit4(b,'#fff0d0'); if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Платното се дере още по-яростно!',2); shake=6; } if(b.hp<=0) bossDie(); }});
 defBoss('canvas',{upd:dt=>{
   const b=boss, p=player; b.anim+=dt; b.hitT-=dt;
   if(b.dead){ bossDeathFx(b,dt); return; }
@@ -60,7 +60,7 @@ defBoss('canvas',{upd:dt=>{
   b.fireT-=dt; if(b.fireT<=0){ b.fireT=b.phase>1?1.8:2.6; const side=Math.random()<0.5, hx=side?AX()+1.5*T:AX()+28*T, hy=11*T, tt=1.4, tx=p.x+p.w/2+rnd(-24,24);
     bossOrb(hx,hy,(tx-hx)/tt,(p.y+p.h-6-hy)/tt-0.5*G*tt,{grav:true,dmg:14,r:6,life:5}); sfxAt('boom',{x:hx,y:hy,w:0}); for(let i=0;i<12;i++) part(hx,hy,rnd(-40,40),rnd(-60,0),0.8,'rgba(240,232,214,0.8)',3,-20); }
   b.spawnT-=dt; if(b.spawnT<=0){ b.spawnT=b.phase>1?7:10; if(enemies.filter(e=>!e.dead&&e.type==='shade').length<(b.phase>1?3:2)) mechSpawn('shade',AX()+rnd(4,24)*T); }
-  if(b.state==='fight'&&!mySumm('rip').length){ b.state='open'; b.t=b.phase>1?5:6.5; b.open=0; showMsg('Окото на платното е отворено!',1.6); }
+  if(b.state==='fight'&&!mySumm('rip').length){ b.state='open'; b.t=b.phase>1?5:6.5; b.open=0; showMsg('Процепите се затвориха — окото на платното се отвори!',1.6); }
   if(b.state==='open'){ b.open=Math.min(1,b.open+dt*3); b.t-=dt; if(b.t<=0){ b.state='fight'; const pos=b.phase>1?[[30,7],[36,11],[44,7],[50,11]]:[[33,10],[41,7],[48,10]]; for(const [tx,row] of pos) summ4('rip',tx,row,'rip'); } }
   else b.open=Math.max(0,b.open-dt*3);
 }});
@@ -74,9 +74,9 @@ defBoss('canvas',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; cons
 defBoss('legion',{make:()=>({type:'legion',x:AX()+20*T,y:15*T-42,w:26,h:42,hp:1000*D.bhp,max:1000*D.bhp,state:'intro',t:2,face:-1,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,act:0,spawnT:9})});
 defBoss('legion',{hurt:(d,blast)=>{ const b=boss, p=player; if(!b||b.dead||b.state==='intro') return;
   const front=sgn(p.x+p.w/2-(b.x+b.w/2))===b.face, open=b.state==='windup'||b.state==='stun';
-  if(front&&!open&&!blast){ sparks(b.face>0?b.x+b.w:b.x,b.y+18,3,'#e8e0c8'); hint4(b,'Щитът спира куршумите! Заобиколи го — или удряй, когато вдигне копието.'); b.hp-=d*0.08; }
+  if(front&&!open&&!blast){ sparks(b.face>0?b.x+b.w:b.x,b.y+18,3,'#e8e0c8'); hint4(b,'Щитът поема целия огън отпред! Мини в гръб или стреляй точно когато вдигне копието.'); b.hp-=d*0.08; }
   else { b.hp-=d*(b.state==='stun'?1.3:1); bHit4(b,'#c8b890'); }
-  if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Стражът вика легиона си!',2); shake=6; } if(b.hp<=0) bossDie(); }});
+  if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Стражът надига легиона си!',2); shake=6; } if(b.hp<=0) bossDie(); }});
 defBoss('legion',{upd:dt=>{
   const b=boss, p=player; b.anim+=dt; b.hitT-=dt;
   if(b.dead){ bossDeathFx(b,dt); return; }
@@ -102,9 +102,9 @@ defBoss('legion',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; begi
 /* ---------- 4. БЕЗМЪЛВНИЯТ ---------- */
 defBoss('silent',{make:()=>({type:'silent',x:AX()+22*T,y:15*T-40,w:48,h:40,hp:900*D.bhp,max:900*D.bhp,state:'intro',t:2,face:-1,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,tx:0,heard:0,spawnT:10})});
 defBoss('silent',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
-  if(b.state!=='recover'){ b.hp-=d*0.12; sparks(b.x+b.w/2,b.y+10,2,'#8adcff'); hint4(b,'Кожата му поглъща куршумите. Изчакай да се хвърли — и стреляй в сърцето.'); }
+  if(b.state!=='recover'){ b.hp-=d*0.12; sparks(b.x+b.w/2,b.y+10,2,'#8adcff'); hint4(b,'Бронята му поглъща куршумите. Изчакай го да скочи в атака и стреляй в оголеното ядро!'); }
   else { b.hp-=d*1.3; bHit4(b,'#8adcff'); }
-  b.tx=player.x; b.heard=1; if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Безмълвният вече чува и стъпките ти!',2); shake=6; } if(b.hp<=0) bossDie(); }});
+  b.tx=player.x; b.heard=1; if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Безмълвният вече долавя дори плахите ти стъпки!',2); shake=6; } if(b.hp<=0) bossDie(); }});
 defBoss('silent',{upd:dt=>{
   const b=boss, p=player; b.anim+=dt; b.hitT-=dt;
   if(b.dead){ bossDeathFx(b,dt); return; }
@@ -137,12 +137,12 @@ defFoe('note',{draw:e=>{ if(e.dead&&e.deadT>0.5) return; const x=Math.round(e.x+
   ctx.save(); ctx.globalCompositeOperation='lighter'; const g=ctx.createRadialGradient(x,y,1,x,y,16); g.addColorStop(0,`rgba(${FQ_RGB[e.fq]},${on?0.9:0.35})`); g.addColorStop(1,`rgba(${FQ_RGB[e.fq]},0)`); ctx.fillStyle=g; ctx.fillRect(x-16,y-16,32,32); ctx.restore();
   ctx.fillStyle=e.hitT>0?'#ffffff':FQ_COL[e.fq]; ctx.beginPath(); ctx.ellipse(x-2,y+3,5,4,-0.4,0,7); ctx.fill(); ctx.fillRect(x+2,y-8,2,11); ctx.fillRect(x+2,y-8,6,2); }});
 function cond4Phase(b,ph){ b.phase=ph; LVL.still=ph===2; LVL.dark=ph===3; LVL.sonar=ph===3; LVL.freq=ph!==3; shake=10; flash=1; flashCol='#ffffff';
-  showMsg(ph===2?'Диригентът спира времето! Движи се — и само тогава то тече.':'Светлината угасва. Чуй го — сонарът е на E.',3); }
+  showMsg(ph===2?'Диригентът замразява времето! Само твоето движение го кара да тече.':'Светлината угасва! Води се по сонара — клавиш E.',3); }
 defBoss('conductor',{make:()=>{ LVL.still=false; LVL.dark=false; LVL.sonar=false; LVL.freq=true;
   const b={type:'conductor',x:AX()+13*T,y:4*T,w:3*T,h:3*T,hp:1500*D.bhp,max:1500*D.bhp,state:'intro',t:2.4,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,fireT:1.5,waveT:3,tpT:4,mech:true};
   for(let f=0;f<3;f++) summ4('note',40,6,'note',{fq:f,hp:110*D.ehp}); return b; }});
 defBoss('conductor',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
-  if(b.phase===1){ sparks(b.x+b.w/2,b.y+b.h/2,3,'#b48cff'); hint4(b,'Тоновете го пазят. Удряй всяка нота в нейния цвят!'); return; }
+  if(b.phase===1){ sparks(b.x+b.w/2,b.y+b.h/2,3,'#b48cff'); hint4(b,'Резонансната му аура е непробиваема! Трябва да поразиш всяка нота със съвпадащия ѝ тон.'); return; }
   b.hp-=d; bHit4(b,'#b48cff'); if(b.phase===2&&b.hp<b.max*0.4) cond4Phase(b,3); if(b.hp<=0){ LVL.still=false; LVL.dark=false; LVL.sonar=false; bossDie(); } }});
 defBoss('conductor',{upd:dt=>{
   const b=boss, p=player; b.anim+=dt; b.hitT-=dt;

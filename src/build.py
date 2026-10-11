@@ -116,7 +116,7 @@ doc=f'''<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="Резонанс — поредица ретро екшън игри, които се играят направо в браузъра.">
+<meta name="description" content="Резонанс — поредица класически екшън платформъри, създадени за браузър.">
 <meta name="theme-color" content="#080b0d">
 <link rel="icon" href="data:image/svg+xml,{quote(icon)}">
 {home}{head}
@@ -132,7 +132,7 @@ open(out,'w',encoding='utf-8').write(doc)
 # начален екран — до HTML файла: иконите (iPhone: apple-touch-icon; Android: icon-*.png) и manifest-ът за Android
 if offline: print('built', out, len(doc), 'games:', ', '.join(g for g,_ in games), '(offline)'); raise SystemExit
 sys.dont_write_bytecode=True; import icon; odir=os.path.dirname(os.path.abspath(out)); icon.write_all(odir)
-man=json.dumps({'name':'Резонанс','short_name':'Резонанс','description':'Поредица ретро екшън игри, които се играят направо в браузъра.',
+man=json.dumps({'name':'Резонанс','short_name':'Резонанс','description':'Поредица класически екшън платформъри, създадени за браузър.',
   'lang':'bg','id':'./','start_url':'./','scope':'./','display':'fullscreen','background_color':'#080b0d','theme_color':'#080b0d','categories':['games'],
   'icons':[{'src':f'icon-{n}.png','sizes':f'{n}x{n}','type':'image/png','purpose':'any'} for n in (192,512)]
         +[{'src':f'icon-maskable-{n}.png','sizes':f'{n}x{n}','type':'image/png','purpose':'maskable'} for n in (192,512)]},ensure_ascii=False,indent=1)+'\n'

@@ -1,11 +1,11 @@
 /* ================= РЕЗОНАНС 2 · BOSSES ================= */
 defBosses('intro',{
-  deep:'Дълбинният! Стреляй по пипалата. Когато паднат, главата му изплува — тогава я удряй.',
-  breach:'Пробивът! Пази генераторите, докато д-р Илиева претоварва портала. Можеш да спреш лъча с тялото си.',
-  stone:'Каменният страж! В миналото е непробиваем. Смени епохата с E — в настоящето ядрото му е открито.',
-  swarm:'Роякът! Хиляди малки машини в една форма. Унищожавай ги на групи — гранатите и пушката помагат.',
-  storm:'Бурята! Пази се от мълниите и вятъра. Стреляй в окото, когато се отвори.',
-  maker:'Създателят. Тук законите се пишат наново — гравитацията ще се обръща. Стреляй в сърцевината.'});
+  deep:'Дълбинният! Разстрелвай пипалата. Щом паднат, главата му изплува — концентрирай огъня върху нея!',
+  breach:'Пробивът! Пази генераторите, докато д-р Илиева претоварва портала. Можеш да блокираш лъча със скафандъра си.',
+  stone:'Каменният страж! В древността бронята му е неуязвима. Смени епохата с [E] — в руините на настоящето ядрото му е оголено.',
+  swarm:'Роякът! Хиляди микромашини действат в синхрон. Поразявай ги на групи — гранатите и помпата вършат отлична работа.',
+  storm:'Бурята! Пази се от мълниите и свирепия вятър. Цели се в окото в мига, в който се разтвори!',
+  maker:'Създателят! Тук физичните закони се рушат — гравитацията се обръща. Поразявай пулсиращото ядро!'});
 defBosses('name',{deep:'ДЪЛБИННИЯТ',breach:'ПРОБИВЪТ · ПРЕТОВАРВАНЕ',stone:'КАМЕННИЯТ СТРАЖ',swarm:'РОЯКЪТ',storm:'БУРЯТА',maker:'СЪЗДАТЕЛЯТ'});
 defBosses('col',{deep:'#4fe3d6',breach:'#ff6ad5',stone:'#e0c08a',swarm:'#ffd36b',storm:'#9fc8ff',maker:'#ffffff'});
 
@@ -17,7 +17,7 @@ function deepWave(b){ const a=LVL.arena, n=b.phase===1?(DI===0?2:3):(DI===0?3:4)
   b.wave++; for(const hx of hs){ const e=makeEnemy('tent',hx*T+8,15*T); e.hp=(DI===0?45:70)*D.ehp; e.summoned=true; e.tag='tent'; e.baseY=15*T; e.topY=(a.tentTop||6)*T+Math.round(rnd(0,2))*T; e.y=15*T-4; e.h=4; e.grow=0; e.cd=rnd(1.5,3); e.slam=0; enemies.push(e); }
   sfxAt('roar',{x:b.cx,y:12*T,w:0}); shake=6; }
 defBoss('deep',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state!=='head') return; b.hp-=d; b.hitT=0.08; blood(b.cx+rnd(-14,14),b.y+rnd(6,24),true,blast?10:3);
-  if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Дълбинният побесня — водата се надига!',2.2); sfxAt('roar',b); shake=8; }
+  if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Дълбинният изпада в ярост — водата приижда!',2.2); sfxAt('roar',b); shake=8; }
   if(b.hp<=0){ bossDie(); FLOOD.y=11*T; } }});
 defBoss('deep',{upd:dt=>{
   const b=boss, p=player, a=LVL.arena; b.anim+=dt; b.hitT-=dt;
@@ -59,12 +59,12 @@ defBoss('breach',{upd:dt=>{
   if(b.state==='intro'){ b.t-=dt; if(b.t<=0) b.state='fight'; return; }
   b.hp=Math.max(0,b.hp-dt);
   if(b.hp<=0){ bossDie(); for(const e of enemies) if(!e.dead&&e.summoned) hurtEnemy(e,999,0); return; }
-  if(GENS.every(g=>g.hp<=0)&&!p.dead){ showMsg('Генераторите паднаха! Порталът не може да бъде затворен.',3); die(); return; }
+  if(GENS.every(g=>g.hp<=0)&&!p.dead){ showMsg('Генераторите са сринати! Пробивът е необратим.',3); die(); return; }
   b.spawnT-=dt; if(b.spawnT<=0){ b.spawnT=[5.2,3.9,3.0][DI]*(b.hp<b.max*0.4?0.85:1); const alive=enemies.filter(e=>!e.dead&&e.summoned).length; if(alive<[3,5,6][DI]){ let x; do { x=AX()+rnd(3,27)*T; } while(Math.abs(x-p.x)<70); portalSpawn('imp',x,15*T,0,'boss'); } }
   b.flyT-=dt; if(b.flyT<=0){ b.flyT=rnd(9,13); if(DI>0) portalSpawn('flyer',cx+rnd(-40,40),cy+40,0,'boss'); }
   if(!b.beam){ b.beamT-=dt; if(b.beamT<=0){ const al=GENS.filter(g=>g.hp>0); if(al.length){ const g=al[Math.floor(rnd(al.length))]; b.beam={g,t:1.5,fire:0}; sfxAt('charge',{x:cx,y:cy,w:0}); } b.beamT=[13,10,8][DI]; } }
   else { const bm=b.beam; if(bm.t>0){ bm.t-=dt; if(bm.t<=0){ bm.fire=0.5; shake=6; sfxAt('zap',{x:cx,y:cy,w:0});
-        const gx=bm.g.x+14, gy=bm.g.y+10; if(!p.dead&&segHitsRect(cx,cy+20,gx,gy,p)){ hurtPlayer(18,0); showMsg('Блокира лъча!',1.2); } else { bm.g.hp-=[16,24,32][DI]; bm.g.hitT=0.3; if(bm.g.hp<=0){ bm.g.hp=0; explode(gx,gy,40,0,0,true); showMsg('Генератор е унищожен!',2); } } } }
+        const gx=bm.g.x+14, gy=bm.g.y+10; if(!p.dead&&segHitsRect(cx,cy+20,gx,gy,p)){ hurtPlayer(18,0); showMsg('Пое лъча на скафандъра!',1.2); } else { bm.g.hp-=[16,24,32][DI]; bm.g.hitT=0.3; if(bm.g.hp<=0){ bm.g.hp=0; explode(gx,gy,40,0,0,true); showMsg('Генераторът беше сринат!',2); } } } }
     else { bm.fire-=dt; if(bm.fire<=0) b.beam=null; } }
 }});
 defBoss('breach',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; const x=b.x+b.w/2-cam, y=b.y+b.h/2, k=b.dead?Math.max(0,1-b.deathT/2.6):1;
@@ -78,9 +78,9 @@ defBoss('breach',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; cons
 /* ---------- 3. КАМЕННИЯТ СТРАЖ ---------- */
 defBoss('stone',{make:()=>{ const cx=AX()+20*T, a=LVL.arena; setDoorAll([a.door,a.r0,a.r1],'D'); return {type:'stone',x:cx-20,y:15*T-62,w:40,h:62,hp:900*D.bhp,max:900*D.bhp,state:'intro',t:2,face:-1,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,at:2.5,pulse:0,hintT:0}; }});
 defBoss('stone',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
-  if(ERA===0){ sparks(b.x+b.w/2+rnd(-10,10),b.y+rnd(10,50),3,'#d8c8a0'); b.hintT-=1; if(b.hintT<=0){ b.hintT=25; showMsg('Камъкът е непробиваем — смени епохата с E!',1.8); } return; }
+  if(ERA===0){ sparks(b.x+b.w/2+rnd(-10,10),b.y+rnd(10,50),3,'#d8c8a0'); b.hintT-=1; if(b.hintT<=0){ b.hintT=25; showMsg('Камъкът е неуязвим — смени епохата с [E]!',1.8); } return; }
   b.hp-=d*1.1; b.hitT=0.08; sparks(b.x+b.w/2+rnd(-8,8),b.y+28+rnd(-8,8),5,'#ffd08a');
-  if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Стражът побесня!',2); shake=8; }
+  if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Стражът се разяри и удвоява натиска!',2); shake=8; }
   if(b.hp<=0) bossDie(); }});
 defBoss('stone',{upd:dt=>{
   const b=boss, p=player, a=LVL.arena; b.anim+=dt; b.hitT-=dt;
@@ -93,7 +93,7 @@ defBoss('stone',{upd:dt=>{
     if(ERA===1){ b.pulse+=dt; if(b.pulse>(DI===0?7:5.5)){ b.state='pulse'; b.t=1.2; b.pulse=0; sfxAt('charge',b); } } }
   else if(b.state==='stomp'){ b.t-=dt; if(b.t<=0){ shake=9; sfxAt('stomp',b); const n=b.phase>1?2:1; for(let i=0;i<n;i++) for(const s of [-1,1]) bossOrb(bcx+s*22,15*T-7,s*(150+i*40)*D.bspd,0,{dmg:12,r:6,life:3}); b.state='walk'; } }
   else if(b.state==='throw'){ b.t-=dt; if(b.t<=0){ const n=b.phase>1?3:2, tt=1.0, hx=bcx, hy=b.y+6; for(let i=0;i<n;i++){ const tx=pcx+(i-(n-1)/2)*40, ty=p.y+p.h-6; bossOrb(hx,hy,(tx-hx)/tt,(ty-hy)/tt-0.5*G*tt,{dmg:12,r:5,grav:true,red:true}); } sfxAt('stomp',b); b.state='walk'; } }
-  else if(b.state==='pulse'){ b.t-=dt; if(b.t<=0){ if(ERA===1){ switchEra(true); showMsg('Стражът те връща в миналото!',1.8); flash=0.8; flashCol='#ffe2b0'; } b.state='walk'; } }
+  else if(b.state==='pulse'){ b.t-=dt; if(b.t<=0){ if(ERA===1){ switchEra(true); showMsg('Времеви импулс — връщане в миналото!',1.8); flash=0.8; flashCol='#ffe2b0'; } b.state='walk'; } }
   if(!p.dead&&ov(b,p)){ b.bite=(b.bite||0)-dt; if(b.bite<=0){ b.bite=1; hurtPlayer(14,sgn(dx||1)*220); p.vy=-180; } }
 }});
 defBoss('stone',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; begin(b); if(b.dead) ctx.globalAlpha=1-clamp((b.deathT-1.8)/0.8,0,1);
@@ -134,7 +134,7 @@ defBoss('swarm',{draw:()=>{ const b=boss; if(b.form==='fist'&&b.ft>1.6&&b.state=
 /* ---------- 5. БУРЯТА ---------- */
 defBoss('storm',{make:()=>{ const cx=AX()+15*T; return {type:'storm',cx,x:cx-45,y:0.6*T,w:90,h:46,hp:800*D.bhp,max:800*D.bhp,state:'intro',t:2,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,eye:0,cols:[],at:2.5,gust:0,gustT:8}; }});
 defBoss('storm',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return; if(b.eye<0.5){ if(Math.random()<0.4) sparks(b.cx+rnd(-30,30),b.y+rnd(10,40),2,'#cfe8ff'); return; }
-  b.hp-=d; b.hitT=0.08; sparks(b.cx+rnd(-8,8),b.y+24,4,'#9fe8ff'); if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Бурята се засилва!',2); shake=8; } if(b.hp<=0){ bossDie(); GWIND=0; } }});
+  b.hp-=d; b.hitT=0.08; sparks(b.cx+rnd(-8,8),b.y+24,4,'#9fe8ff'); if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Бурята преминава в свиреп ураган!',2); shake=8; } if(b.hp<=0){ bossDie(); GWIND=0; } }});
 defBoss('storm',{upd:dt=>{
   const b=boss, p=player; b.anim+=dt; b.hitT-=dt;
   if(b.dead){ GWIND=0; b.y+=dt*20; bossDeathFx(b,dt); return; }
@@ -145,7 +145,7 @@ defBoss('storm',{upd:dt=>{
   else { b.at-=dt; if(b.at<=0&&!b.cols.length){ const n=b.phase>1?(DI===0?3:4):(DI===0?2:3); const pcx=p.x+p.w/2; b.cols=[]; for(let i=0;i<n;i++) b.cols.push({x:clamp(pcx+(i-(n-1)/2)*46+rnd(-10,10),AX()+2*T,AX()+28*T),t:1.15}); sfxAt('charge',{x:b.cx,y:b.y,w:0}); } }
   if(b.cols.length){ let fired=false; for(const c of b.cols){ c.t-=dt; if(c.t<=0&&!c.done){ c.done=true; fired=true; shake=6; light(c.x,8*T,140,1,'rgba(200,230,255,'); if(!p.dead&&Math.abs(p.x+p.w/2-c.x)<11) hurtPlayer(22,0); for(let i=0;i<8;i++) part(c.x,rnd(2*T,15*T),rnd(-30,30),rnd(-30,30),0.3,'#e8f6ff',2,0); } }
     if(fired) sfxAt('zap',{x:b.cx,y:b.y,w:0});
-    if(b.cols.every(c=>c.done)){ b.cols=b.cols.filter(c=>c.t>-0.25); if(!b.cols.length){ b.eye=(DI===0?4:3.2); b.at=(b.phase>1?1.6:2.4)*D.rate; showMsg('Окото е отворено!',1); } } }
+    if(b.cols.every(c=>c.done)){ b.cols=b.cols.filter(c=>c.t>-0.25); if(!b.cols.length){ b.eye=(DI===0?4:3.2); b.at=(b.phase>1?1.6:2.4)*D.rate; showMsg('Окото се отвори — стреляй!',1); } } }
   if(b.eye>0){ b.fire=(b.fire||0)-dt; if(b.fire<=0&&!p.dead){ b.fire=1.1*D.rate; const dx=p.x+p.w/2-b.cx, dy=p.y+p.h/2-(b.y+24), d=Math.hypot(dx,dy)||1; bossOrb(b.cx,b.y+24,dx/d*140,dy/d*140,{dmg:9,ice:true}); } }
 }});
 defBoss('storm',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; const x=b.cx-cam, y=b.y+22;
@@ -161,8 +161,8 @@ defBoss('storm',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; const
 /* ---------- 6. СЪЗДАТЕЛЯТ ---------- */
 defBoss('maker',{make:()=>{ LVL.zeroG=false; const cx=AX()+15*T, cy=ROWS*T/2; return {type:'maker',cx,cy,x:cx-20,y:cy-20,w:40,h:40,hp:1500*(DI===0?0.4:D.bhp),max:1500*(DI===0?0.4:D.bhp),state:'intro',t:2.5,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,sp:0,at:2,flipT:7,fw:0,droneT:9,onFlip(){ this.cy=ROWS*T-this.cy; }}; }});
 defBoss('maker',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return; b.hp-=d; b.hitT=0.08; sparks(b.cx+rnd(-10,10),b.cy+rnd(-10,10),4,'#ffffff');
-  if(b.phase===1&&b.hp<b.max*0.66){ b.phase=2; b.flipT=3; showMsg('Създателят пренаписва гравитацията!',2.2); shake=10; }
-  else if(b.phase===2&&b.hp<b.max*0.33){ b.phase=3; if(FLIP) flipWorld(); LVL.zeroG=true; showMsg('Гравитацията изчезна! Плувай във въздуха — X е тласък.',2.6); shake=10; }
+  if(b.phase===1&&b.hp<b.max*0.66){ b.phase=2; b.flipT=3; showMsg('Създателят изкривява гравитацията!',2.2); shake=10; }
+  else if(b.phase===2&&b.hp<b.max*0.33){ b.phase=3; if(FLIP) flipWorld(); LVL.zeroG=true; showMsg('Гравитацията изчезна напълно! Маневрирай във въздуха — с [X] подаваш тяга.',2.6); shake=10; }
   if(b.hp<=0){ bossDie(); LVL.zeroG=false; if(FLIP) flipWorld(true); } }});
 defBoss('maker',{upd:dt=>{
   const b=boss, p=player; b.anim+=dt; b.hitT-=dt;
@@ -175,7 +175,7 @@ defBoss('maker',{upd:dt=>{
   b.sp-=dt; if(b.sp<=0){ b.sp=(b.phase===1?0.22:b.phase===2?0.18:0.13)/(DI===0?0.7:DI===2?1.25:1); const k=b.phase===3?3:2; for(let i=0;i<k;i++){ const an=b.anim*(b.phase===3?2.4:1.6)+i*Math.PI*2/k; bossOrb(b.cx,b.cy,Math.cos(an)*95*D.bspd,Math.sin(an)*95*D.bspd,{dmg:8,r:3,life:4}); } }
   b.at-=dt; if(b.at<=0&&!p.dead){ b.at=(b.phase===1?3.2:2.6)*D.rate; for(let i=0;i<(DI===0?2:3);i++){ const an=Math.atan2(pcy-b.cy,pcx-b.cx)+(i-1)*0.6; ebullets.push({x:b.cx,y:b.cy,vx:Math.cos(an)*110,vy:Math.sin(an)*110,life:4,dmg:10,r:4,orb:true,hornet:true}); } sfxAt('hornet',b); }
   b.droneT-=dt; if(b.droneT<=0){ b.droneT=rnd(10,14); if(enemies.filter(e=>!e.dead&&e.summoned).length<(DI===2?3:2)){ portalSpawn('drone',AX()+rnd(4,26)*T,(FLIP?6:10)*T,0,'boss'); } }
-  if(b.phase===2){ b.flipT-=dt; if(b.flipT<1&&!b.fw){ b.fw=1; showMsg('Гравитацията се обръща!',0.9); } if(b.flipT<=0){ b.fw=0; b.flipT=(DI===0?9:7); flipWorld(); } }
+  if(b.phase===2){ b.flipT-=dt; if(b.flipT<1&&!b.fw){ b.fw=1; showMsg('Гравитацията се преобръща!',0.9); } if(b.flipT<=0){ b.fw=0; b.flipT=(DI===0?9:7); flipWorld(); } }
   if(!p.dead&&ov(b,p)){ b.bite=(b.bite||0)-dt; if(b.bite<=0){ b.bite=1; hurtPlayer(14,sgn(pcx-b.cx)*200); } }
 }});
 defBoss('maker',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; const x=b.cx-cam, y=b.cy; ctx.save(); if(b.dead) ctx.globalAlpha=1-clamp((b.deathT-1.8)/0.8,0,1);

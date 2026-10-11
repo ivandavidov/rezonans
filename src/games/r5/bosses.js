@@ -1,10 +1,10 @@
 /* ================= РЕЗОНАНС 5 · БОСОВЕ ================= */
 defBosses('intro',{
-  combine:'Комбайнът! Кристалът на покрива е уязвим, когато машината се забие в края на нивата.',
-  cascade:'Каскадата! Разбий кристалите във вировете — тогава травертиновата ѝ кожа ще се напука.',
-  moth:'Нощницата! Уязвима е само на светло — в лъчите от тавана или до сигнална ракета.',
-  valchev:'Вълчев! Щитът му пада само докато зарежда удара си.',
-  resonator:'Третият резонатор! Удряй ядрото, когато пластините се отворят. Не пускай хората до машината!'});
+  combine:'Автономният комбайн! Кристалният резонатор на покрива е оголен само когато машината се блъсне в края на нивата.',
+  cascade:'Крушунската каскада! Строши кристалите във водните вирове — само тогава варовиковата ѝ броня ще се пропука.',
+  moth:'Пещерната нощница! В мрака куршумите се разпиляват в рояка. Примами я под светлината от свода или запали сигнална ракета.',
+  valchev:'Проф. Вълчев! Личният му енергиен щит спада единствено в мига, в който концентрира мощния си удар.',
+  resonator:'Третият резонатор! Стреляй в ядрото веднага щом защитните пластини се разтворят. Спирай хората в транс — не бива да стигат до машината!'});
 defBosses('name',{combine:'КОМБАЙНЪТ',cascade:'КАСКАДАТА',moth:'НОЩНИЦАТА',valchev:'ПРОФ. ВЪЛЧЕВ',resonator:'„КАМЕРТОН-3“'});
 defBosses('col',{combine:'#d8a040',cascade:'#5ad8c8',moth:'#b8a0d8',valchev:'#9aff8a',resonator:'#3fd0a0'});
 defBosses('norm',{combine:1,cascade:1,moth:1,valchev:1,resonator:0.85});
@@ -17,8 +17,8 @@ const crystalFx=(x,y,col,t)=>{ ctx.save(); ctx.globalCompositeOperation='lighter
 /* ---------- 1. КОМБАЙНЪТ ---------- */
 defBoss('combine',{make:()=>({type:'combine',x:AX()+20*T,y:15*T-44,w:84,h:44,hp:900*D.bhp,max:900*D.bhp,state:'intro',t:2,face:-1,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,baleT:3,act:0,mech:true})});
 defBoss('combine',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
-  if(b.state!=='stun'){ sparks(b.x+b.w/2+rnd(-20,20),b.y+8,3,'#d8a040'); hint5(b,'Бронята е дебела. Изчакай да се забие в края на нивата!'); b.hp-=d*0.05; return; }
-  b.hp-=d*1.2; bHit5(b,'#9aff8a'); if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Жетварката се върти още по-бързо!',2); shake=6; } if(b.hp<=0) bossDie(); }});
+  if(b.state!=='stun'){ sparks(b.x+b.w/2+rnd(-20,20),b.y+8,3,'#d8a040'); hint5(b,'Челото е от закалена стомана. Изчакай комбайнът да се блъсне и да заседне в края!'); b.hp-=d*0.05; return; }
+  b.hp-=d*1.2; bHit5(b,'#9aff8a'); if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Хедерът се завърта с бясна скорост!',2); shake=6; } if(b.hp<=0) bossDie(); }});
 defBoss('combine',{upd:dt=>{
   const b=boss, p=player; b.anim+=dt; b.hitT-=dt;
   if(b.dead){ bossDeathFx(b,dt); return; }
@@ -47,8 +47,8 @@ defFoe('rim',{draw:e=>{ if(e.dead&&e.deadT>0.5) return; const x=Math.round(e.x+e
   ctx.fillStyle=e.hitT>0?'#fff':'#5ad8c8'; ctx.beginPath(); ctx.moveTo(x,y-9); ctx.lineTo(x+6,y); ctx.lineTo(x,y+8); ctx.lineTo(x-6,y); ctx.closePath(); ctx.fill(); ctx.fillStyle='#e6d8b0'; ctx.fillRect(x-8,y+7,16,3); }});
 defBoss('cascade',{make:()=>{ for(const [tx,row] of [[32,11],[40,8],[48,11]]) summ5('rim',tx,row,'rim'); return {type:'cascade',x:AX()+12*T,y:2*T,w:5*T,h:7*T,hp:1100*D.bhp,max:1100*D.bhp,state:'intro',t:2,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,fireT:2,waveT:5,open:0}; }});
 defBoss('cascade',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
-  if(b.state!=='open'){ sparks(b.x+b.w/2+rnd(-20,20),b.y+b.h/2,3,'#e6d8b0'); hint5(b,'Травертинът я пази. Разбий кристалите във вировете!'); return; }
-  b.hp-=d; bHit5(b,'#5ad8c8'); if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Каскадата надига езерото!',2); shake=6; } if(b.hp<=0) bossDie(); }});
+  if(b.state!=='open'){ sparks(b.x+b.w/2+rnd(-20,20),b.y+b.h/2,3,'#e6d8b0'); hint5(b,'Травертиновата броня поглъща ударите. Първо пръсни кристалите във вировете!'); return; }
+  b.hp-=d; bHit5(b,'#5ad8c8'); if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Каскадата разплисква водите на езерото!',2); shake=6; } if(b.hp<=0) bossDie(); }});
 defBoss('cascade',{upd:dt=>{
   const b=boss, p=player; b.anim+=dt; b.hitT-=dt;
   if(b.dead){ bossDeathFx(b,dt); return; }
@@ -57,7 +57,7 @@ defBoss('cascade',{upd:dt=>{
   b.x=AX()+12*T+Math.sin(b.anim*0.5)*3*T;
   b.fireT-=dt; if(b.fireT<=0){ b.fireT=b.phase>1?1.4:2.0; const tt=1.3; for(const o of (b.phase>1?[-30,0,30]:[-15,15])){ const tx=pcx+o; bossOrb(bcx,bcy,(tx-bcx)/tt,(p.y+p.h-6-bcy)/tt-0.5*G*tt,{grav:true,dmg:12,r:5,life:5}); } sfxAt('throwG',b); }
   b.waveT-=dt; if(b.waveT<=0){ b.waveT=b.phase>1?3.5:5; for(const s of [-1,1]) ebullets.push({x:bcx,y:15*T-6,vx:s*160*D.bspd,vy:0,life:3,dmg:14,r:6,orb:true}); for(let i=0;i<24;i++) part(bcx+rnd(-40,40),15*T-4,rnd(-80,80),rnd(-160,-40),0.6,'#bff4ee',2,300); sfxAt('stomp',b); }
-  if(b.state==='fight'&&!alive5('rim').length){ b.state='open'; b.t=b.phase>1?5:6.5; showMsg('Кожата ѝ се напука!',1.6); shake=5; }
+  if(b.state==='fight'&&!alive5('rim').length){ b.state='open'; b.t=b.phase>1?5:6.5; showMsg('Варовиковият щит се пропука!',1.6); shake=5; }
   if(b.state==='open'){ b.open=Math.min(1,b.open+dt*3); b.t-=dt; if(b.t<=0){ b.state='fight'; const pos=b.phase>1?[[32,11],[38,8],[43,8],[48,11]]:[[32,11],[40,8],[48,11]]; for(const [tx,row] of pos) summ5('rim',tx,row,'rim'); } }
   else b.open=Math.max(0,b.open-dt*3);
 }});
@@ -70,8 +70,8 @@ defBoss('cascade',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; con
 /* ---------- 3. НОЩНИЦАТА ---------- */
 defBoss('moth',{make:()=>({type:'moth',x:AX()+13*T,y:3*T,w:70,h:30,hp:950*D.bhp,max:950*D.bhp,state:'intro',t:2,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,diveT:4,spawnT:5,tx:0,ty:0})});
 defBoss('moth',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
-  if(!isLit(b.x+b.w/2,b.y+b.h/2)){ for(let i=0;i<3;i++) part(b.x+rnd(b.w),b.y+rnd(b.h),rnd(-40,40),rnd(-40,40),0.4,'#2a2024',2,0); hint5(b,'На тъмно куршумите минават през рояка. Освети я!'); return; }
-  b.hp-=d; bHit5(b,'#b8a0d8'); if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Рояк се отделя от нея!',2); shake=6; } if(b.hp<=0) bossDie(); }});
+  if(!isLit(b.x+b.w/2,b.y+b.h/2)){ for(let i=0;i<3;i++) part(b.x+rnd(b.w),b.y+rnd(b.h),rnd(-40,40),rnd(-40,40),0.4,'#2a2024',2,0); hint5(b,'В тъмнината роякът се разсейва и куршумите минават на халос. Освети я с ракета!'); return; }
+  b.hp-=d; bHit5(b,'#b8a0d8'); if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Разярен рояк от прилепи се отделя от крилете ѝ!',2); shake=6; } if(b.hp<=0) bossDie(); }});
 defBoss('moth',{upd:dt=>{
   const b=boss, p=player; b.anim+=dt; b.hitT-=dt;
   if(b.dead){ b.y+=40*dt; bossDeathFx(b,dt); return; }
@@ -97,16 +97,16 @@ defBoss('moth',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; const 
 const VALCH_POS=[[32.5,12],[40.5,9],[48.5,12]];
 defBoss('valchev',{make:()=>({type:'valchev',x:AX()+20*T,y:15*T-30,w:14,h:30,hp:850*D.bhp,max:850*D.bhp,state:'intro',t:2.2,face:-1,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,pos:1,fireT:1.4,spawnT:8,act:0})});
 defBoss('valchev',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
-  if(b.state!=='charge'&&b.state!=='stun'){ sparks(b.x+b.w/2+rnd(-8,8),b.y+b.h/2+rnd(-10,10),3,'#9aff8a'); hint5(b,'Щитът го пази. Изчакай да започне да зарежда!'); return; }
-  b.hp-=d*(b.state==='stun'?1.3:1); bHit5(b,'#9aff8a'); if(b.state==='charge'&&d>=10){ b.state='stun'; b.t=1.6; showMsg('Ударът е прекъснат!',1.2); }
-  if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; vlc('„Охрана! Задръжте доктора!“'); shake=6; } if(b.hp<=0) bossDie(); }});
+  if(b.state!=='charge'&&b.state!=='stun'){ sparks(b.x+b.w/2+rnd(-8,8),b.y+b.h/2+rnd(-10,10),3,'#9aff8a'); hint5(b,'Енергийното поле отбива огъня. Дебни мига, в който започне да зарежда!'); return; }
+  b.hp-=d*(b.state==='stun'?1.3:1); bHit5(b,'#9aff8a'); if(b.state==='charge'&&d>=10){ b.state='stun'; b.t=1.6; showMsg('Зарядът е прекъснат!',1.2); }
+  if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; vlc('„Охрана! Не допускайте доктора до апаратурата!“'); shake=6; } if(b.hp<=0) bossDie(); }});
 defBoss('valchev',{upd:dt=>{
   const b=boss, p=player; b.anim+=dt; b.hitT-=dt;
   if(b.dead){ b.y-=50*dt; bossDeathFx(b,dt); return; }
   if(b.state==='intro'){ b.t-=dt; if(b.t<=0){ b.state='idle'; b.t=1.5; } return; }
   const pcx=p.x+p.w/2, pcy=p.y+p.h/2, bcx=b.x+b.w/2, bcy=b.y+b.h/2; b.face=sgn(pcx-bcx)||b.face;
   if(b.state==='idle'){ b.t-=dt; b.fireT-=dt; if(b.fireT<=0){ b.fireT=b.phase>1?0.9:1.3; const a=Math.atan2(pcy-bcy,pcx-bcx); for(const o of (b.phase>1?[-0.15,0,0.15]:[0])) ebullets.push({x:bcx,y:bcy,vx:Math.cos(a+o)*180*D.bspd,vy:Math.sin(a+o)*180*D.bspd,life:4,dmg:12,r:4,orb:true}); sfxAt('flyer',b); }
-    if(b.t<=0){ b.act++; if(b.act%2===0){ b.state='charge'; b.t=b.phase>1?1.5:1.9; showMsg('Вълчев зарежда!',1); } else { b.state='blink'; b.t=0.5; } } }
+    if(b.t<=0){ b.act++; if(b.act%2===0){ b.state='charge'; b.t=b.phase>1?1.5:1.9; showMsg('Вълчев концентрира резонансен заряд!',1); } else { b.state='blink'; b.t=0.5; } } }
   else if(b.state==='blink'){ b.t-=dt; if(b.t<=0){ let n=b.pos; while(n===b.pos) n=Math.floor(Math.random()*3); b.pos=n; const [tx,row]=VALCH_POS[n]; b.x=AX()+(tx-26)*T-b.w/2; b.y=row*T-b.h; for(let i=0;i<20;i++) part(b.x+b.w/2,b.y+b.h/2,rnd(-80,80),rnd(-80,80),0.5,'#9aff8a',2,0); b.state='idle'; b.t=b.phase>1?1.4:2; } }
   else if(b.state==='charge'){ b.t-=dt; if(Math.random()<dt*20) part(bcx+rnd(-20,20),bcy+rnd(-20,20),(bcx-(bcx+rnd(-20,20)))*2,0,0.3,'#9aff8a',1.5,0);
     if(b.t<=0){ b.state='idle'; b.t=1.6; for(let i=0;i<14;i++){ const a=i/14*6.283; ebullets.push({x:bcx,y:bcy,vx:Math.cos(a)*150*D.bspd,vy:Math.sin(a)*150*D.bspd,life:4,dmg:14,r:5,orb:true}); } shake=6; sfxAt('boom',b); } }
@@ -123,8 +123,8 @@ defBoss('valchev',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; beg
 /* ---------- 5. ТРЕТИЯТ РЕЗОНАТОР ---------- */
 defBoss('resonator',{make:()=>({type:'resonator',x:AX()+12*T,y:2.5*T,w:5*T,h:5*T,hp:1600*D.bhp,max:1600*D.bhp,state:'intro',t:2.5,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,cyc:0,open:0,fireT:2,waveT:6,sleepT:3,mech:true})});
 defBoss('resonator',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
-  if(b.open<0.6){ sparks(b.x+b.w/2+rnd(-20,20),b.y+b.h/2+rnd(-20,20),3,'#3fd0a0'); hint5(b,'Пластините са затворени. Изчакай да се отворят!'); return; }
-  b.hp-=d; bHit5(b,'#3fd0a0'); if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Камбаната бие по-бързо!',2); shake=8; } if(b.hp<=0){ for(const s of SLEEPERS) if(s.boss&&!s.ok) wakeSleeper(s); bossDie(); } }});
+  if(b.open<0.6){ sparks(b.x+b.w/2+rnd(-20,20),b.y+b.h/2+rnd(-20,20),3,'#3fd0a0'); hint5(b,'Титаниевите пластини са плътно затворени. Изчакай цикъла им на отваряне!'); return; }
+  b.hp-=d; bHit5(b,'#3fd0a0'); if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Резонаторната камбана забива все по-учестено!',2); shake=8; } if(b.hp<=0){ for(const s of SLEEPERS) if(s.boss&&!s.ok) wakeSleeper(s); bossDie(); } }});
 defBoss('resonator',{upd:dt=>{
   const b=boss, p=player; b.anim+=dt; b.hitT-=dt;
   if(b.dead){ bossDeathFx(b,dt); return; }
@@ -135,7 +135,7 @@ defBoss('resonator',{upd:dt=>{
   b.waveT-=dt; if(b.waveT<=0){ b.waveT=b.phase>1?4:6; for(const s of [-1,1]) ebullets.push({x:bcx,y:15*T-6,vx:s*170*D.bspd,vy:0,life:3,dmg:14,r:6,orb:true}); sfxAt('stomp',b); shake=4; }
   // хора в транс вървят към машината и я лекуват
   b.sleepT-=dt; if(b.sleepT<=0&&SLEEPERS.filter(s=>s.boss&&!s.ok).length<(b.phase>1?3:2)){ b.sleepT=b.phase>1?6:8; const left=Math.random()<0.5, tx=left?28:53;
-    addSleeper(tx,left?36:45,{boss:true,gone:true,speed:1.1,line:'…какво… къде съм…',onLost:()=>{ if(!b.dead){ b.hp=Math.min(b.max,b.hp+b.max*0.08); showMsg('Машината се храни със съня им! Не ги пускай до нея.',2); for(let i=0;i<20;i++) part(bcx,bcy,rnd(-60,60),rnd(-60,60),0.6,'#3fd0a0',2,0); } }}); }
+    addSleeper(tx,left?36:45,{boss:true,gone:true,speed:1.1,line:'…къде… какво става с мен…',onLost:()=>{ if(!b.dead){ b.hp=Math.min(b.max,b.hp+b.max*0.08); showMsg('Резонаторът се захранва от съня им! Не допускай никого до ядрото!',2); for(let i=0;i<20;i++) part(bcx,bcy,rnd(-60,60),rnd(-60,60),0.6,'#3fd0a0',2,0); } }}); }
   if(!p.dead&&ov(b,p)){ b.bite=(b.bite||0)-dt; if(b.bite<=0){ b.bite=0.8; hurtPlayer(14,sgn(pcx-bcx||1)*240); } }
 }});
 defBoss('resonator',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; const cx=Math.round(b.x+b.w/2-cam), cy=Math.round(b.y+b.h/2); ctx.save(); if(b.dead) ctx.globalAlpha=1-clamp((b.deathT-1.8)/0.8,0,1);
