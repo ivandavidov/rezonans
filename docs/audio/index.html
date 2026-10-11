@@ -431,22 +431,32 @@ const FRAC=`uniform float uS,uTc;
 float mapA(vec3 p,out vec4 tr){float sc=1.;tr=vec4(1000.);
   for(int i=0;i<8;i++){p=-1.+2.*fract(.5*p+.5);float r2=dot(p,p);tr=min(tr,vec4(abs(p),r2));float k=uS/r2;p*=k;sc*=k;}
   return .25*abs(p.y)/sc;}
+vec3 sky(vec3 d){vec3 c=vec3(0.);   // звездите са неподвижни в света: местят се само когато камерата се завърта
+  for(int i=0;i<3;i++){float S=130.+float(i)*70.;vec3 q=d*S,i0=floor(q);   // всяка звезда е точка в своята клетка, пренесена върху сферата на посоките
+    for(int z=-1;z<=1;z++)for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++){vec3 id=i0+vec3(x,y,z);
+      if(abs(length(id+.5)-S)>.5)continue;float h=h31(id+float(i)*13.);if(h<.973)continue;   // само клетките около сферата — иначе по осите (там гледат коридорите) остава дупка
+      vec3 s=normalize(id+.5+(vec3(h31(id+1.7),h31(id+5.3),h31(id+9.1))-.5)*.6)*S;
+      c+=mix(vec3(.8,.88,1.),pal(h*7.+uT*.02),.35)*smoothstep(.36,0.,length(q-s))*(.5+.5*sin(uT*(1.+h*3.)+h*50.))*(.9+.5*uTrebA);}}
+  return c;}
 void main(){
   vec2 sp=(uv-.5)*vec2(uAsp,1.)*2.;float tm=uTc;
   vec3 ro=vec3(2.8*cos(.1+.33*tm),.4+.3*cos(.37*tm),2.8*cos(.5+.35*tm)),ta=vec3(1.9*cos(1.2+.41*tm),.4+.1*cos(.27*tm),1.9*cos(2.+.38*tm));
   float rl=.2*cos(.1*tm);vec3 cw=normalize(ta-ro),cp=vec3(sin(rl),cos(rl),0.),cu=normalize(cross(cw,cp)),cv=cross(cu,cw);
   vec3 rd=normalize(sp.x*cu+sp.y*cv+2.*cw);
-  vec4 tr;float t=.01,h=1.,hit=-1.;int st=0;
-  for(int i=0;i<128;i++){h=mapA(ro+rd*t,tr);st=i;if(h<.0002*t){hit=t;break;}if(t>12.)break;t+=h;}
-  vec3 col=pal(.62+uT*.01)*.03;
-  if(hit>0.){vec3 p=ro+rd*t;vec4 tq;vec2 e=vec2(1.,-1.)*.0005*t;
+  // лъч, който не е стигнал точността, пак се оцветява: иначе подът под полегат ъгъл остава тъмна ивица
+  vec4 tr;float t=.01,h=1.;
+  for(int i=0;i<200;i++){h=mapA(ro+rd*t,tr);if(h<.0004*t||t>20.)break;t+=h;}
+  vec3 col=pal(.62+uT*.01)*.02;
+  if(t<20.){vec3 p=ro+rd*t;vec4 tq;vec2 e=vec2(1.,-1.)*.0005*t;
     vec3 n=normalize(e.xyy*mapA(p+e.xyy,tq)+e.yyx*mapA(p+e.yyx,tq)+e.yxy*mapA(p+e.yxy,tq)+e.xxx*mapA(p+e.xxx,tq));
-    float key=clamp(dot(vec3(.577,.577,-.577),n),0.,1.),bac=clamp(.2+.8*dot(vec3(-.707,0.,.707),n),0.,1.),amb=.7+.3*n.y,ao=pow(clamp(tr.w*2.,0.,1.),1.2);
-    vec3 br=(vec3(.4)*amb+vec3(1.)*key*(.8+.5*uBassA)+vec3(.4)*bac)*ao;
-    vec3 c=vec3(1.);c=mix(c,pal(.08+uT*.012)*1.1,clamp(6.*tr.y,0.,1.));c=mix(c,pal(.55+uT*.017)*1.1,pow(clamp(1.-2.*tr.z,0.,1.),8.));
-    col=c*br*exp(-.2*t)*1.1;
+    float oc=0.,w=1.;for(int k=0;k<5;k++){float hh=.02+.06*float(k);oc+=(hh-4.*mapA(p+n*hh,tq))*w;w*=.7;}   // засенчване в ъглите (подът до стените)
+    float key=clamp(dot(vec3(.577,.577,-.577),n),0.,1.),bac=clamp(.2+.8*dot(vec3(-.707,0.,.707),n),0.,1.),amb=.7+.3*n.y,
+      ao=pow(clamp(tr.w*2.,0.,1.),1.2)*clamp(1.-oc*1.5,0.,1.);
+    vec3 br=(vec3(.25)*amb+vec3(1.)*key*(.9+.15*uBassA)+vec3(.25)*bac)*ao;
+    vec3 c=vec3(1.);c=mix(c,pal(.08+uT*.012),clamp(6.*tr.y,0.,1.));c=mix(c,pal(.55+uT*.017),pow(clamp(1.-2.*tr.z,0.,1.),8.));
+    col=mix(col,sqrt(max(c*br,0.)),exp(-.1*t));   // √ — гама (средните тонове не потъват в тъмното); max: pal() дава и −1e-8 → NaN
     col+=pal(uT*.03+tr.w*3.)*exp(-tr.w*30.)*(.4+.8*uTrebA+.8*uBeatHi)*exp(-.2*t);}
-  col+=pal(.5+uT*.02)*float(st)/128.*.12*(.5+uBeat);
+  if(t>14.)col+=sky(rd)*smoothstep(14.,20.,t);
   o=vec4(col,1.);}`;
 
 // течен мрамор (вложено изкривяване на шум)
@@ -886,7 +896,7 @@ const PR=[
   {n:'Резонансен тунел',ty:'tun',par:a=>({over:.85,zoom:1.004+.004*a.beat,decay:.88,bloom:.8,ca:.8,vig:.5})},
   {n:'Течен кристал',ty:'blob',par:(a,t,st)=>{const m=blobMat(st);   // обратната връзка също преминава от единия материал към другия
     return {over:1,zoom:1.005-.002*m,rot:.0015*(1-m),warp:.3*(1-m),flow:1.2*m,decay:.92,hue:.005-.0075*m,blur:.25*(1-m),echo:.22*m,echoZ:.7,bloom:.6+.2*m};}},
-  {n:'Фрактален храм',ty:'frac',par:()=>({over:.88,decay:.85,bloom:.55,ca:.4,vig:.5})},
+  {n:'Фрактален храм',ty:'frac',par:()=>({bloom:.15,ca:.1,vig:.35,expo:1.3})},
   {n:'Рояк',ty:'part',cfg:{shapes:[0,1,2,3,4,5],cam:0},par:()=>({add:1,zoom:1.003,rot:.0012,warp:.2,decay:.92,blur:.4,bloom:1})},
   {n:'Спектрален пейзаж',ty:'part',cfg:{shapes:[6],cam:1,ps:1.8,br:1.6},par:()=>({add:1,decay:.7,bloom:.9})},
   {n:'Фибри на Хопф',ty:'part',cfg:{shapes:[7,8,9],cam:2,br:1.1},par:(a,t)=>({add:1,zoom:.998,rot:-.001,decay:.93,blur:.3,bloom:1.1})},
@@ -987,7 +997,7 @@ function frame(now){
 
 /* ================= интерфейс ================= */
 // версия на визуализатора — сменя се при всяка промяна (видима в ⓘ; така се познава стара версия от кеша на телефона)
-const VER='2026-10-11.1';
+const VER='2026-10-11.5';
 let osdT=0,infoOn=false,idleT=0,digBuf='',digT=0;
 function osd(extra){const i=tgt(),el=$('#osd');
   el.innerHTML=String(i+1).padStart(2,'0')+' · '+PR[i].n+(DR.lock?' 🔒':'')+(extra?'<small>'+extra+'</small>':'');el.classList.add('on');clearTimeout(osdT);osdT=setTimeout(()=>el.classList.remove('on'),3800);}
