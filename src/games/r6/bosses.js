@@ -1,10 +1,10 @@
 /* ================= РЕЗОНАНС 6 · БОСОВЕ ================= */
 defBosses('intro',{
-  shadow:'Сянката! Куршумите минават през нея. Изпей тона (E) — за няколко секунди ще стане истинска.',
-  echoes:'Ехотата! Наяве са само отражения. Смени на сън с E — там можеш да ги удариш.',
-  priest:'Жрецът! Огньовете го пазят. Угаси трите огъня — тогава е уязвим.',
-  cerber:'Триглавият! Изпей тона, докато главите пеят — ще замлъкнат и ще станат уязвими.',
-  firsttone:'Първият тон! Щитът му е от звук. Изпей тона отблизо, за да го пробиеш, после стреляй.'});
+  shadow:'Сянката! Оловото минава през нея като през дим. Изпей тона (E) — за няколко мига ще се вплътни.',
+  echoes:'Ехотата! Наяве са просто сенки. Премини в съня с E — само там можеш да ги раниш.',
+  priest:'Жрецът! Жертвените пламъци го бранят. Потуши и трите огъня, за да свалиш защитата му.',
+  cerber:'Триглавият! Откликни с тона, докато главите реват в хор — така ще секнеш гласа им и ще откриеш пролука.',
+  firsttone:'Първият тон! Акустичният му щит отблъсква всичко. Приближи се и изпей тона от упор, за да го пробиеш!'});
 defBosses('name',{shadow:'СЯНКАТА',echoes:'ЕХОТАТА',priest:'ЖРЕЦЪТ',cerber:'ТРИГЛАВИЯТ',firsttone:'ПЪРВИЯТ ТОН'});
 defBosses('col',{shadow:'#b8a0ff',echoes:'#f0c8ff',priest:'#ff9a4a',cerber:'#e8c25a',firsttone:'#8ab4ff'});
 defBosses('norm',{shadow:1,echoes:1,priest:1,cerber:1,firsttone:0.85});
@@ -18,10 +18,10 @@ const wisps6=(n,x,y)=>{ if(enemies.filter(e=>!e.dead&&e.type==='wisp').length>=n
 
 /* ---------- 1. СЯНКАТА ---------- */
 defBoss('shadow',{make:()=>({type:'shadow',x:AX()+22*T,y:15*T-30,w:14,h:30,hp:700*D.bhp,max:700*D.bhp,state:'intro',t:2,face:-1,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,solidT:0,fireT:1.6,wispT:6,dashT:5,onGround:false})});
-defBoss('shadow',{onTone:d=>{ const b=boss; if(d<260&&b.state!=='intro'){ b.solidT=b.phase>1?2.8:3.6; for(let i=0;i<16;i++) part(b.x+b.w/2,b.y+b.h/2,rnd(-80,80),rnd(-80,80),0.5,'#e8c25a',2,0); showMsg('Сянката стана истинска!',1.2); } }});
+defBoss('shadow',{onTone:d=>{ const b=boss; if(d<260&&b.state!=='intro'){ b.solidT=b.phase>1?2.8:3.6; for(let i=0;i<16;i++) part(b.x+b.w/2,b.y+b.h/2,rnd(-80,80),rnd(-80,80),0.5,'#e8c25a',2,0); showMsg('Сянката се вплътни!',1.2); } }});
 defBoss('shadow',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
-  if(!(b.solidT>0)){ for(let i=0;i<3;i++) part(b.x+rnd(b.w),b.y+rnd(b.h),rnd(-30,30),rnd(-30,30),0.4,'#3a2a5a',2,0); hint6(b,'Куршумите минават през сянката. Изпей тона — E!'); return; }
-  b.hp-=d; bHit6(b,'#e8c25a'); if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Сянката се разделя на светлинки!',2); shake=6; } if(b.hp<=0) bossDie(); }});
+  if(!(b.solidT>0)){ for(let i=0;i<3;i++) part(b.x+rnd(b.w),b.y+rnd(b.h),rnd(-30,30),rnd(-30,30),0.4,'#3a2a5a',2,0); hint6(b,'Куршумите минават през сянката. Изпей тона с E!'); return; }
+  b.hp-=d; bHit6(b,'#e8c25a'); if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Сянката се разпада на реещи се искри!',2); shake=6; } if(b.hp<=0) bossDie(); }});
 defBoss('shadow',{upd:dt=>{
   const b=boss, p=player; b.anim+=dt; b.hitT-=dt; b.solidT=Math.max(0,b.solidT-dt);
   if(b.dead){ bossDeathFx(b,dt); return; }
@@ -50,8 +50,8 @@ defBoss('shadow',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; cons
 defBoss('echoes',{make:()=>{ const a=LVL.arena; if(ERAD) setDoorAll([a.door,a.r0,a.r1],'D'); return {type:'echoes',x:AX()+13*T,y:2.5*T,w:4*T,h:4*T,hp:1000*D.bhp,max:1000*D.bhp,state:'intro',t:2,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,fireT:2,rainT:5,wispT:4,pullT:9}; }});
 const echoVuln=()=>!ERAD||ERA===1;
 defBoss('echoes',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
-  if(!echoVuln()){ sparks(b.x+b.w/2+rnd(-20,20),b.y+b.h/2,3,'#c8b8e8'); hint6(b,'Наяве ехотата са само отражения. Смени на сън — E!'); return; }
-  b.hp-=d; bHit6(b,'#f0c8ff'); if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Трите гласа запяват в унисон!',2); shake=6; } if(b.hp<=0) bossDie(); }});
+  if(!echoVuln()){ sparks(b.x+b.w/2+rnd(-20,20),b.y+b.h/2,3,'#c8b8e8'); hint6(b,'Наяве ехотата са недосегаеми. Премини в съня с E!'); return; }
+  b.hp-=d; bHit6(b,'#f0c8ff'); if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Трите гласа запяват в зловещ унисон!',2); shake=6; } if(b.hp<=0) bossDie(); }});
 defBoss('echoes',{upd:dt=>{
   const b=boss, p=player, a=LVL.arena; b.anim+=dt; b.hitT-=dt;
   if(b.dead){ bossDeathFx(b,dt); if(ERAD&&b.exitDone&&!b.allOpen){ b.allOpen=true; setDoorAll(a.exitDoor,'.'); } return; }
@@ -61,10 +61,10 @@ defBoss('echoes',{upd:dt=>{
   const heads=[0,1,2].map(i=>{ const an=b.anim*1.4+i*2.094; return [b.x+b.w/2+Math.cos(an)*26,b.y+b.h/2+Math.sin(an)*18]; });
   b.fireT-=dt; if(b.fireT<=0&&!p.dead){ b.fireT=(dream?(b.phase>1?1.2:1.6):2.2)*D.rate; const hs=dream?heads:[heads[Math.floor(b.anim)%3]];
     for(const [hx,hy] of hs){ const an=Math.atan2(pcy-hy,pcx-hx); ebullets.push({x:hx,y:hy,vx:Math.cos(an)*165*D.bspd,vy:Math.sin(an)*165*D.bspd,life:4,dmg:10,r:4,orb:true}); } sfxAt('flyer',b); }
-  if(dream){ b.rainT-=dt; if(b.rainT<=0){ b.rainT=b.phase>1?3.5:5; for(let i=0;i<(b.phase>1?7:5);i++) bossOrb(AX()+(2+Math.random()*26)*T,T,rnd(-20,20),40,{grav:true,dmg:10,r:4,life:4}); showMsg('Небето на съня се руши!',1); } }
+  if(dream){ b.rainT-=dt; if(b.rainT<=0){ b.rainT=b.phase>1?3.5:5; for(let i=0;i<(b.phase>1?7:5);i++) bossOrb(AX()+(2+Math.random()*26)*T,T,rnd(-20,20),40,{grav:true,dmg:10,r:4,life:4}); showMsg('Небето на съня се пропуква!',1); } }
   else { b.wispT-=dt; if(b.wispT<=0){ b.wispT=b.phase>1?4:6; wisps6(b.phase>1?3:2,b.x+b.w/2,b.y+b.h); } }
   // във втората фаза ехотата те изтръгват от съня
-  if(b.phase>1&&ERAD&&ERA===1){ b.pullT-=dt; if(b.pullT<=0){ b.pullT=9; if(switchEra(true)){ showMsg('Ехотата те събудиха насила! Върни се в съня — E.',2); flash=0.6; flashCol='#f0c8ff'; } } }
+  if(b.phase>1&&ERAD&&ERA===1){ b.pullT-=dt; if(b.pullT<=0){ b.pullT=9; if(switchEra(true)){ showMsg('Ехотата те изтръгнаха от съня! Върни се обратно с E.',2); flash=0.6; flashCol='#f0c8ff'; } } }
 }});
 defBoss('echoes',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; const cx=Math.round(b.x+b.w/2-cam), cy=Math.round(b.y+b.h/2), v=echoVuln(); ctx.save(); const fa=b.dead?1-clamp((b.deathT-1.8)/0.8,0,1):1;
   ctx.globalAlpha=fa*(v?1:0.4); glow6(cx,cy,v?'240,200,255':'140,120,200',40,0.35);
@@ -86,10 +86,10 @@ defFoe('pyre',{draw:e=>{ if(e.dead&&e.deadT>0.6) return; const x=Math.round(e.x+
   ctx.fillStyle='#ffe08a'; ctx.beginPath(); ctx.moveTo(x-3,y-7); ctx.lineTo(x-f,y-14); ctx.lineTo(x+3,y-7); ctx.closePath(); ctx.fill(); }});
 const PRIEST_POS=[[32.5,12],[40.5,9],[48.5,12],[40.5,15]], PYRES=[[29,14],[40,8],[52,14]];
 defBoss('priest',{make:()=>{ for(const [tx,row] of PYRES) summ6('pyre',tx,row,'pyre'); return {type:'priest',x:AX()+14.5*T-7,y:9*T-32,w:14,h:32,hp:900*D.bhp,max:900*D.bhp,state:'intro',t:2,face:-1,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,pos:1,fireT:1.6,tpT:2.6,sumT:8}; }});
-defBoss('priest',{onTone:d=>{ const b=boss; if(d<200&&b.state==='fight'){ b.tpT=Math.max(b.tpT,2.2); b.fireT=Math.max(b.fireT,1.8); showMsg('Тонът прекъсна заклинанието!',1); } }});
+defBoss('priest',{onTone:d=>{ const b=boss; if(d<200&&b.state==='fight'){ b.tpT=Math.max(b.tpT,2.2); b.fireT=Math.max(b.fireT,1.8); showMsg('Тонът прекъсна призоваването!',1); } }});
 defBoss('priest',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
-  if(b.state!=='open'){ sparks(b.x+b.w/2+rnd(-6,6),b.y+b.h/2+rnd(-10,10),3,'#ff9a4a'); hint6(b,'Огньовете го пазят. Угаси трите огъня!'); return; }
-  b.hp-=d; bHit6(b,'#ff9a4a'); if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('„Стражи на рода, станете!“',2); shake=6; } if(b.hp<=0) bossDie(); }});
+  if(b.state!=='open'){ sparks(b.x+b.w/2+rnd(-6,6),b.y+b.h/2+rnd(-10,10),3,'#ff9a4a'); hint6(b,'Пламъците го бранят. Потуши трите огъня!'); return; }
+  b.hp-=d; bHit6(b,'#ff9a4a'); if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('„Стражи на древното семе, надигнете се!“',2); shake=6; } if(b.hp<=0) bossDie(); }});
 const priestTp=(b,n)=>{ b.pos=n; const [tx,row]=PRIEST_POS[n]; b.x=AX()+(tx-26)*T-b.w/2; b.y=row*T-b.h; for(let i=0;i<18;i++) part(b.x+b.w/2,b.y+b.h/2,rnd(-70,70),rnd(-70,70),0.5,'#ff9a4a',2,0); };
 defBoss('priest',{upd:dt=>{
   const b=boss, p=player; b.anim+=dt; b.hitT-=dt;
@@ -99,8 +99,8 @@ defBoss('priest',{upd:dt=>{
   if(b.state==='fight'){
     b.tpT-=dt; if(b.tpT<=0){ b.tpT=b.phase>1?2:2.6; let n=b.pos; while(n===b.pos) n=Math.floor(Math.random()*3); priestTp(b,n); }
     b.fireT-=dt; if(b.fireT<=0&&!p.dead){ b.fireT=(b.phase>1?1.3:1.8)*D.rate; const tt=1.1; for(const o of (b.phase>1?[-32,0,32]:[-16,16])){ const tx=pcx+o; bossOrb(bcx,b.y+4,(tx-bcx)/tt,(p.y+p.h-6-b.y)/tt-0.5*G*tt,{grav:true,dmg:12,r:5,red:true,life:5}); } sfxAt('throwG',b); }
-    if(!alive6('pyre').length){ b.state='open'; b.t=b.phase>1?5:6.5; priestTp(b,3); showMsg('Огньовете угаснаха! Жрецът е беззащитен!',1.6); shake=5; } }
-  else if(b.state==='open'){ b.t-=dt; if(b.t<=0){ b.state='fight'; b.tpT=0.4; for(const [tx,row] of PYRES) summ6('pyre',tx,row,'pyre'); showMsg('Жрецът отново запали огньовете.',1.4); } }
+    if(!alive6('pyre').length){ b.state='open'; b.t=b.phase>1?5:6.5; priestTp(b,3); showMsg('Огньовете угаснаха! Жрецът е открит за удар!',1.6); shake=5; } }
+  else if(b.state==='open'){ b.t-=dt; if(b.t<=0){ b.state='fight'; b.tpT=0.4; for(const [tx,row] of PYRES) summ6('pyre',tx,row,'pyre'); showMsg('Жрецът възпламени олтарите наново.',1.4); } }
   if(b.phase>1){ b.sumT-=dt; if(b.sumT<=0){ b.sumT=9; if(enemies.filter(e=>!e.dead&&e.type==='thrax').length<2) mechSpawn('thrax',AX()+(pcx>AX()+15*T?4:25)*T); } }
   if(!p.dead&&ov(b,p)){ b.bite=(b.bite||0)-dt; if(b.bite<=0){ b.bite=0.8; hurtPlayer(10,sgn(pcx-bcx||1)*220); } }
 }});
@@ -116,11 +116,11 @@ defBoss('priest',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; begi
 
 /* ---------- 4. ТРИГЛАВИЯТ ---------- */
 defBoss('cerber',{make:()=>({type:'cerber',x:AX()+18*T,y:15*T-46,w:72,h:46,hp:1000*D.bhp,max:1000*D.bhp,state:'intro',t:2,face:-1,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,act:0})});
-defBoss('cerber',{onTone:d=>{ const b=boss; if(b.state==='sing'&&d<320){ b.state='quiet'; b.t=b.phase>1?3.4:4.2; shake=6; showMsg('Главите замлъкнаха! Стреляй!',1.4); for(let i=0;i<24;i++) part(b.x+b.w/2,b.y+10,rnd(-100,100),rnd(-80,20),0.6,'#e8c25a',2,0); }
-  else if(b.state!=='quiet'&&b.state!=='intro') hint6(b,'Изчакай главите да запеят — тогава изпей тона.'); }});
+defBoss('cerber',{onTone:d=>{ const b=boss; if(b.state==='sing'&&d<320){ b.state='quiet'; b.t=b.phase>1?3.4:4.2; shake=6; showMsg('Главите замлъкнаха! Стреляй сега!',1.4); for(let i=0;i<24;i++) part(b.x+b.w/2,b.y+10,rnd(-100,100),rnd(-80,20),0.6,'#e8c25a',2,0); }
+  else if(b.state!=='quiet'&&b.state!=='intro') hint6(b,'Изчакай хорът да запее — тогава откликни с тона.'); }});
 defBoss('cerber',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
-  if(b.state!=='quiet'){ sparks(b.x+b.w/2+rnd(-20,20),b.y+12,3,'#e8c25a'); hint6(b,'Акордът на главите го пази. Изпей тона, докато пеят!'); return; }
-  b.hp-=d; bHit6(b,'#e8c25a'); if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Триглавият вие — сенките на мъртвите идват!',2); shake=8; } if(b.hp<=0) bossDie(); }});
+  if(b.state!=='quiet'){ sparks(b.x+b.w/2+rnd(-20,20),b.y+12,3,'#e8c25a'); hint6(b,'Хорът на звера го пази. Изпей тона точно докато пеят!'); return; }
+  b.hp-=d; bHit6(b,'#e8c25a'); if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Триглавият завива диво — сенките на мъртвите прииждат!',2); shake=8; } if(b.hp<=0) bossDie(); }});
 defBoss('cerber',{upd:dt=>{
   const b=boss, p=player; b.anim+=dt; b.hitT-=dt;
   if(b.dead){ bossDeathFx(b,dt); return; }
@@ -149,12 +149,12 @@ defBoss('cerber',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; cons
 
 /* ---------- 5. ПЪРВИЯТ ТОН ---------- */
 defBoss('firsttone',{make:()=>({type:'firsttone',x:AX()+13*T,y:2*T,w:4*T,h:4*T,hp:1500*D.bhp,max:1500*D.bhp,state:'intro',t:2.5,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,shield:1,openT:0,fireT:2,beamT:5,sumT:7,mech:true})});
-defBoss('firsttone',{onTone:d=>{ const b=boss; if(b.state==='intro') return; if(d<320){ b.openT=b.phase>2?2.6:3.4; showMsg('Щитът е пробит!',1); for(let i=0;i<30;i++) part(b.x+b.w/2,b.y+b.h/2,rnd(-120,120),rnd(-120,120),0.6,'#e8c25a',2,0); } else hint6(b,'Твърде далеч си. Приближи се и изпей тона!'); }});
+defBoss('firsttone',{onTone:d=>{ const b=boss; if(b.state==='intro') return; if(d<320){ b.openT=b.phase>2?2.6:3.4; showMsg('Щитът е пробит!',1); for(let i=0;i<30;i++) part(b.x+b.w/2,b.y+b.h/2,rnd(-120,120),rnd(-120,120),0.6,'#e8c25a',2,0); } else hint6(b,'Твърде далеч си! Приближи се плътно и изпей тона.'); }});
 defBoss('firsttone',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
-  if(b.shield>0.4){ sparks(b.x+b.w/2+rnd(-24,24),b.y+b.h/2+rnd(-24,24),3,'#8ab4ff'); hint6(b,'Щитът от звук отразява всичко. Изпей тона!'); return; }
+  if(b.shield>0.4){ sparks(b.x+b.w/2+rnd(-24,24),b.y+b.h/2+rnd(-24,24),3,'#8ab4ff'); hint6(b,'Звуковият щит отразява всичко. Изпей тона отблизо!'); return; }
   b.hp-=d; bHit6(b,'#ffffff');
-  if(b.phase===1&&b.hp<b.max*0.6){ b.phase=2; showMsg('„Ти, който слушаш. Защо се съпротивляваш?“',2.2); shake=8; }
-  else if(b.phase===2&&b.hp<b.max*0.3){ b.phase=3; showMsg('Светлината се свива. Тонът става почти непоносим!',2.2); shake=10; }
+  if(b.phase===1&&b.hp<b.max*0.6){ b.phase=2; showMsg('„Ти, който чуваш тона... Защо се противиш?“',2.2); shake=8; }
+  else if(b.phase===2&&b.hp<b.max*0.3){ b.phase=3; showMsg('Светлината се сгъстява. Тонът става оглушителен!',2.2); shake=10; }
   if(b.hp<=0) bossDie(); }});
 defBoss('firsttone',{upd:dt=>{
   const b=boss, p=player; b.anim+=dt; b.hitT-=dt;

@@ -1,10 +1,10 @@
 /* ================= РЕЗОНАНС 8 · БОСОВЕ И АРЕНИ =================
    Арените ги строи r8SvArena (генерираните епизоди и оцеляването — както r1). 34 колони: под на ред 15, изход в колона 29. */
-defBosses('intro',{r8trolley:'Тролеят! Качи се на площадките, докато минава отдолу — и стреляй, когато спре да обърне щангите.',
-  r8switch:'Стрелочникът! Будката пуска вагоните по релсите — прескачай ги или се качи горе. Стреляй по будката.',
-  r8xray:'Рентгенът! Където мине лъчът, нещата се забравят. Крий се под оловните паравани и стреляй нагоре (↑).',
-  r8mirror:'Отражението! Върви по стъпките ти със закъснение. Не стой на едно място — и стреляй.',
-  r8drafter:'Чертожника! В СЕГА щитът го пази — превключи на СПОМЕН (E), за да го удариш.'});
+defBosses('intro',{r8trolley:'Тролеят! Качи се по платформите, докато минава отдолу — и стреляй, щом спре да обърне щангите.',
+  r8switch:'Стрелочникът! Будката засилва вагони по релсите — прескачай ги или се качи отгоре. Стреляй по будката.',
+  r8xray:'Рентгенът! Където падне лъчът, спомените се изтриват. Крий се зад оловните паравани и стреляй нагоре (↑).',
+  r8mirror:'Отражението! Преследва те по петите със закъснение. Не се спирай на едно място и стреляй непрекъснато.',
+  r8drafter:'Чертожника! В СЕГА щитът го прави неуязвим — превключи на СПОМЕН (E), за да го поразиш.'});
 defBosses('name',{r8trolley:'ТРОЛЕЯТ',r8switch:'СТРЕЛОЧНИКЪТ',r8xray:'РЕНТГЕНЪТ',r8mirror:'ОТРАЖЕНИЕТО',r8drafter:'ЧЕРТОЖНИКА'});
 defBosses('col',{r8trolley:'#8ad8ff',r8switch:'#ff6a5a',r8xray:'#c8f0ff',r8mirror:'#9ad8e8',r8drafter:'#ffd27a'});
 defBosses('norm',{r8trolley:1,r8switch:1,r8xray:1,r8mirror:1,r8drafter:1});
@@ -13,26 +13,26 @@ function r8SvArena(type,d,o){   // вика я svTry
   const {fill,colG,sky,fixed}=o, r0=sky?0:2;
   for(let x=d;x<d+32;x++) colG(x,15);
   fill(d+29,r0,d+29,14,'D');
-  const A={type,door:d,r0,r1:14,exitDoor:[d+29,r0,14],msg:'Пътят е свободен.'};
+  const A={type,door:d,r0,r1:14,exitDoor:[d+29,r0,14],msg:'Пътят е открит.'};
   if(type==='r8trolley'){   // площадки на ред 10 и стълби до тях — тролеят минава отдолу
     for(const [a,b] of [[1,6],[11,18],[23,28]]) fill(d+a,10,d+b,10,'=');
     for(const lx of [3,14,26]) fill(d+lx,10,d+lx,14,'H');
-    fixed.push(['health',d+5,9],['ammo',d+16,9],['health',d+24,9],['battery',d+8,14,'E']); A.msg='Тролеят спря. Пътят към депото е свободен.'; }
+    fixed.push(['health',d+5,9],['ammo',d+16,9],['health',d+24,9],['battery',d+8,14,'E']); A.msg='Тролеят застина. Пътят към депото е свободен.'; }
   if(type==='r8switch'){   // площадки на ред 11 — над вагоните; будката е вдясно (колони 22–26)
     for(const [a,b] of [[1,7],[10,17]]) fill(d+a,11,d+b,11,'=');
     for(const lx of [4,13]) fill(d+lx,11,d+lx,14,'H');
-    fixed.push(['health',d+6,10],['ammo',d+15,10],['grenade',d+2,10],['health',d+9,14,'E']); A.msg='Стрелките замръзнаха. Влаковете спряха.'; }
+    fixed.push(['health',d+6,10],['ammo',d+15,10],['grenade',d+2,10],['health',d+9,14,'E']); A.msg='Стрелките блокираха. Влаковете спряха.'; }
   if(type==='r8xray'){   // оловните паравани на ред 11 — лъчът ги топи; при прераждане се връщат
     A.covers=[]; for(const [a,b] of [[3,6],[11,14],[19,22]]) for(let x=d+a;x<=d+b;x++){ fill(x,11,x,11,'='); A.covers.push([x,11]); }
-    fixed.push(['health',d+5,14],['ammo',d+13,14],['health',d+21,14],['battery',d+9,14,'E']); A.msg='Апаратът угасна. Кабинетът е отворен.'; }
+    fixed.push(['health',d+5,14],['ammo',d+13,14],['health',d+21,14],['battery',d+9,14,'E']); A.msg='Апаратът изключи. Кабинетът е отворен.'; }
   if(type==='r8mirror'){   // витринната зала: две площадки със стълби — има къде да се бяга
     for(const [a,b] of [[4,9],[17,22]]) fill(d+a,11,d+b,11,'=');
     for(const lx of [6,19]) fill(d+lx,11,d+lx,14,'H');
-    fixed.push(['health',d+8,10],['ammo',d+18,10],['health',d+13,14],['battery',d+25,14,'E']); A.msg='Стъклото се пропука. Залата е отворена.'; }
+    fixed.push(['health',d+8,10],['ammo',d+18,10],['health',d+13,14],['battery',d+25,14,'E']); A.msg='Стъклото се пръсна. Залата е свободна.'; }
   if(type==='r8drafter'){   // дворът на „Христо Ботев“: финалът няма изход — завършва с избора (лостовете при бюста)
     for(const [a,b] of [[8,12],[16,20]]) fill(d+a,11,d+b,11,'='); for(const lx of [10,18]) fill(d+lx,11,d+lx,14,'H');
     A.exitDoor=[d,r0,14]; A.cp=d+2; fixed.push(['health',d+11,10],['ammo',d+19,10],['health',d+6,14],['battery',d+14,14,'E']);
-    A.msg='Резонаторът замлъкна. При бюста на Ботев: запази града такъв — или върни старата карта.'; }
+    A.msg='Резонаторът замлъкна. Пред бюста на Ботев: запази града такъв — или върни старата карта.'; }
   return A;
 }
 
@@ -43,7 +43,7 @@ defBoss('r8trolley',{make:()=>{ const a=LVL.arena;
     dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,dir:-1,phase:1,sparkT:2.4,spawnT:4,drops:[],bite:0,pole:0}; }});
 defBoss('r8trolley',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
   b.hp-=d*(b.state==='stop'?1.5:1); b.hitT=0.08; sparks(b.x+b.w/2+rnd(-30,30),b.y+rnd(4,30),3,'#bfe8ff');
-  if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; b.spawnT=0; shake=6; showMsg('Щангите пращят — от жицата падат искри!',2); }
+  if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; b.spawnT=0; shake=6; showMsg('Щангите пращят — от жицата се сипят искри!',2); }
   if(b.hp<=0) bossDie(); }});
 defBoss('r8trolley',{upd:dt=>{
   const b=boss, p=player, a=LVL.arena; b.anim+=dt; b.hitT-=dt; b.bite-=dt;
@@ -87,7 +87,7 @@ defBoss('r8switch',{make:()=>{ const a=LVL.arena;
     dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,wagT:1.5,fireT:2.5,side:1,wag:[],lever:0}; }});
 defBoss('r8switch',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
   b.hp-=d*(b.lever>0.5?1.5:1); b.hitT=0.08; sparks(b.x+rnd(8,b.w-8),b.y+rnd(10,b.h-10),3,'#ffb04a');
-  if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; shake=6; showMsg('Будката превключва всички стрелки — вагоните идват и от двете страни!',2.2); }
+  if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; shake=6; showMsg('Будката превключва всички стрелки — вагоните връхлитат от двете страни!',2.2); }
   if(b.hp<=0){ b.wag=[]; bossDie(); } }});
 defBoss('r8switch',{upd:dt=>{
   const b=boss, p=player, a=LVL.arena; b.anim+=dt; b.hitT-=dt; b.lever=Math.max(0,b.lever-dt*1.5);
@@ -126,7 +126,7 @@ defBoss('r8xray',{make:()=>{ const a=LVL.arena; for(const k in r8XrHit) delete r
 defBoss('r8xray',{onRespawn:()=>{ const a=LVL.arena; for(const [x,y] of a.covers) if(map[y][x]!=='='){ map[y][x]='='; redrawCols(x,x); } for(const k in r8XrHit) delete r8XrHit[k]; }});
 defBoss('r8xray',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
   b.hp-=d; b.hitT=0.08; sparks(b.x+b.w/2+rnd(-12,12),b.y+b.h,3,'#c8f0ff');
-  if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; shake=6; showMsg('Апаратът се нагрява — лъчът е по-бърз!',2); for(const sx of [4,24]){ const e=makeEnemy('drone',(LVL.arena.door+sx)*T+8,8*T); e.summoned=true; e.alert=true; enemies.push(e); } }
+  if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; shake=6; showMsg('Апаратът прегрява — лъчът удря още по-бързо!',2); for(const sx of [4,24]){ const e=makeEnemy('drone',(LVL.arena.door+sx)*T+8,8*T); e.summoned=true; e.alert=true; enemies.push(e); } }
   if(b.hp<=0) bossDie(); }});
 defBoss('r8xray',{upd:dt=>{
   const b=boss, p=player, a=LVL.arena; b.anim+=dt; b.hitT-=dt;
@@ -161,7 +161,7 @@ defBoss('r8mirror',{make:()=>{ const a=LVL.arena;
     phase:1,trail:[],face:-1,fireT:2.2,bite:0,twin:null}; }});
 defBoss('r8mirror',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
   b.hp-=d; b.hitT=0.08; sparks(b.x+b.w/2,b.y+b.h/2,4,'#c8f0ff');
-  if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; shake=5; showMsg('Стъклото се пука — отраженията стават две!',2); b.twin={x:b.x,y:b.y}; }
+  if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; shake=5; showMsg('Стъклото се пука — отраженията вече са две!',2); b.twin={x:b.x,y:b.y}; }
   if(b.hp<=0){ b.twin=null; bossDie(); } }});
 defBoss('r8mirror',{upd:dt=>{
   const b=boss, p=player; b.anim+=dt; b.hitT-=dt; b.bite-=dt;
@@ -189,35 +189,46 @@ defBoss('r8mirror',{glow:b=>[b.x+8,b.y+14,60,0.6]});
 // Под 30 % щитът го пази и в двата слоя — сваля го дървеното оръдие (лостът в арената). След боя — изборът на края.
 const R8_END={
  1:{t:'КРАЙ · ЗАПАЗЕНИЯТ ГРАД',
-    end:['Вела спира резонатора. Тринадесетият удар не идва.','Плевен остава такъв, какъвто е тази нощ — разместен. Но на сутринта хората помнят: спирката, която я нямаше, тролея без шофьор, тринадесетте удара.','Дамянов сяда на пейката-книга в двора и гледа как децата влизат в училище.'],
-    win:['Градът остана разместен, но вече никой не забравя.','Петър сверява часовника на кулата. Той бие дванадесет и спира.','Всеки сам ще си начертае пътя до училище.']},
+    end:['Вела изключва резонатора. Тринадесетият удар така и не прозвучава.',
+         'Плевен остава такъв, какъвто е тази нощ — пренареден. Но на сутринта хората помнят всичко: спирката, която беше изчезнала, тролея без ватман, тринадесетте удара.',
+         'Дамянов присяда на пейката във форма на разтворена книга в двора и тихо наблюдава как децата влизат за първи час.'],
+    win:['Градът остана завинаги преобразен, но паметта на хората е жива.',
+         'Петър сверява часовника на кулата. Той отмерва точно дванадесет удара и спира.',
+         'Оттук нататък всеки сам ще чертае своя път към училище.']},
  2:{t:'КРАЙ · СТАРАТА КАРТА',
-    end:['Вела пуска тона за последен път — обратно.','Улиците се връщат по местата си една по една, като стрелки на часовник.','С последната улица си отива и споменът ѝ.'],
-    win:['Плевен е такъв, какъвто беше. Никой не помни нищо.','На сутринта Вела кара към работа и спира пред „Христо Ботев“, без да знае защо.']},
+    end:['Вела задейства тона за последен път — с обратен знак.',
+         'Улиците се връщат по старите си места една по една, точно както стрелките на часовник.',
+         'А с наместването на последния камък си отива и последният спомен.'],
+    win:['Плевен отново е такъв, какъвто беше някога. Никой не помни нищо от случилото се.',
+         'На сутринта Вела кара велосипеда към работа и неволно спира пред „Христо Ботев“, без да знае защо.']},
  3:{t:'КРАЙ · ЗАПОМНЕНИЯТ ГРАД',   // само със всичките 20 картички
-    end:['Вела пуска тона обратно — но преди тринадесетия удар изважда картичките.','Раздава ги една по една: на Петър, на Ганчева, на децата пред училището, на самия Дамянов. Всяка е място, което някой е обичал.','Улиците се връщат по местата си. И този път хората помнят — защото някой им е дал спомена в ръцете.'],
-    win:['Плевен е такъв, какъвто беше — и всички помнят какво се случи.','Дамянов пази своята картичка от 1977 г. в джоба на палтото.','Вела кара към работа. На всяка спирка някой ѝ маха.']}};
+    end:['Вела завърта тона обратно — но точно преди тринадесетия удар изважда събраните картички.',
+         'Раздава ги една по една: на Петър, на д-р Ганчева, на децата пред училището, на самия Дамянов. Всяка от тях запечатва кътче, скъпо за нечие сърце.',
+         'Улиците се наместват обратно по местата си. Но този път градът не забравя — защото всеки държи живия спомен в ръцете си.'],
+    win:['Плевен се върна в познатите си очертания — но всички помнят какво се случи.',
+         'Дамянов грижливо пази своята картичка от 1977 г. във вътрешния джоб на палтото си.',
+         'Вела върти педалите към работа. На всяка спирка някой ѝ маха с благодарност.']}};
 function r8Choose(n){ if(MST.chose) return; MST.chose=1; store.set('rz8.ending',n); flash=1; flashCol=n===1?'#ffe2a0':'#d8f4ff'; shake=8;
   if(AC){ for(let i=0;i<4;i++) osc({type:'sine',f:[523,659,784,1046][i],t:1.6,v:0.06,when:i*0.3}); }
   LVL.end=R8_END[n].end; MST.endAt=lvT+1.5; }
 const r8Lev=v=>{ LEVERS=LEVERS.filter(q=>!q.r8); if(v) LEVERS.push(...v); };
 defBoss('r8drafter',{make:()=>{ const a=LVL.arena;
   r8Lev([{x:a.door+5,y:15,label:'запали оръдието',r8:1,cannon:1,on:false,near:false,fn:v=>{ const b=boss; if(!b||b.dead) return;
-    if(b.phase<3){ showMsg('Оръдието е заредено. Още не — щитът му още се пука сам в СПОМЕН.',2.4); v.on=false; return; }
-    b.broken=7; b.ball=0.6; shake=10; flash=0.6; flashCol='#ffe2a0'; sfxAt('boom',b); showMsg('Оръдието гръмна! Щитът падна!',2); v.rearm=9; }}]);
+    if(b.phase<3){ showMsg('Оръдието е заредено. Изчакай — щитът му все още се пропуква сам в СПОМЕН.',2.4); v.on=false; return; }
+    b.broken=7; b.ball=0.6; shake=10; flash=0.6; flashCol='#ffe2a0'; sfxAt('boom',b); showMsg('Оръдието гръмна! Щитът е разрушен!',2); v.rearm=9; }}]);
   return {type:'r8drafter',x:(a.door+14)*T,y:15*T-34,w:22,h:34,hp:900*D.bhp,max:900*D.bhp,state:'intro',t:1.6,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,
     phase:1,ringT:2.5,rulT:4.5,rul:null,backT:7,broken:0,ball:0,dir:1,chose:false}; }});
 const r8Open=b=>b.broken>0||(b.phase<3&&ERAD&&ERA===1);
 defBoss('r8drafter',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
-  if(!r8Open(b)){ sparks(b.x+b.w/2+rnd(-14,14),b.y+rnd(0,b.h),3,'#ffd27a'); if(!b.hintT||lvT-b.hintT>4){ b.hintT=lvT; showMsg(b.phase<3?'Щитът го пази. Превключи на СПОМЕН — E.':'Щитът го пази и в двата слоя. Оръдието!',1.6); } return; }
+  if(!r8Open(b)){ sparks(b.x+b.w/2+rnd(-14,14),b.y+rnd(0,b.h),3,'#ffd27a'); if(!b.hintT||lvT-b.hintT>4){ b.hintT=lvT; showMsg(b.phase<3?'Щитът го пази. Превключи на СПОМЕН с E!':'Щитът го пази и в двата свята! Оръдието!',1.6); } return; }
   b.hp-=d; b.hitT=0.08; sparks(b.x+b.w/2,b.y+b.h/2,4,'#ffd27a');
-  if(b.phase===1&&b.hp<b.max*0.6){ b.phase=2; shake=5; showMsg('„Не разбираш ли? Аз го поправям!“',2.2); for(const sx of [4,24]){ const e=makeEnemy('r8walker',(LVL.arena.door+sx)*T+8,15*T); e.summoned=true; enemies.push(e); } }
-  if(b.phase===2&&b.hp<b.max*0.3){ b.phase=3; shake=8; showMsg('„Тук няма спомен, който да ме спре!“ — щитът го пази и в двата слоя. Оръдието!',3); }
+  if(b.phase===1&&b.hp<b.max*0.6){ b.phase=2; shake=5; showMsg('„Не разбираш ли? Аз просто го поправям!“',2.2); for(const sx of [4,24]){ const e=makeEnemy('r8walker',(LVL.arena.door+sx)*T+8,15*T); e.summoned=true; enemies.push(e); } }
+  if(b.phase===2&&b.hp<b.max*0.3){ b.phase=3; shake=8; showMsg('„Тук вече няма спомен, който да ме спре!“ — щитът действа и в двата свята! Оръдието!',3); }
   if(b.hp<=0){ b.rul=null; bossDie(); } }});
 defBoss('r8drafter',{upd:dt=>{
   const b=boss, p=player, a=LVL.arena; b.anim+=dt; b.hitT-=dt; b.broken=Math.max(0,b.broken-dt); b.ball=Math.max(0,b.ball-dt);
   for(const v of LEVERS) if(v.cannon&&v.rearm!=null){ v.rearm-=dt; if(v.rearm<=0){ v.rearm=null; v.on=false; } }
-  if(b.dead){ bossDeathFx(b,dt); if(MST.r8all&&lvT>=MST.r8all){ MST.r8all=0; radio('Вела… ти събра всички картички. Има и трети път — раздай ги.'); }
+  if(b.dead){ bossDeathFx(b,dt); if(MST.r8all&&lvT>=MST.r8all){ MST.r8all=0; radio('Вела… ти събра всички картички! Има и трети път — раздай ги.'); }
     if(b.deathT>2.6&&!b.chose&&!SURV){ b.chose=true; const all=memCount()>=memTotal();   // третият лост — само със всичките картички
       r8Lev([{x:a.door+20,y:15,label:'запази града',r8:1,fn:()=>r8Choose(1),on:false,near:false},{x:a.door+25,y:15,label:'върни старата карта',r8:1,fn:()=>r8Choose(2),on:false,near:false}]
         .concat(all?[{x:a.door+14,y:15,label:'раздай картичките',r8:1,fn:()=>r8Choose(3),on:false,near:false}]:[]));

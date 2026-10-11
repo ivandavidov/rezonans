@@ -1,10 +1,10 @@
 /* ================= РЕЗОНАНС 7 · БОСОВЕ ================= */
 defBosses('intro',{
-  syntax:'?SYNTAX ERROR! Поправи трите реда — застани на курсорите и натисни E. Тогава грешката е уязвима.',
-  snake:'Змията! Уязвима е само главата. Пази се от опашката.',
-  dark:'Тъмния! Удряй го само когато сте в една палитра — сменяй с E.',
-  copy:'Копието! Повтаря движенията ти със закъснение. Спри за миг, отдръпни се — и стреляй по замръзналото копие.',
-  nula:'Нулата! BREAK сваля щита ѝ. Когато отслабне — RUN на средната платформа.'});
+  syntax:'?SYNTAX ERROR! Поправи трите реда — застани на курсорите и натисни E. Едва тогава грешката става уязвима.',
+  snake:'Змията! Уязвима е единствено главата ѝ. Пази се от опашката!',
+  dark:'Тъмния! Удряй го само когато сте в една и съща палитра — сменяй я с E.',
+  copy:'Копието! Повтаря движенията ти със забавяне. Спри за миг, отдръпни се и стреляй по замръзналата фигура!',
+  nula:'Нулата! BREAK сваля защитното ѝ поле. Щом отслабне — активирай RUN на средната платформа!'});
 defBosses('name',{syntax:'?SYNTAX ERROR',snake:'ЗМИЯТА',dark:'ТЪМНИЯ',copy:'КОПИЕТО',nula:'НУЛАТА'});
 defBosses('col',{syntax:'#8aff9a',snake:'#2ae84a',dark:'#e82ae8',copy:'#ffd84a',nula:'#ffffff'});
 defBosses('norm',{syntax:1,snake:1,dark:1,copy:1,nula:0.85});
@@ -19,10 +19,10 @@ const glow7=(x,y,col,r,a)=>{ ctx.save(); ctx.globalCompositeOperation='lighter';
 const SYN_FIX=[[29,14,'FIX 10'],[40,8,'FIX 20'],[52,14,'FIX 30']];
 defBoss('syntax',{make:()=>{ dropBossCursors(); for(const [tx,row,l] of SYN_FIX) addCursor('POKE',ax7(tx),row,{label:l,boss:true,syn:1});
   return {type:'syntax',x:AX()+8*T,y:3*T,w:13*10,h:18,hp:700*D.bhp,max:700*D.bhp,state:'intro',t:2,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,fireT:1.5,rainT:3,open:0}; }});
-defBoss('syntax',{onCmd:c=>{ const b=boss; if(!c.o.syn||b.state==='open') return; const left=CURS.filter(k=>k.o.syn&&!k.done).length; if(left>0) showMsg('Поправен ред. Остават '+left+'.',1.2);
-  else { b.state='open'; b.t=b.phase>1?5:6.5; shake=6; showMsg('Синтаксисът е поправен — грешката е уязвима!',1.6); } }});
+defBoss('syntax',{onCmd:c=>{ const b=boss; if(!c.o.syn||b.state==='open') return; const left=CURS.filter(k=>k.o.syn&&!k.done).length; if(left>0) showMsg('Поправен ред. Остават още '+left+'.',1.2);
+  else { b.state='open'; b.t=b.phase>1?5:6.5; shake=6; showMsg('Синтаксисът е възстановен — грешката вече е уязвима!',1.6); } }});
 defBoss('syntax',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
-  if(b.state!=='open'){ sparks(b.x+rnd(b.w),b.y+b.h/2,3,'#8aff9a'); hint7(b,'Грешката е недосегаема. Поправи трите реда на курсорите!'); return; }
+  if(b.state!=='open'){ sparks(b.x+rnd(b.w),b.y+b.h/2,3,'#8aff9a'); hint7(b,'Грешката е неуязвима! Поправи трите реда от курсорите!'); return; }
   b.hp-=d; bHit7(b,'#ffffff'); if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('„?SYNTAX ERROR IN EVERYTHING!“',2); shake=6; } if(b.hp<=0){ dropBossCursors(); bossDie(); } }});
 defBoss('syntax',{upd:dt=>{
   const b=boss, p=player; b.anim+=dt; b.hitT-=dt;
@@ -30,7 +30,7 @@ defBoss('syntax',{upd:dt=>{
   if(b.state==='intro'){ b.t-=dt; if(b.t<=0) b.state='fight'; return; }
   const pcx=p.x+p.w/2, bcx=b.x+b.w/2;
   if(b.state==='open'){ b.open=Math.min(1,b.open+dt*2); b.y+=(9.5*T-b.y)*Math.min(1,dt*3); b.t-=dt;
-    if(b.t<=0){ b.state='fight'; for(const c of CURS) if(c.o.syn) c.done=false; showMsg('Някой пак написа PRNIT. Грешката се върна!',1.6); } return; }
+    if(b.t<=0){ b.state='fight'; for(const c of CURS) if(c.o.syn) c.done=false; showMsg('Някой отново натрака PRNIT! Грешката се върна!',1.6); } return; }
   b.open=Math.max(0,b.open-dt*2); b.y+=(3*T-b.y)*Math.min(1,dt*2); b.x=AX()+8*T+Math.sin(b.anim*0.6)*7*T;
   b.fireT-=dt; if(b.fireT<=0&&!p.dead){ b.fireT=(b.phase>1?1.1:1.6)*D.rate; const a=Math.atan2(p.y+p.h/2-(b.y+b.h),pcx-bcx); for(const o of (b.phase>1?[-0.2,0,0.2]:[-0.1,0.1])) ebullets.push({x:bcx,y:b.y+b.h,vx:Math.cos(a+o)*170*D.bspd,vy:Math.sin(a+o)*170*D.bspd,life:3,dmg:10,r:4,orb:true}); }
   b.rainT-=dt; if(b.rainT<=0){ b.rainT=b.phase>1?2.6:3.6; for(let i=0;i<(b.phase>1?5:3);i++) bossOrb(b.x+rnd(b.w),b.y+b.h,rnd(-30,30),20,{grav:true,dmg:10,r:4,life:4}); }
@@ -44,7 +44,7 @@ defBoss('syntax',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; cons
 /* ---------- 2. ЗМИЯТА ---------- */
 defBoss('snake',{make:()=>({type:'snake',x:AX()+20*T,y:8*T,w:14,h:14,hp:800*D.bhp,max:800*D.bhp,state:'intro',t:2,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:-1,vy:0,phase:1,trail:[],len:10,turnT:1,growT:6,spitT:3})});
 defBoss('snake',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return; b.hp-=d; bHit7(b,'#2ae84a');
-  if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Змията ускорява — и започва да плюе байтове!',2); shake=6; } if(b.hp<=0) bossDie(); }});
+  if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Змията ускорява и бълва байтове!',2); shake=6; } if(b.hp<=0) bossDie(); }});
 defBoss('snake',{upd:dt=>{
   const b=boss, p=player; b.anim+=dt; b.hitT-=dt;
   if(b.dead){ bossDeathFx(b,dt); if(b.trail.length>0&&Math.random()<0.5){ const s=b.trail.shift(); for(let i=0;i<4;i++) part(s[0],s[1],rnd(-60,60),rnd(-60,60),0.4,'#2ae84a',2,0); } return; }
@@ -74,8 +74,8 @@ const DARK_POS=[[32.5,12],[40.5,9],[48.5,12],[40.5,15]];
 defBoss('dark',{make:()=>{ const a=LVL.arena; if(ERAD) setDoorAll([a.door,a.r0,a.r1],'D'); return {type:'dark',x:AX()+14.5*T-8,y:9*T-30,w:16,h:30,hp:950*D.bhp,max:950*D.bhp,state:'intro',t:2,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,pal:1,palT:7,pos:1,fireT:1.4,tpT:3,sumT:8}; }});
 const darkVuln=b=>ERAD?ERA===b.pal:b.pal===0;
 defBoss('dark',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
-  if(!darkVuln(b)){ for(let i=0;i<3;i++) part(b.x+rnd(b.w),b.y+rnd(b.h),rnd(-40,40),rnd(-40,40),0.4,'#555555',2,0); hint7(b,ERAD?'Не сте в една палитра! Смени с E.':'Изчакай да смени цвета си!'); return; }
-  b.hp-=d; bHit7(b,'#ffffff'); if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Тъмния сменя цветовете все по-бързо!',2); shake=6; } if(b.hp<=0) bossDie(); }});
+  if(!darkVuln(b)){ for(let i=0;i<3;i++) part(b.x+rnd(b.w),b.y+rnd(b.h),rnd(-40,40),rnd(-40,40),0.4,'#555555',2,0); hint7(b,ERAD?'Не сте в една палитра! Превключи с E.':'Изчакай да смени цвета си!'); return; }
+  b.hp-=d; bHit7(b,'#ffffff'); if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Тъмния сменя цветовете все по-бясно!',2); shake=6; } if(b.hp<=0) bossDie(); }});
 defBoss('dark',{upd:dt=>{
   const b=boss, p=player, a=LVL.arena; b.anim+=dt; b.hitT-=dt;
   if(b.dead){ bossDeathFx(b,dt); if(ERAD&&b.exitDone&&!b.allOpen){ b.allOpen=true; setDoorAll(a.exitDoor,'.'); } return; }
@@ -96,8 +96,8 @@ defBoss('dark',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; const 
 /* ---------- 4. КОПИЕТО ---------- */
 defBoss('copy',{make:()=>({type:'copy',x:AX()+24*T,y:15*T-26,w:10,h:26,hp:800*D.bhp,max:800*D.bhp,state:'intro',t:2,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,buf:[],still:0,frozen:0,face:-1,fireT:2,sumT:9,f:null})});
 defBoss('copy',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
-  if(b.still<0.3){ sparks(b.x+5,b.y+13,2,'#ffd84a'); hint7(b,'Копието се изплъзва, докато се движи. Спри за миг — и то ще замръзне.'); return; }
-  b.hp-=d*1.1; bHit7(b,'#ffd84a'); if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Копието наваксва! Закъснението е по-малко.',2); shake=6; } if(b.hp<=0) bossDie(); }});
+  if(b.still<0.3){ sparks(b.x+5,b.y+13,2,'#ffd84a'); hint7(b,'Копието е неуловимо в движение! Спри за миг — и то ще замръзне.'); return; }
+  b.hp-=d*1.1; bHit7(b,'#ffd84a'); if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Копието наваксва! Закъснението става все по-малко!',2); shake=6; } if(b.hp<=0) bossDie(); }});
 defBoss('copy',{upd:dt=>{
   const b=boss, p=player; b.anim+=dt; b.hitT-=dt;
   if(b.dead){ bossDeathFx(b,dt); return; }
@@ -121,14 +121,14 @@ defBoss('copy',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; const 
 /* ---------- 5. НУЛАТА ---------- */
 defBoss('nula',{make:()=>{ dropBossCursors(); for(const tx of [29,52]) addCursor('BREAK',ax7(tx),14,{label:'BREAK',boss:true,r:10,t:4,cd:8});
   return {type:'nula',x:AX()+13*T,y:2*T,w:4*T,h:4*T,hp:1500*D.bhp,max:1500*D.bhp,state:'intro',t:2.5,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,shield:1,openT:0,fireT:2,aimT:4,sumT:8,mech:true}; }});
-defBoss('nula',{onCmd:c=>{ const b=boss; if(c.cmd==='BREAK'&&b.phase<3){ b.openT=b.phase>1?3.6:4.5; showMsg('BREAK! Щитът падна!',1.2); for(let i=0;i<30;i++) part(b.x+b.w/2,b.y+b.h/2,rnd(-120,120),rnd(-120,120),0.6,'#ffffff',2,0); }
-  if(c.cmd==='RUN'&&b.phase===3){ b.hp-=b.max*0.105; b.hitT=0.3; shake=10; flash=0.6; flashCol='#8aff9a'; showMsg(b.hp>0?'Програмата на Мира работи… още!':'RUN!',1.4); if(b.hp<=0){ dropBossCursors(); bossDie(); } } }});
+defBoss('nula',{onCmd:c=>{ const b=boss; if(c.cmd==='BREAK'&&b.phase<3){ b.openT=b.phase>1?3.6:4.5; showMsg('BREAK! Защитният щит падна!',1.2); for(let i=0;i<30;i++) part(b.x+b.w/2,b.y+b.h/2,rnd(-120,120),rnd(-120,120),0.6,'#ffffff',2,0); }
+  if(c.cmd==='RUN'&&b.phase===3){ b.hp-=b.max*0.105; b.hitT=0.3; shake=10; flash=0.6; flashCol='#8aff9a'; showMsg(b.hp>0?'Програмата на МИРА се изпълнява… давай пак!':'RUN!',1.4); if(b.hp<=0){ dropBossCursors(); bossDie(); } } }});
 defBoss('nula',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
-  if(b.phase===3){ sparks(b.x+b.w/2+rnd(-20,20),b.y+b.h/2,3,'#ffffff'); hint7(b,'Куршумите вече не стигат. RUN — на средната платформа!'); return; }
-  if(b.shield>0.4){ sparks(b.x+b.w/2+rnd(-24,24),b.y+b.h/2+rnd(-24,24),3,'#c0c0c0'); hint7(b,'Щитът е цял. Използвай курсора BREAK!'); return; }
+  if(b.phase===3){ sparks(b.x+b.w/2+rnd(-20,20),b.y+b.h/2,3,'#ffffff'); hint7(b,'Куршумите вече не помагат! RUN — на средната платформа!'); return; }
+  if(b.shield>0.4){ sparks(b.x+b.w/2+rnd(-24,24),b.y+b.h/2+rnd(-24,24),3,'#c0c0c0'); hint7(b,'Щитът е непокътнат! Задействай курсора BREAK!'); return; }
   b.hp-=d; bHit7(b,'#ffffff');
-  if(b.phase===1&&b.hp<b.max*0.6){ b.phase=2; showMsg('„Аз съм нищо. И нищото расте.“',2); shake=8; }
-  if(b.phase===2&&b.hp<b.max*0.3){ b.hp=b.max*0.3; b.phase=3; b.openT=0; shake=10; addCursor('RUN',ax7(40),8,{label:'RUN',boss:true,cd:3.5}); showMsg('МИРА: „Програмата ми е готова! RUN — на средната платформа!“',2.6); } }});
+  if(b.phase===1&&b.hp<b.max*0.6){ b.phase=2; showMsg('„Аз съм нищото. И нищото поглъща всичко!“',2); shake=8; }
+  if(b.phase===2&&b.hp<b.max*0.3){ b.hp=b.max*0.3; b.phase=3; b.openT=0; shake=10; addCursor('RUN',ax7(40),8,{label:'RUN',boss:true,cd:3.5}); showMsg('МИРА: „Програмата ми е готова! Активирай RUN на средната платформа!“',2.6); } }});
 defBoss('nula',{upd:dt=>{
   const b=boss, p=player; b.anim+=dt; b.hitT-=dt;
   if(b.dead){ bossDeathFx(b,dt); return; }
