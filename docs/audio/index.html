@@ -224,7 +224,7 @@ void main(){
   o=vec4(min(col,vec3(10.)),1.);}`;
 
 // крайният образ: калейдоскоп, ехо, сияние, хроматична аберация, тонове
-const COMP=`uniform sampler2D uFB,uBl;uniform float uFade,uBloom,uEcho,uEchoZ,uEchoO,uKal,uKalA,uKalR,uCA,uVig,uExpo,uGrain,uFlash,uGam;
+const COMP=`uniform sampler2D uFB,uBl;uniform float uFade,uBloom,uEcho,uEchoZ,uEchoO,uKal,uKalA,uKalR,uCA,uVig,uExpo,uGrain,uFlash,uGam,uWhite;
 vec3 aces(vec3 x){return clamp((x*(2.51*x+.03))/(x*(2.43*x+.59)+.14),0.,1.);}
 vec2 mir(vec2 u){return 1.-abs(1.-mod(u,2.));}
 void main(){
@@ -239,6 +239,7 @@ void main(){
   c=aces(c);c=pow(c,vec3(uGam));
   vec2 v=uv-.5;c*=1.-uVig*dot(v,v)*2.;
   c+=(h21(gl_FragCoord.xy+fract(uT*7.)*311.)-.5)*uGrain;
+  c=mix(c,vec3(1.),uWhite);
   o=vec4(c*uFade,1.);}`;
 const BPRE=`uniform sampler2D uSrc;uniform vec2 uTx;uniform float uThr;
 void main(){vec3 c=(texture(uSrc,uv+uTx*vec2(-.5,-.5)).rgb+texture(uSrc,uv+uTx*vec2(.5,-.5)).rgb+texture(uSrc,uv+uTx*vec2(-.5,.5)).rgb+texture(uSrc,uv+uTx*vec2(.5,.5)).rgb)*.25;
@@ -426,11 +427,80 @@ void main(){
     col+=pal(uT*.05)*uBeat*.2*fr;o=vec4(col,1.);}
   else o=vec4(pal(uT*.04+.3)*exp(-md*8.)*(.02+.06*uBeat),0.);}`;
 
-// фрактал (Аполониева мрежа) — летене вътре
-const FRAC=`uniform float uS,uTc;
-float mapA(vec3 p,out vec4 tr){float sc=1.;tr=vec4(1000.);
+// фрактал — летене вътре; пет форми с една и съща светлина, смяната е през бяло (TY.frac).
+// Всяка форма дава разстоянието до стената с капаните за цвета (mapA) и пътя на камерата (cam). CY, CZ, CW — колко от капаните става
+// цвят на мрежата, мъниста и сянка: подбрани по квантилите на капаните така, че белият, мрежата и мънистата да заемат колкото при Аполониевия
+const FRACF=[
+`#define CY 6.
+#define CZ 2.
+#define CW 2.
+#define GL 1.
+#define GK 30.
+#define CAM_LOOP
+float mapA(vec3 p,out vec4 tr){float sc=1.;tr=vec4(1000.);   // Аполониева мрежа: куполи и сферични кухини
   for(int i=0;i<8;i++){p=-1.+2.*fract(.5*p+.5);float r2=dot(p,p);tr=min(tr,vec4(abs(p),r2));float k=uS/r2;p*=k;sc*=k;}
-  return .25*abs(p.y)/sc;}
+  return .25*abs(p.y)/sc;}`,
+`#define CY 12.
+#define CZ 2.
+#define CW 2.
+#define GL .8
+#define GK 40.
+#define NRMA
+const vec3 CS=vec3(1.1,.7,.9);const float SZ=1.1;   // псевдо-Клайнов (Knighty): кутийно сгъване + сферично обръщане; сводове, портали от вложени пръстени
+float mapA(vec3 p,out vec4 tr){float sc=1.;tr=vec4(1000.);
+  p=CS-abs(mod(p+CS,4.*CS)-2.*CS);   // огледално повторение — безкраен
+  for(int i=0;i<40;i++){vec3 ap=p;p=2.*clamp(p,-CS,CS)-p;float r2=dot(p,p);tr=min(tr,vec4(abs(p),r2));float k=max(SZ/r2,1.);p*=k;sc*=k;if(all(equal(ap,p)))break;}   // докато точката спре да се мени
+  return .5*abs(p.y)/sc;}
+// точна нормала: всички стъпки са огледала и обръщане, затова се пази ортогоналната част на Якобиана (при числената по сферите остават ивици)
+vec3 nrmA(vec3 p){mat3 M=mat3(1.);vec3 s=-sign(mod(p+CS,4.*CS)-2.*CS);
+  p=CS-abs(mod(p+CS,4.*CS)-2.*CS);M=mat3(M[0]*s,M[1]*s,M[2]*s);
+  for(int i=0;i<40;i++){vec3 ap=p;s=vec3(lessThanEqual(abs(p),CS))*2.-1.;p=2.*clamp(p,-CS,CS)-p;M=mat3(M[0]*s,M[1]*s,M[2]*s);
+    float r2=dot(p,p);if(r2<SZ){vec3 u=p/sqrt(r2);M=mat3(M[0]-2.*u*dot(u,M[0]),M[1]-2.*u*dot(u,M[1]),M[2]-2.*u*dot(u,M[2]));p*=SZ/r2;}
+    if(all(equal(ap,p)))break;}
+  return normalize(vec3(M[0].y,M[1].y,M[2].y))*sign(p.y);}
+void cam(float tm,out vec3 ro,out vec3 ta,out float rl){   // по безкрайния коридор по x (период 4·CS.x), малко над огледалната равнина y=−0,7
+  ro=vec3(mod(.9*tm,4.4),-.6+.05*sin(.37*tm),-.9+.12*sin(.29*tm+1.));ta=ro+vec3(1.,-.06+.08*sin(.23*tm),.25+.45*sin(.19*tm));rl=.12*cos(.1*tm);}`,
+`#define CY 3.3
+#define CZ 5.
+#define CW 2.3
+#define GL 1.
+#define GK 30.
+#define CAM_LOOP
+float mapA(vec3 p,out vec4 tr){float sc=1.,K=1.25+.08*uQ.z;tr=vec4(1000.);   // готически арки: сгъването на Аполониевия, накрая — цилиндри вместо плочи
+  for(int i=0;i<8;i++){p=-1.+2.*fract(.5*p+.5);float r2=dot(p,p);tr=min(tr,vec4(abs(p.x),abs(length(p.xz)-.45),abs(p.z),r2));float k=K/r2;p*=k;sc*=k;}   // капанът на мрежата следи цилиндъра
+  return .25*(length(p.xz)-.45)/sc;}`,
+`#define CY 6.
+#define CZ 2.
+#define CW 2.
+#define GL 1.
+#define GK 30.
+float mapA(vec3 p,out vec4 tr){const float F=.8;p*=F;   // Менгерова решетка: греди с квадратно сечение, перфорирани на всяко ниво
+  vec3 a=mod(p,2.)-1.;a.xy*=rot(.12*uQ.x);vec3 b=abs(a);
+  float d=min(min(max(b.x,b.y),max(b.y,b.z)),max(b.z,b.x))-1./3.,s=3.,lv=0.;
+  for(int m=0;m<3;m++){a=mod(p*s,2.)-1.;if(m==0)a.yz*=rot(.15*uQ.y);s*=3.;vec3 r=abs(1.-3.*abs(a));
+    float dm=(min(min(max(r.x,r.y),max(r.y,r.z)),max(r.z,r.x))-1.)/s;if(dm>d){d=dm;lv=float(m+1);}}
+  tr=vec4(.3,lv<1.5?0.:.05,lv<2.5?.5:.031,lv<2.5?1.:.3);   // цвят по нивото: гредите — бели, дупките — розови, най-малките — мъниста
+  return d/F;}
+void cam(float tm,out vec3 ro,out vec3 ta,out float rl){   // по тунел по x (период 2,5): обиколката неизбежно пресича гредите
+  ro=vec3(mod(.9*tm,2.5),.2*sin(.37*tm),.2*sin(.29*tm+1.));ta=ro+vec3(1.,.12*sin(.23*tm),.5*sin(.19*tm));rl=.12*cos(.1*tm);}`,
+`#define CY 10.
+#define CZ 14.
+#define CW 1.2
+#define GL 1.
+#define GK 30.
+#define CAM_LOOP
+float mapA(vec3 p,out vec4 tr){const float F=2.2,L=3.;p=(p+vec3(2.39,-1.72,-1.45))*F;   // Мандълбокс отвътре: пещери и мостове (огледално повторен;
+  // мащабът и отместването са подбрани така, че обиколката да минава само през празно — при всяко S)
+  vec3 c=L*(abs(mod(p/L+1.,4.)-2.)-1.),z=c;float dr=1.,S=-1.85+.12*uQ.w;tr=vec4(1000.);
+  for(int i=0;i<10;i++){z=clamp(z,-1.,1.)*2.-z;float r2=dot(z,z);tr=min(tr,vec4(abs(z)*.3,r2*1.5+.03));
+    if(r2<.25){z*=4.;dr*=4.;}else if(r2<1.){z/=r2;dr/=r2;}z=z*S+c;dr=dr*abs(S)+1.;}
+  return length(z)/abs(dr)/F;}`];
+const FRAC=`uniform float uS,uTc;uniform vec4 uQ;
+/*ФОРМА*/
+#ifdef CAM_LOOP
+void cam(float tm,out vec3 ro,out vec3 ta,out float rl){   // обиколка (Аполониевият; арките и Мандълбоксът са нагласени по нея)
+  ro=vec3(2.8*cos(.1+.33*tm),.4+.3*cos(.37*tm),2.8*cos(.5+.35*tm));ta=vec3(1.9*cos(1.2+.41*tm),.4+.1*cos(.27*tm),1.9*cos(2.+.38*tm));rl=.2*cos(.1*tm);}
+#endif
 vec3 sky(vec3 d){vec3 c=vec3(0.);   // звездите са неподвижни в света: местят се само когато камерата се завърта
   for(int i=0;i<3;i++){float S=130.+float(i)*70.;vec3 q=d*S,i0=floor(q);   // всяка звезда е точка в своята клетка, пренесена върху сферата на посоките
     for(int z=-1;z<=1;z++)for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++){vec3 id=i0+vec3(x,y,z);
@@ -440,22 +510,26 @@ vec3 sky(vec3 d){vec3 c=vec3(0.);   // звездите са неподвижн�
   return c;}
 void main(){
   vec2 sp=(uv-.5)*vec2(uAsp,1.)*2.;float tm=uTc;
-  vec3 ro=vec3(2.8*cos(.1+.33*tm),.4+.3*cos(.37*tm),2.8*cos(.5+.35*tm)),ta=vec3(1.9*cos(1.2+.41*tm),.4+.1*cos(.27*tm),1.9*cos(2.+.38*tm));
-  float rl=.2*cos(.1*tm);vec3 cw=normalize(ta-ro),cp=vec3(sin(rl),cos(rl),0.),cu=normalize(cross(cw,cp)),cv=cross(cu,cw);
+  vec3 ro,ta;float rl;cam(tm,ro,ta,rl);vec3 cw=normalize(ta-ro),cp=vec3(sin(rl),cos(rl),0.),cu=normalize(cross(cw,cp)),cv=cross(cu,cw);
   vec3 rd=normalize(sp.x*cu+sp.y*cv+2.*cw);
   // лъч, който не е стигнал точността, пак се оцветява: иначе подът под полегат ъгъл остава тъмна ивица
   vec4 tr;float t=.01,h=1.;
   for(int i=0;i<200;i++){h=mapA(ro+rd*t,tr);if(h<.0004*t||t>20.)break;t+=h;}
   vec3 col=pal(.62+uT*.01)*.02;
+#ifdef NRMA
+  if(t<20.){vec3 p=ro+rd*t;vec4 tq;
+    vec3 n=nrmA(p);
+#else
   if(t<20.){vec3 p=ro+rd*t;vec4 tq;vec2 e=vec2(1.,-1.)*.0005*t;
     vec3 n=normalize(e.xyy*mapA(p+e.xyy,tq)+e.yyx*mapA(p+e.yyx,tq)+e.yxy*mapA(p+e.yxy,tq)+e.xxx*mapA(p+e.xxx,tq));
+#endif
     float oc=0.,w=1.;for(int k=0;k<5;k++){float hh=.02+.06*float(k);oc+=(hh-4.*mapA(p+n*hh,tq))*w;w*=.7;}   // засенчване в ъглите (подът до стените)
     float key=clamp(dot(vec3(.577,.577,-.577),n),0.,1.),bac=clamp(.2+.8*dot(vec3(-.707,0.,.707),n),0.,1.),amb=.7+.3*n.y,
-      ao=pow(clamp(tr.w*2.,0.,1.),1.2)*clamp(1.-oc*1.5,0.,1.);
+      ao=pow(clamp(tr.w*CW,0.,1.),1.2)*clamp(1.-oc*1.5,0.,1.);
     vec3 br=(vec3(.25)*amb+vec3(1.)*key*(.9+.15*uBassA)+vec3(.25)*bac)*ao;
-    vec3 c=vec3(1.);c=mix(c,pal(.08+uT*.012),clamp(6.*tr.y,0.,1.));c=mix(c,pal(.55+uT*.017),pow(clamp(1.-2.*tr.z,0.,1.),8.));
+    vec3 c=vec3(1.);c=mix(c,pal(.08+uT*.012),clamp(CY*tr.y,0.,1.));c=mix(c,pal(.55+uT*.017),pow(clamp(1.-CZ*tr.z,0.,1.),8.));
     col=mix(col,sqrt(max(c*br,0.)),exp(-.1*t));   // √ — гама (средните тонове не потъват в тъмното); max: pal() дава и −1e-8 → NaN
-    col+=pal(uT*.03+tr.w*3.)*exp(-tr.w*30.)*(.4+.8*uTrebA+.8*uBeatHi)*exp(-.2*t);}
+    col+=GL*pal(uT*.03+tr.w*3.)*exp(-tr.w*GK)*(.4+.8*uTrebA+.8*uBeatHi)*exp(-.2*t);}
   if(t>14.)col+=sky(rd)*smoothstep(14.,20.,t);
   o=vec4(col,1.);}`;
 
@@ -680,7 +754,7 @@ try{
   const q=(fs,uv)=>prog(VSQ,FS(fs,uv));
   Object.assign(P,{warp:q(WARP),comp:q(COMP),bpre:q(BPRE),bdown:q(BDOWN),bup:q(BUP),copy:q(COPY),text:q(TEXT),shape:q(SHAPE),
     line:prog(VSC(LINEVS),FS(LINEFS,false)),part:prog(VSC(PARTVS),FS(PARTFS,false)),
-    tun:q(TUN),blob:q(BLOB),frac:q(FRAC),marb:q(MARB),aur:q(AUR),neb:q(NEB),sea:q(SEA),bulb:q(BULB),lava:q(LAVA)});
+    tun:q(TUN),blob:q(BLOB),frac:FRACF.map(f=>q(FRAC.replace('/*ФОРМА*/',f))),marb:q(MARB),aur:q(AUR),neb:q(NEB),sea:q(SEA),bulb:q(BULB),lava:q(LAVA)});
   if(HF)Object.assign(P,{adv:q(F_ADV),div:q(F_DIV),curl:q(F_CURL),vort:q(F_VORT),pres:q(F_PRES),grad:q(F_GRAD),splat:q(F_SPLAT),mul:q(F_MUL),ring:q(F_RING),fdisp:q(F_DISP),
     chup:q(CH_UP),chpl:q(CH_PL),chpt:prog(VSC(CH_PTVS),FS(PARTFS,false)),rpup:q(RP_UP),rpdi:q(RP_DI),rdin:q(RD_IN),rdup:q(RD_UP),rddi:q(RD_DI),
     phin:q(PH_IN),phup:q(PH_UP),phdf:q(PH_DF),phdp:prog(VSC(PH_DPVS),FS(PH_DPFS,false)),phdi:q(PH_DI),atup:q(AT_UP),atdr:prog(VSC(AT_VS),FS(PARTFS,false))});
@@ -824,8 +898,13 @@ const TY={
       if(st.m<1)st.m=Math.min(1,st.m+dt/4);st.ry+=dt*(.05+.18*A.spd);
       st.mp=(st.mp+dt)%40;
       run(P.blob,{uA:st.a,uB:st.b,uM:ease(st.m),uMat:blobMat(st),uRY:st.ry,uRX:.35*Math.sin(t*.07)},dst);}},
-  frac:{init:()=>({tc:rnd(0,40)}),
-    draw(pr,st,dst,dt,t){st.tc+=dt*(.035+.11*A.spd);run(P.frac,{uS:1.17+.07*Math.sin(t*.07),uTc:st.tc},dst);}},
+  // смяна на формата: 0,5 с към бяло, в пика — новата форма (със свой път на камерата), 0,5 с от бяло; на силен бас, иначе до 4 с по-късно
+  frac:{init:()=>({tc:rnd(0,40),f:Math.floor(Math.random()*P.frac.length),next:rnd(20,30),ph:0,w:0}),
+    draw(pr,st,dst,dt,t){st.tc+=dt*(.035+.11*A.spd);st.next-=dt;
+      if(!st.ph&&st.next<=0&&(A.onLo||st.next<-4))st.ph=1e-4;
+      if(st.ph){const p0=st.ph;st.ph+=dt;if(p0<.5&&st.ph>=.5)st.f=pick(P.frac.map((p,i)=>i),st.f);if(st.ph>=1){st.ph=0;st.next=rnd(20,30);}}
+      st.w=st.ph?ease(Math.min(1,st.ph<.5?st.ph*2:2-st.ph*2)):0;
+      run(P.frac[st.f],{uS:1.17+.07*Math.sin(t*.07),uTc:st.tc,uQ:[Math.sin(t*.031),Math.sin(t*.023+1),Math.sin(t*.017+2),Math.sin(t*.027+3)]},dst);}},
   part:{init:pr=>{const s=pr.cfg.shapes;const a=pick(s);return {a,b:a,m:1,next:rnd(3,5),hue:Math.random()};},
     draw(pr,st,dst,dt,t){const c=pr.cfg;st.next-=dt;
       if(c.shapes.length>1&&st.m>=1&&(st.next<=0||(A.onLo>.6&&st.next<2.5))){st.a=st.b;st.b=pick(c.shapes,st.a);st.m=0;st.next=rnd(11,17);}
@@ -880,7 +959,7 @@ const TY={
 
 // пресетите: сцена + параметри на обратната връзка и крайния образ (интерполират се при смяна)
 const DEF={zoom:1,zoomExp:1,rot:0,cx:0,cy:0,dx:0,dy:0,sx:1,sy:1,warp:0,warpS:1,warpSpd:.45,flow:0,flowS:2,decay:.96,hue:0,sat:1,blur:0,over:1,add:1,fold:6,foldA:0,rip:0,edge:0,
-  bloom:.6,echo:0,echoZ:1,echoO:0,kal:6,kalA:0,kalR:0,ca:.3,vig:.4,expo:1,grain:.03,flash:0,gam:1};
+  bloom:.6,echo:0,echoZ:1,echoO:0,kal:6,kalA:0,kalR:0,ca:.3,vig:.4,expo:1,grain:.03,flash:0,gam:1,white:0};
 const PR=[
   {n:'Вихрушка',ty:'wave',cfg:{spin:.12,waves:[{m:0,r:.42,amp:.3,w:2.2,h:0,hs:.02},{m:0,r:.2,amp:.14,w:1.6,h:.5,hs:.02,rs:-1.3}]},
     par:(a,t)=>({zoom:1.007+.006*(a.bassA-1),zoomExp:1.15,rot:.0025*Math.sin(t*.05),warp:.45+.3*a.midA,warpS:1.1,decay:.978,hue:.0018,blur:.35,bloom:.7,ca:.4})},
@@ -896,7 +975,7 @@ const PR=[
   {n:'Резонансен тунел',ty:'tun',par:a=>({over:.85,zoom:1.004+.004*a.beat,decay:.88,bloom:.8,ca:.8,vig:.5})},
   {n:'Течен кристал',ty:'blob',par:(a,t,st)=>{const m=blobMat(st);   // обратната връзка също преминава от единия материал към другия
     return {over:1,zoom:1.005-.002*m,rot:.0015*(1-m),warp:.3*(1-m),flow:1.2*m,decay:.92,hue:.005-.0075*m,blur:.25*(1-m),echo:.22*m,echoZ:.7,bloom:.6+.2*m};}},
-  {n:'Фрактален храм',ty:'frac',par:()=>({bloom:.15,ca:.1,vig:.35,expo:1.3})},
+  {n:'Фрактален храм',ty:'frac',par:(a,t,st)=>({bloom:.15,ca:.1,vig:.35,expo:1.3,white:st.w})},
   {n:'Рояк',ty:'part',cfg:{shapes:[0,1,2,3,4,5],cam:0},par:()=>({add:1,zoom:1.003,rot:.0012,warp:.2,decay:.92,blur:.4,bloom:1})},
   {n:'Спектрален пейзаж',ty:'part',cfg:{shapes:[6],cam:1,ps:1.8,br:1.6},par:()=>({add:1,decay:.7,bloom:.9})},
   {n:'Фибри на Хопф',ty:'part',cfg:{shapes:[7,8,9],cam:2,br:1.1},par:(a,t)=>({add:1,zoom:.998,rot:-.001,decay:.93,blur:.3,bloom:1.1})},
@@ -992,12 +1071,12 @@ function frame(now){
     for(let i=1;i<BL.length;i++)run(P.bdown,{uSrc:BL[i-1],uTx:BL[i-1].tx},BL[i]);
     let src=BL[BL.length-1];for(let i=BL.length-2;i>=0;i--){run(P.bup,{uSrc:src,uTx:src.tx,uAdd:BL[i]},BU[i]);src=BU[i];}
     run(P.comp,{uFB:FB.rd,uBl:src,uFade:j?wB:1-wB,uBloom:p.bloom*.3,uEcho:p.echo,uEchoZ:p.echoZ,uEchoO:p.echoO,uKal:p.kal,uKalA:p.kalA,uKalR:p.kalR,uCA:p.ca*(1+.5*A.beat),uVig:p.vig,
-      uExpo:p.expo*(running?1:.55),uGrain:p.grain,uFlash:0,uGam:p.gam},null,j?{blend:'add'}:null);});
+      uExpo:p.expo*(running?1:.55),uGrain:p.grain,uFlash:0,uGam:p.gam,uWhite:p.white},null,j?{blend:'add'}:null);});
   adapt(dt);if(infoOn&&frameNo%10===0)info();}
 
 /* ================= интерфейс ================= */
 // версия на визуализатора — сменя се при всяка промяна (видима в ⓘ; така се познава стара версия от кеша на телефона)
-const VER='2026-10-11.5';
+const VER='2026-10-11.6';
 let osdT=0,infoOn=false,idleT=0,digBuf='',digT=0;
 function osd(extra){const i=tgt(),el=$('#osd');
   el.innerHTML=String(i+1).padStart(2,'0')+' · '+PR[i].n+(DR.lock?' 🔒':'')+(extra?'<small>'+extra+'</small>':'');el.classList.add('on');clearTimeout(osdT);osdT=setTimeout(()=>el.classList.remove('on'),3800);}
