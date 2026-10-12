@@ -85,7 +85,7 @@ iframe{position:fixed;width:1px;height:1px;left:-10px;top:-10px;border:0;opacity
 <div id="help">
 <b>→ / ←</b> следваща / предишна сцена по номер (със случаен модел и стойности, освен заключената фигура)<br>
 <b>1 … 24</b> избор на сцена (две цифри — бързо една след друга)<br>
-<b>Интервал</b> заключи / отключи сцената<br>
+<b>Интервал</b> заключи / отключи сцената (помни се и след затваряне)<br>
 <b>↑ / ↓</b> следващ / предишен модел на сцената, подред<br>
 <b>+ / −</b> нови / предишни случайни стойности за модела<br>
 <b>L</b> заключи / отключи фигурата — модел и стойности (помни се и след затваряне)<br>
@@ -1152,10 +1152,10 @@ const tgt=()=>DR.q>=0?DR.q:DR.b?DR.b.i:DR.a.i;
 function initSt(i){const pr=PR[i],Y=TY[pr.ty];if(!figN(pr))return Y.init(pr);
   const F=pr.fig;if(!F.lock){figModel(F,figMs(pr).length,1);figVal(pr,F.seq[F.c],2);}return Y.init(pr,figArg(pr,figCur(pr)));}
 function goTo(i){if(PR[i].off)return;DR.left=rnd(45,70);
-  if(DR.b){DR.q=i===DR.b.i?-1:i;osd();return;}   // по време на преливане — следващата се нарежда след него
+  if(DR.b){DR.q=i===DR.b.i?-1:i;osd();drSave();return;}   // по време на преливане — следващата се нарежда след него
   if(i===DR.a.i)return;
   const s=SL[1-DR.a.k];if(PR[i].ty==='fluid'&&PR[DR.a.i].ty!=='fluid')FL.free();
-  s.i=i;s.st=initSt(i);s.wt=0;clear(s.fb.rd);clear(s.fb.wr);DR.b=s;DR.m=0;osd();
+  s.i=i;s.st=initSt(i);s.wt=0;clear(s.fb.rd);clear(s.fb.wr);DR.b=s;DR.m=0;osd();drSave();
   if(RZM&&MS.auto===1)musRandom();else if(RZM&&MS.auto===2)musLevel();}
 function step(d){const n=PR.length;let i=tgt();do i=(i+d+n)%n;while(PR[i].off);goTo(i);}   // по номер, след последната — първата
 function rndNext(){if(!DR.order.length){DR.order=live().filter(i=>i!==tgt());for(let i=DR.order.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[DR.order[i],DR.order[j]]=[DR.order[j],DR.order[i]];}}
@@ -1163,7 +1163,10 @@ function rndNext(){if(!DR.order.length){DR.order=live().filter(i=>i!==tgt());for
 function drUpdate(dt){
   if(DR.b){DR.m+=dt/XF;if(DR.m>=1){DR.a=DR.b;DR.b=null;if(DR.q>=0){const q=DR.q;DR.q=-1;goTo(q);}}}
   else if(!DR.lock&&running){DR.left-=dt;if(DR.left<=0&&(A.onLo||DR.left<-4))goTo(rndNext());}}
-SL[0].st=initSt(0);
+// заключената сцена (интервал) се пази между пусканията (rzviz.scene, по име): страницата започва с нея, пак заключена
+function drSave(){if(!EMBED)lsSet('rzviz.scene',DR.lock?PR[tgt()].n:'');}
+if(!/[?&]embed/.test(location.search)){const n=lsGet('rzviz.scene',''),i=n?PR.findIndex(p=>p.n===n&&!p.off):-1;if(i>=0){SL[0].i=i;DR.lock=true;}}
+SL[0].st=initSt(SL[0].i);
 function params(i,st,t){const p=Object.assign({},DEF,PR[i].par(A,t,st),{dark:st.w||0}),Y=TY[PR[i].ty];if(Y.vpar&&st.v)Y.vpar(st.v,p);return p;}
 
 /* ================= кадър ================= */
@@ -1195,7 +1198,7 @@ function frame(now){
 
 /* ================= интерфейс ================= */
 // версия на визуализатора — сменя се при всяка промяна (видима в ⓘ; така се познава стара версия от кеша на телефона)
-const VER='2026-10-12.9';
+const VER='2026-10-12.10';
 let osdT=0,infoOn=false,idleT=0,digBuf='',digT=0;
 function osd(extra){const i=tgt(),el=$('#osd');
   el.innerHTML=String(i+1).padStart(2,'0')+' · '+PR[i].n+(DR.lock?' 🔒':'')+(extra?'<small>'+extra+'</small>':'');el.classList.add('on');clearTimeout(osdT);osdT=setTimeout(()=>el.classList.remove('on'),3800);}
@@ -1224,7 +1227,7 @@ addEventListener('keydown',e=>{
   if(c==='KeyS'){musToggle();e.preventDefault();return;}
   if(c==='ArrowRight'||c==='KeyN')step(1);
   else if(c==='ArrowLeft'||c==='KeyP')step(-1);
-  else if(c==='Space'){DR.lock=!DR.lock;osd(DR.lock?'сцената е заключена':'автоматична смяна');}
+  else if(c==='Space'){DR.lock=!DR.lock;drSave();osd(DR.lock?'сцената е заключена':'автоматична смяна');}
   else if(c==='KeyF')full();
   else if(c==='KeyH'||e.key==='?')$('#help').classList.toggle('on');
   else if(c==='KeyI')infoToggle();
