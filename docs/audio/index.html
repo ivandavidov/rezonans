@@ -59,7 +59,7 @@ body.idle #hint{opacity:0}body:not(.run) #hint{display:none}
 #bar{position:fixed;right:16px;bottom:14px;z-index:3;display:flex;gap:8px;transition:opacity .6s}
 #bar button,#infBtn{height:30px;padding:0 12px;border-radius:20px;border:1px solid #ffffff40;background:#03080eb0;color:#dff;font:12px 'IBM Plex Mono',monospace;cursor:pointer;display:flex;align-items:center;gap:6px}
 #bar svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
-#sndBtn.off{color:#ff9f9f;border-color:#ff9f9f66}#sndBtn .x,#sndBtn.off .w{display:none}#sndBtn.off .x{display:inline}
+body.nofig #figUp,body.nofig #figDn{display:none}
 @media (pointer:coarse){#hint{bottom:58px;white-space:normal;text-align:center;width:calc(100vw - 32px)}}
 #infBtn{position:fixed;left:16px;bottom:14px;z-index:3;transition:opacity .6s}
 body.idle #bar,body:not(.run) #bar,body.embed #bar,body.idle #infBtn,body:not(.run) #infBtn,body.embed #infBtn{opacity:0;pointer-events:none}
@@ -85,10 +85,10 @@ iframe{position:fixed;width:1px;height:1px;left:-10px;top:-10px;border:0;opacity
 <b>→ / ←</b> следваща / предишна сцена по номер<br>
 <b>1 … 24</b> избор на сцена (две цифри — бързо една след друга)<br>
 <b>Интервал</b> заключи / отключи сцената<br>
+<b>↑ / ↓</b> следваща / предишна фигура на сцената (всяка нова е случайна)<br>
+<b>L</b> заключи / отключи фигурата (помни се и след затваряне)<br>
 без натискане сцените се сменят сами, в случаен ред<br>
 <b>F</b> цял екран (и двоен клик)<br>
-<b>M</b> звук вкл. / изкл.<br>
-<b>+ / −</b> сила на звука<br>
 <b>Q</b> качество: авто / високо / средно / ниско<br>
 <b>T</b> надписът „Резонанс“<br>
 <b>I</b> сведения (кадри, нива на звука)<br>
@@ -98,9 +98,9 @@ iframe{position:fixed;width:1px;height:1px;left:-10px;top:-10px;border:0;opacity
 </div>
 <div id="info"></div>
 <div id="sleep"><div id="slTxt">Приятна почивка</div>
-<div id="sleepUi"><span>сън · спиране след</span><button data-t="0">никога</button><button data-t="30">30 мин</button><button data-t="60">1 ч</button><button data-t="120">2 ч</button><span>·</span><button id="slDot">надпис</button><button id="slMute">звук вкл.<i class="kb"> (M)</i></button><button id="slFs">цял екран<i class="kb"> (F)</i></button><button id="slOut">изход<i class="kb"> (Z)</i></button><span id="slLeft"></span></div></div>
-<div id="hint">H — помощ · → следваща сцена · S — музика · Z — сън · F — цял екран</div>
-<div id="tip"></div><div id="bar"><button id="sndBtn" title="Звук вкл. / изкл. (M)"><svg viewBox="0 0 16 16"><path d="M2.5 6h2.5l3.5-3v10l-3.5-3h-2.5z"/><path class="w" d="M11 5.5q1.5 2.5 0 5M12.8 3.8q3 4.2 0 8.4"/><path class="x" d="M11 6l4 4M15 6l-4 4"/></svg></button><button id="fsBtn" title="Цял екран (F)"><svg viewBox="0 0 16 16"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/></svg></button><button id="slpBtn">☾ Сън</button><button id="musBtn">♪ Музика</button></div><button id="infBtn" title="Сведения (I)">ⓘ</button>
+<div id="sleepUi"><span>сън · спиране след</span><button data-t="0">никога</button><button data-t="30">30 мин</button><button data-t="60">1 ч</button><button data-t="120">2 ч</button><span>·</span><button id="slDot">надпис</button><button id="slFs">цял екран<i class="kb"> (F)</i></button><button id="slOut">изход<i class="kb"> (Z)</i></button><span id="slLeft"></span></div></div>
+<div id="hint">H — помощ · → сцена · ↑ фигура · S — музика · Z — сън · F — цял екран</div>
+<div id="tip"></div><div id="bar"><button id="figUp" title="Следваща фигура (↑)">▲</button><button id="figDn" title="Предишна фигура (↓)">▼</button><button id="fsBtn" title="Цял екран (F)"><svg viewBox="0 0 16 16"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/></svg></button><button id="slpBtn">☾ Сън</button><button id="musBtn">♪ Музика</button></div><button id="infBtn" title="Сведения (I)">ⓘ</button>
 <div id="mus">
 <h3>МУЗИКА <button id="musX" title="Затвори (S)">×</button></h3>
 <label>Тоналност <b id="vTr"></b></label><input type="range" id="iTr" min="-12" max="6" step="1">
@@ -118,7 +118,7 @@ iframe{position:fixed;width:1px;height:1px;left:-10px;top:-10px;border:0;opacity
 <h1>РЕЗОНАНС</h1>
 <button id="go" disabled>ЗАРЕЖДАНЕ…</button>
 <div id="status"></div>
-<div class="keys">→ следваща сцена · Интервал — заключи · F — цял екран · H — помощ</div>
+<div class="keys">→ следваща сцена · ↑ фигура · Интервал — заключи · F — цял екран · H — помощ</div>
 </div></div>
 <iframe id="game" allow="autoplay" title="Звуков двигател на играта" tabindex="-1"></iframe>
 <script>
@@ -279,7 +279,7 @@ void main(){int id=gl_VertexID;float i=float(id/2),side=float(id%2)*2.-1.,n=uN-1
 const LINEFS=`uniform vec3 uCol;uniform float uBr;in float vSide;void main(){float k=1.-vSide*vSide;o=vec4(uCol*uBr*k*k,0.);}`;
 
 // частици: морфиране между 3D форми, без състояние — всичко се смята от номера на частицата
-const PARTVS=`float gH=-1.,gC=-1.,gF=1.;uniform float uN,uA,uB,uMM,uPS,uBr,uHue,uYaw,uPitch,uCamD,uLift,uHead;uniform vec4 uSF;uniform sampler2D uHist;out vec3 vC;
+const PARTVS=`float gH=-1.,gC=-1.,gF=1.;uniform float uN,uA,uB,uMM,uPS,uBr,uHue,uYaw,uPitch,uCamD,uLift,uHead,uHS;uniform vec4 uSF;uniform sampler2D uHist;out vec3 vC;
 float sfm(float a){float t1=pow(abs(cos(uSF.x*a*.25)),uSF.z),t2=pow(abs(sin(uSF.x*a*.25)),uSF.w);return min(pow(t1+t2+1e-4,-1./uSF.y),2.2);}
 // фибрация на Хопф: всяка точка от S² е окръжност в S³; бавно 4D въртене → стереографска проекция
 vec3 hopf(float i,float n,int v){
@@ -307,7 +307,7 @@ vec3 shp(float k,float i,float n){
     return vec3(r1*cos(th)*r2*cos(ph),r2*sin(ph),r1*sin(th)*r2*cos(ph))*.85;}
   if(m==6){float cols=256.,rows=floor(n/cols),cx=mod(i,cols),cz=floor(i/cols),zf=cz/rows;
     float row=mod(uHead-zf*126.,128.);float hg=texture(uHist,vec2(.02+abs((cx+.5)/cols*2.-1.)*.72,(row+.5)/128.)).r;gH=hg;
-    return vec3((cx/cols*2.-1.)*1.5,hg*hg*1.1-.35,(1.-zf)*3.4-1.7);}
+    return vec3((cx/cols*2.-1.)*1.5,hg*hg*uHS-.35,(1.-zf)*3.4-1.7);}
   return hopf(i,n,m-7);}
 void main(){
   float i=float(gl_VertexID),h=h11(i*.917+.13);
@@ -359,10 +359,10 @@ void main(){vec3 c=texture(uDye,uv).rgb;vec2 dx=vec2(uTxD.x,0.),dy=vec2(0.,uTxD.
   c=c*dif+sp*.35*min(length(c),1.2);o=vec4(c,1.);}`;
 
 // 3D тунел (raymarching)
-const TUN=`uniform float uZ,uRoll;
+const TUN=`uniform float uZ,uRoll,uK,uG,uTw,uLa,uH;   // фигура: издутини uK и сегменти uG (цели — без шев), усукване, дълбочина, цвят
 vec2 path(float z){return vec2(sin(z*.13)*1.6+sin(z*.051)*1.2,cos(z*.1)*1.1+sin(z*.037)*.8);}
 float tR(vec3 p,out float a){vec2 c=p.xy-path(p.z);a=atan(c.y,c.x);
-  return 1.7+.1*sin(a*5.+p.z*.7)+.3*spec(fract(abs(a)/PI)*.45+.02)*(.4+.6*uBassA)-length(c);}
+  return 1.7+uLa*sin(a*uK+p.z*uTw)+.3*spec(fract(abs(a)/PI)*.45+.02)*(.4+.6*uBassA)-length(c);}
 float map(vec3 p){float a;return tR(p,a)*.6;}
 void main(){
   vec2 sp=(uv-.5)*vec2(uAsp,1.);
@@ -373,17 +373,17 @@ void main(){
   for(int i=0;i<90;i++){vec3 p=ro+rd*t;d=map(p);
     vec2 c=p.xy-path(p.z);float zr=p.z/3.,ri=floor(zr+.5),dz=(zr-ri)*3.;
     float rr=length(vec2(length(c)-1.35,dz));
-    glow+=pal(ri*.071+uT*.03)*(.3+3.*spec(.02+fract(ri*.1731)*.4)+1.2*uBeat)*exp(-rr*14.)*.05;
+    glow+=pal(ri*.071+uT*.03+uH)*(.3+3.*spec(.02+fract(ri*.1731)*.4)+1.2*uBeat)*exp(-rr*14.)*.05;
     if(d<.0015*t||t>42.)break;t+=min(d,.3);}
   vec3 col=vec3(0.);
   if(t<42.){vec3 p=ro+rd*t;float a;tR(p,a);
     vec2 e=vec2(.01,0.);vec3 n=normalize(vec3(map(p+e.xyy)-map(p-e.xyy),map(p+e.yxy)-map(p-e.yxy),map(p+e.yyx)-map(p-e.yyx)));
-    vec2 g=vec2(a/TAU*18.,p.z*.9),gi=floor(g),gf=fract(g)-.5;
+    vec2 g=vec2(a/TAU*uG,p.z*.9),gi=floor(g),gf=fract(g)-.5;
     float bd=.5-max(abs(gf.x),abs(gf.y)),edge=exp(-bd/max(fwidth(bd),1e-4)*.55)+.3*exp(-bd*14.),hc=h21(gi);
     float lit=smoothstep(.8,1.,.5+.5*sin(hc*43.+uMT*.6))*(spec(fract(hc*7.3)*.5+.02)*1.6+.4+uBeatHi);
-    vec3 neon=pal(gi.y*.013+uT*.04+.55);
+    vec3 neon=pal(gi.y*.013+uT*.04+.55+uH);
     float dif=max(dot(n,-rd),0.);
-    col=vec3(.02,.025,.04)*(.3+.7*dif)+neon*edge*(.45+.7*uMidA)+pal(hc+uT*.05)*lit*.4;
+    col=vec3(.02,.025,.04)*(.3+.7*dif)+neon*edge*(.45+.7*uMidA)+pal(hc+uT*.05+uH)*lit*.4;
     col+=pow(max(dot(reflect(rd,n),-rd),0.),20.)*.12;}
   col*=exp(-t*.055);col+=glow;
   o=vec4(col,1.);}`;
@@ -534,17 +534,17 @@ void main(){
   o=vec4(col,1.);}`;
 
 // течен мрамор (вложено изкривяване на шум)
-const MARB=`uniform float uWK,uSc;
+const MARB=`uniform float uWK,uSc,uHm,uRs;
 void main(){
-  vec2 p=(uv-.5)*vec2(uAsp,1.)*uSc;p=rot(uMT*.01)*p;
+  vec2 p=(uv-.5)*vec2(uAsp,1.)*uSc;p=rot(uMT*.01*uRs)*p;
   vec3 P=vec3(p,uMT*.035);
   vec2 q=vec2(fbm(P),fbm(P+vec3(5.2,1.3,.7)));
   vec2 r=vec2(fbm(vec3(p+uWK*q+vec2(1.7,9.2),uMT*.05)),fbm(vec3(p+uWK*q+vec2(8.3,2.8),uMT*.045)));
   float v=fbm(vec3(p+uWK*r,uMT*.03));
-  vec3 c1=pal(.55+uT*.01),c2=pal(.05+uT*.013);
+  vec3 c1=pal(.55+uHm+uT*.01),c2=pal(.05+uHm+uT*.013);
   vec3 c=mix(c1*c1*.8,c2,clamp(v*v*4.,0.,1.));
   c=mix(c,vec3(0.,.01,.08),clamp(length(q),0.,1.)*.85);
-  c=mix(c,pal(.35+uT*.02+spec(.05+v*.4)*.4),clamp(abs(r.x),0.,1.)*.75);
+  c=mix(c,pal(.35+uHm+uT*.02+spec(.05+v*.4)*.4),clamp(abs(r.x),0.,1.)*.75);
   c*=(v*v*v+.6*v*v+.5*v)*1.3*(.85+.2*uBassA);
   vec3 n=normalize(vec3(-dFdx(v),-dFdy(v),1.5/uRes.y*28.));
   float sp=pow(max(dot(reflect(-normalize(vec3(-.4,.5,1.)),n),vec3(0,0,1)),0.),28.);
@@ -581,7 +581,7 @@ void main(){vec2 dx=vec2(uTxS.x,0.),dy=vec2(0.,uTxS.y);vec4 c=texture(uW,uv);
   n+=(src(uS0,.0005)*sin(uS0.w)+src(uS1,.0005)*sin(uS1.w)+src(uS2,.0005)*sin(uS2.w)+src(uS3,.0005)*sin(uS3.w));
   n=mix(n,s4*.25,.02);
   o=vec4(n,c.x,0.,1.);}`;
-const RP_DI=`uniform sampler2D uW;uniform vec2 uTxS;uniform float uGain;${RP_SRC}
+const RP_DI=`uniform sampler2D uW;uniform vec2 uTxS;uniform float uGain,uHr;${RP_SRC}
 void main(){vec2 dx=vec2(uTxS.x,0.),dy=vec2(0.,uTxS.y);
   float h=texture(uW,uv).x*uGain,L=texture(uW,uv-2.*dx).x*uGain,R=texture(uW,uv+2.*dx).x*uGain,B=texture(uW,uv-2.*dy).x*uGain,T=texture(uW,uv+2.*dy).x*uGain;
   vec3 n=normalize(vec3(L-R,B-T,.5));float lap=L+R+B+T-4.*h;
@@ -591,7 +591,7 @@ void main(){vec2 dx=vec2(uTxS.x,0.),dy=vec2(0.,uTxS.y);
   vec3 c=bot*(.7+clamp(-lap*2.5,-.5,3.)*tint*1.6);
   vec3 ld=normalize(vec3(-.3,.5,1.));c+=pow(max(dot(reflect(-ld,n),vec3(0,0,1)),0.),50.)*.6*vec3(.9,.95,1.);
   c+=tint*(src(uS0,.0006)+src(uS1,.0006)+src(uS2,.0006)+src(uS3,.0006))*8.;
-  o=vec4(c,1.);}`;
+  o=vec4(hueRot(c,uHr*TAU),1.);}`;
 
 // ---- реакция–дифузия (Грей–Скот) ----
 const RD_IN=`uniform float uSeed;void main(){vec2 g=(uv-.5)*vec2(uAsp,1.)*14.,c=floor(g);
@@ -627,8 +627,8 @@ const PH_DPVS=`uniform sampler2D uA;uniform float uSW,uDep;out vec3 vC;
 void main(){int id=gl_VertexID,w=int(uSW);vec4 s=texelFetch(uA,ivec2(id%w,id/w),0);gl_Position=vec4(s.xy*2.-1.,0.,1.);gl_PointSize=1.;
   vC=(s.w<.5?vec3(1,0,0):s.w<1.5?vec3(0,1,0):vec3(0,0,1))*uDep;}`;
 const PH_DPFS=`in vec3 vC;void main(){o=vec4(vC,0.);}`;
-const PH_DI=`uniform sampler2D uTr;uniform float uGain;
-void main(){vec3 t=texture(uTr,uv).rgb;float hs=uT*.006;
+const PH_DI=`uniform sampler2D uTr;uniform float uGain,uHp;
+void main(){vec3 t=texture(uTr,uv).rgb;float hs=uT*.006+uHp*TAU;
   vec3 c=t.r*hueRot(vec3(1.,.42,.16),hs)+t.g*hueRot(vec3(.15,.75,1.),hs)+t.b*hueRot(vec3(.8,.25,1.),hs);
   c=1.-exp(-c*uGain);o=vec4(c*c*1.15,1.);}`;
 
@@ -654,7 +654,7 @@ void main(){int id=gl_VertexID,w=int(uSW);vec4 s=texelFetch(uP,ivec2(id%w,id/w),
   float h=h11(float(id)*.37);vC=pal(uHue+h*.12+min(s.w,4.)*.1)*uBr*min(1.,4./(ps*ps));}`;
 
 // ---- северно сияние над езеро ----
-const AUR=`uniform float uHA;
+const AUR=`uniform float uHA,uAs,uAh;uniform vec2 uAd;
 const mat2 m2=mat2(.95534,.29552,-.29552,.95534);
 float tri(float x){return clamp(abs(fract(x)-.5),.01,.49);}
 vec2 tri2(vec2 p){return vec2(tri(p.x)+tri(p.y),tri(p.y+tri(p.x)));}
@@ -662,8 +662,8 @@ float triN(vec2 p){float z=1.8,z2=2.5,rz=0.;p*=rot(p.x*.06);vec2 bp=p;
   for(int i=0;i<5;i++){vec2 dg=tri2(bp*1.85)*.75;dg*=rot(uMT*.25);p-=dg/z2;bp*=1.3;z2*=.45;z*=.42;p*=1.21+(rz-1.)*.02;rz+=tri(p.x+tri(p.y))*z;p*=-m2;}
   return clamp(1./pow(rz*29.,1.3),0.,.55);}
 vec4 aur(vec3 ro,vec3 rd){vec4 col=vec4(0.),av=vec4(0.);float jt=.006*h21(gl_FragCoord.xy);
-  for(int j=0;j<44;j++){float i=float(j),pt=((.8+pow(i,1.4)*.002)-ro.y)/(rd.y*2.+.4)-jt*smoothstep(0.,15.,i);
-    float rz=triN((ro+pt*rd).zx+vec2(uMT*.12,uMT*.04));vec4 c2=vec4((sin(1.-vec3(2.15,-.5,1.2)+i*.043+uHA)*.5+.5)*rz,rz);
+  for(int j=0;j<44;j++){float i=float(j),pt=((uAh+pow(i,1.4)*.002)-ro.y)/(rd.y*2.+.4)-jt*smoothstep(0.,15.,i);
+    float rz=triN((ro+pt*rd).zx*uAs+uMT*mat2(uAd.x,uAd.y,-uAd.y,uAd.x)*vec2(.12,.04));vec4 c2=vec4((sin(1.-vec3(2.15,-.5,1.2)+i*.043+uHA)*.5+.5)*rz,rz);
     av=mix(av,c2,.5);col+=av*exp2(-i*.065-2.5)*smoothstep(0.,5.,i);}
   col*=clamp(rd.y*15.+.4,0.,1.);return col*1.8;}
 float ridge(float az){return .02+.05*noise(vec3(az*3.,1.,0.))+.025*noise(vec3(az*9.,2.,0.));}
@@ -678,67 +678,68 @@ void main(){vec2 sp=(uv-.5)*vec2(uAsp,1.);vec3 ro=vec3(0.,0.,-6.7),rd=normalize(
   o=vec4(col*(.85+.35*uVol),1.);}`;
 
 // ---- мъглявина: обемен полет през светещ газ ----
-const NEB=`uniform float uHN;
+const NEB=`uniform float uHN,uNs,uNt,uNth;uniform vec3 uNo;
 float nb(vec3 p){float s=0.,a=.5;for(int i=0;i<4;i++){s+=a*tnoise(p);p=p*2.03+vec3(3.1,1.7,5.3);a*=.5;}return s;}
 void main(){vec2 sp=(uv-.5)*vec2(uAsp,1.);vec3 ro=vec3(0.,0.,uMT*.3),rd=normalize(vec3(sp,1.2));
   rd.xy=rot(uT*.006)*rd.xy;rd.xz=rot(.2*sin(uT*.01))*rd.xz;
   vec3 col=vec3(0.);float tr=1.,t=.3+.25*h21(gl_FragCoord.xy);
-  for(int i=0;i<44;i++){vec3 q=(ro+rd*t)*.5;q.xy=rot(q.z*.25)*q.xy;
-    float n=nb(q),st=.16+t*.02,rid=1.-abs(2.*nb(q*1.7+vec3(3.,1.,7.))-1.),d=smoothstep(.53,.75,n)*pow(rid,5.)*1.8;   // нишки
-    if(d>.002){vec3 e=mix(vec3(.12,.22,.85),vec3(.85,.22,.62),smoothstep(.42,.66,n));e=mix(e,vec3(1.,.62,.3),smoothstep(.8,1.,rid)*.55);
+  for(int i=0;i<44;i++){vec3 q=(ro+rd*t)*uNs;q.xy=rot(q.z*uNt)*q.xy;q+=uNo;
+    float n=nb(q),st=.16+t*.02,rid=1.-abs(2.*nb(q*1.7+vec3(3.,1.,7.))-1.),d=smoothstep(uNth,uNth+.22,n)*pow(rid,5.)*1.8;   // нишки
+    if(d>.002){vec3 e=mix(vec3(.12,.22,.85),vec3(.85,.22,.62),smoothstep(uNth-.11,uNth+.13,n));e=mix(e,vec3(1.,.62,.3),smoothstep(.8,1.,rid)*.55);
       e=hueRot(e,uHN);col+=tr*e*d*st*.55;tr*=exp(-d*st*1.4);}
     t+=st;if(tr<.03)break;}
   o=vec4((col+stars(rd)*tr*1.2)*(.85+.3*uVol),1.);}`;
 
 // ---- подводен свят: каустики, лъчи, планктон ----
-const SEA=`float vor(vec2 p,float t){vec2 i=floor(p),f=fract(p);float d1=8.,d2=8.;
+const SEA=`uniform float uHs,uCs,uRa,uBd,uDr;vec3 W(vec3 c){return hueRot(c,uHs);}   // W — цветовете на водата и светлината (пясъкът си остава)
+float vor(vec2 p,float t){vec2 i=floor(p),f=fract(p);float d1=8.,d2=8.;
   for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++){vec2 g=vec2(float(x),float(y)),o=vec2(h21(i+g),h21(i+g+17.3));o=.5+.42*sin(t+TAU*o);float d=length(g+o-f);if(d<d1){d2=d1;d1=d;}else if(d<d2)d2=d;}
   return d2-d1;}
 float caus(vec2 p,float t){p+=.8*vec2(noise(vec3(p*.5,t*.12)),noise(vec3(p*.5+5.,t*.12)));p+=.22*vec2(noise(vec3(p*2.3,t*.2+3.)),noise(vec3(p*2.3+9.,t*.2+3.)));
   return pow(1.-smoothstep(0.,.13,vor(p,t)),5.)*.55+pow(1.-smoothstep(0.,.1,vor(p*1.35+2.,t*1.1+1.)),5.)*.45;}
-void main(){vec2 sp=(uv-.5)*vec2(uAsp,1.);vec3 ro=vec3(uMT*.12,1.5,uMT*.05),rd=normalize(vec3(sp.x,sp.y-.32,1.));
-  vec3 deep=mix(vec3(0.,.035,.07),vec3(.02,.2,.28),smoothstep(-.5,.7,rd.y)),col=deep;
+void main(){vec2 sp=(uv-.5)*vec2(uAsp,1.),dv=rot(uDr)*vec2(.12,.05);vec3 ro=vec3(uMT*dv.x,1.5,uMT*dv.y),rd=normalize(vec3(sp.x,sp.y-.32,1.));
+  vec3 deep=W(mix(vec3(0.,.035,.07),vec3(.02,.2,.28),smoothstep(-.5,.7,rd.y))),col=deep;
   if(rd.y<-.01){float t=-ro.y/rd.y;vec3 p=ro+rd*t;
     float h=noise(vec3(p.xz*.5,0.))*.6+noise(vec3(p.xz*1.6,3.))*.25+.15*sin(p.x*5.+noise(vec3(p.xz*.8,7.))*6.);
     vec3 sand=mix(vec3(.42,.38,.28),vec3(.62,.56,.42),h);
-    float c=caus(p.xz*2.,uMT*.35)*(.55+.5*uVol)*exp(-t*.08);
-    col=mix(sand*(.32+.3*h)+c*vec3(.55,.8,.8)*.9,deep,1.-exp(-t*.14));}
-  else{vec2 q=rd.xz/max(rd.y,.05);col=mix(deep,vec3(.45,.75,.85),smoothstep(0.,1.,rd.y)*.5)+caus(q*.5,uMT*.4)*.25*smoothstep(0.,.6,rd.y);}
-  float ang=atan(sp.x-.25,1.4-sp.y),ray=pow(noise(vec3(ang*7.,uMT*.12,0.)),3.)+.6*pow(noise(vec3(ang*15.+3.,uMT*.17,1.)),3.);
-  col+=vec3(.55,.85,.9)*ray*smoothstep(-.7,.6,sp.y)*.28*(.7+.5*uVol);
+    float c=caus(p.xz*uCs,uMT*.35)*(.55+.5*uVol)*exp(-t*.08);
+    col=mix(sand*(.32+.3*h)+c*W(vec3(.55,.8,.8))*.9,deep,1.-exp(-t*.14));}
+  else{vec2 q=rd.xz/max(rd.y,.05);col=mix(deep,W(vec3(.45,.75,.85)),smoothstep(0.,1.,rd.y)*.5)+caus(q*.5,uMT*.4)*.25*smoothstep(0.,.6,rd.y);}
+  float ang=atan(sp.x-uRa,1.4-sp.y),ray=pow(noise(vec3(ang*7.,uMT*.12,0.)),3.)+.6*pow(noise(vec3(ang*15.+3.,uMT*.17,1.)),3.);
+  col+=W(vec3(.55,.85,.9))*ray*smoothstep(-.7,.6,sp.y)*.28*(.7+.5*uVol);
   for(int l=0;l<3;l++){float L=float(l);vec2 g=sp*(4.+L*3.)+vec2(uMT*.04,-uMT*.02)*(1.+L)+L*13.,id=floor(g),f=fract(g)-.5;float hh=h21(id+L*7.);
-    if(hh>.72){vec2 of=(vec2(h21(id+3.),h21(id+5.))-.5)*.6+.08*vec2(sin(uMT*.3+hh*20.),cos(uMT*.25+hh*30.));col+=vec3(.6,.85,1.)*smoothstep(.07-L*.015,0.,length(f-of))*(hh-.72)*(1.2+L*.5);}}
+    if(hh>uBd){vec2 of=(vec2(h21(id+3.),h21(id+5.))-.5)*.6+.08*vec2(sin(uMT*.3+hh*20.),cos(uMT*.25+hh*30.));col+=W(vec3(.6,.85,1.))*smoothstep(.07-L*.015,0.,length(f-of))*(hh-uBd)*(1.2+L*.5)*.28/(1.-uBd);}}
   o=vec4(col,1.);}`;
 
 // ---- Мандълбулб ----
-const BULB=`uniform float uPw,uRY,uRX;
+const BULB=`uniform float uPw,uRY,uRX,uHb;
 float mb(vec3 p,out vec4 tr){vec3 z=p;float dr=1.,r=length(z);tr=vec4(1e3);
   for(int i=0;i<7;i++){r=length(z);if(r>2.)break;float th=acos(clamp(z.z/max(r,1e-5),-1.,1.))*uPw,ph=atan(z.y,z.x)*uPw;
     dr=pow(r,uPw-1.)*uPw*dr+1.;z=pow(r,uPw)*vec3(sin(th)*cos(ph),sin(th)*sin(ph),cos(th))+p;tr=min(tr,vec4(abs(z),dot(z,z)));}
   return .5*log(max(r,1e-5))*r/dr;}
 float map(vec3 p,out vec4 tr){p.xz=rot(uRY)*p.xz;p.yz=rot(uRX)*p.yz;return mb(p,tr);}
 void main(){vec2 sp=(uv-.5)*vec2(uAsp,1.);vec3 ro=vec3(0.,0.,2.9),rd=normalize(vec3(sp,-1.5));
-  vec3 col=mix(vec3(.01,.01,.025),pal(.6+uT*.01)*.07,smoothstep(.9,0.,length(sp)));
+  vec3 col=mix(vec3(.01,.01,.025),pal(.6+uHb+uT*.01)*.07,smoothstep(.9,0.,length(sp)));
   float b=dot(ro,rd),h=b*b-dot(ro,ro)+1.44;
   if(h>0.){float t=max(-b-sqrt(h),0.),tm=-b+sqrt(h),d=1.,gl=0.;vec4 tr;int st=0;
     for(int i=0;i<96;i++){d=map(ro+rd*t,tr);st=i;gl+=exp(-d*40.)*.02;if(d<.0006*t||t>tm)break;t+=d*.9;}
     if(t<tm){vec3 p=ro+rd*t;vec4 q;vec2 e=vec2(1.,-1.)*.0008;
       vec3 n=normalize(e.xyy*map(p+e.xyy,q)+e.yyx*map(p+e.yyx,q)+e.yxy*map(p+e.yxy,q)+e.xxx*map(p+e.xxx,q));
-      vec3 base=mix(pal(.58+uT*.008),pal(.08+uT*.011),clamp(tr.w*.6,0.,1.));base=mix(base,vec3(1.,.95,.85),clamp(tr.x*tr.x*.6,0.,1.)*.5);
+      vec3 base=mix(pal(.58+uHb+uT*.008),pal(.08+uHb+uT*.011),clamp(tr.w*.6,0.,1.));base=mix(base,vec3(1.,.95,.85),clamp(tr.x*tr.x*.6,0.,1.)*.5);
       float ao=pow(1.-float(st)/96.,1.5);vec3 l1=normalize(vec3(.6,.7,.5));float dif=clamp(dot(n,l1),0.,1.),fr=pow(1.-max(dot(n,-rd),0.),3.);
-      col=(base*(.08+dif*.9)+pal(.55+uT*.02)*fr*.5+pow(max(dot(reflect(rd,n),l1),0.),24.)*.4)*ao+pal(uT*.02+tr.w)*exp(-tr.w*6.)*(.2+.5*uTrebA);}
-    col+=pal(.6+uT*.015)*gl*(.5+.4*uVol);}
+      col=(base*(.08+dif*.9)+pal(.55+uHb+uT*.02)*fr*.5+pow(max(dot(reflect(rd,n),l1),0.),24.)*.4)*ao+pal(uT*.02+uHb+tr.w)*exp(-tr.w*6.)*(.2+.5*uTrebA);}
+    col+=pal(.6+uHb+uT*.015)*gl*(.5+.4*uVol);}
   o=vec4(col,1.);}`;
 
 // ---- лава лампа: восъчни метатопки ----
-const LAVA=`uniform float uLT;
+const LAVA=`uniform float uLT,uHl,uLn,uLs;
 float map(vec3 p){float d=p.y+2.35+.12*sin(p.x*1.4+uLT*.2)*sin(p.z*1.1-uLT*.15);d=min(d,2.55-p.y+.1*sin(p.x*1.2-uLT*.18));
-  for(int i=0;i<7;i++){float fi=float(i),ph=uLT*(.05+.03*h11(fi*3.1))+h11(fi)*6.28;
+  for(int i=0;i<9;i++){if(float(i)>=uLn)break;float fi=float(i),ph=uLT*(.05+.03*h11(fi*3.1))+h11(fi)*6.28;
     vec3 c=vec3(sin(fi*2.1+uLT*.04)*.85,-1.9+3.9*(.5-.5*cos(ph)),cos(fi*1.7+uLT*.035)*.45);
-    d=smin(d,length((p-c)*vec3(1.,.82,1.))-(.32+.26*h11(fi*7.7)+.04*(uBassA-1.)),.6);}
+    d=smin(d,length((p-c)*vec3(1.,.82,1.))-(.32+.26*h11(fi*7.7)+.04*(uBassA-1.))*uLs,.6);}
   return d;}
 void main(){vec2 sp=(uv-.5)*vec2(uAsp,1.);vec3 ro=vec3(0.,0.,6.),rd=normalize(vec3(sp,-1.1));
-  vec3 wax=mix(vec3(1.,.28,.06),pal(.95+.1*sin(uT*.02)),.25);
+  vec3 wax=hueRot(mix(vec3(1.,.28,.06),pal(.95+.1*sin(uT*.02)),.25),uHl*TAU);
   vec3 bg=mix(vec3(.012,.008,.04),vec3(.08,.03,.1),smoothstep(.6,-.6,sp.y))+wax*.12*exp(-pow((sp.y+.6)*2.5,2.));
   bg+=vec3(1.,.8,.7)*.05*(exp(-pow((sp.x+uAsp*.38)*25.,2.))+exp(-pow((sp.x-uAsp*.4)*40.,2.)));
   float t=2.,d,md=9.;for(int i=0;i<80;i++){d=map(ro+rd*t);md=min(md,d);if(d<.002||t>11.)break;t+=d*.8;}
@@ -762,7 +763,7 @@ try{
 
 /* ================= звук и анализ ================= */
 const A={bass:1,mid:1,treb:1,bassA:1,midA:1,trebA:1,beat:0,beatLo:0,beatHi:0,vol:0,onLo:0,onHi:0,spd:.45,ripT:9};
-const AU={ctx:null,an:null,aL:null,aR:null,out:null,vol:+lsGet('rzviz.vol',.8),mute:false,mode:'',
+const AU={ctx:null,an:null,aL:null,aR:null,out:null,vol:.8,mode:'',
   fq:new Float32Array(1024),td:new Float32Array(2048),tL:new Float32Array(1024),tR:new Float32Array(1024),
   S:new Float32Array(512),V:new Float32Array(512),Vp:new Float32Array(512),N:new Float32Array(512),W:new Float32Array(1536),pLo:0,pHi:0,data:new Float32Array(2048),row:new Float32Array(256),
   map:null,ref:-40,pk:.15,L:[0,0,0],age:0,hacc:0,head:0,dLo:null,dHi:null};
@@ -781,12 +782,12 @@ function det(d,x,now,gap,minAbs){const h=d.h,N=Math.min(d.n,h.length);let m=0,s=
   h[d.i]=x;d.i=(d.i+1)%h.length;d.n++;
   if(N>12&&x>m+1.4*s+minAbs&&now-d.last>gap){d.last=now;return Math.min(1,.35+(x-m)/(5*s+minAbs*4+1e-6));}return 0;}
 function hook(ctx,src){
-  const v=ctx.createGain();v.gain.value=AU.mute?0:AU.vol*AU.vol;src.connect(v);v.connect(ctx.destination);
+  const v=ctx.createGain();v.gain.value=AU.vol*AU.vol;src.connect(v);v.connect(ctx.destination);
   const an=ctx.createAnalyser();an.fftSize=2048;an.smoothingTimeConstant=.55;an.minDecibels=-110;an.maxDecibels=-10;src.connect(an);
   const sp=ctx.createChannelSplitter(2);src.connect(sp);
   const aL=ctx.createAnalyser(),aR=ctx.createAnalyser();aL.fftSize=aR.fftSize=1024;sp.connect(aL,0);sp.connect(aR,1);
   Object.assign(AU,{ctx,an,aL,aR,out:v,map:null,age:0,L:[0,0,0]});}
-function setVol(){if(AU.out)AU.out.gain.setTargetAtTime(AU.mute?0:AU.vol*AU.vol,AU.ctx.currentTime,.05);lsSet('rzviz.vol',AU.vol.toFixed(2));$('#sndBtn').classList.toggle('off',AU.mute);}
+function setVol(){if(AU.out)AU.out.gain.setTargetAtTime(AU.vol*AU.vol,AU.ctx.currentTime,.05);}
 // плавно следване: бързо нагоре (ta), бавно надолу (tr) — нищо не скача от кадър в кадър
 const sm=(c,v,ta,tr,dt)=>c+(v-c)*(1-Math.exp(-dt/(v>c?ta:tr)));
 function audioUpdate(dt,now){
@@ -850,15 +851,16 @@ const FL={ok:HF,ready:false,frame:-1,
     if(this.frame===frameNo)return;this.frame=frameNo;
     // само непрекъснати струи: силата им следва плавните обвивки, въртенето — музикалното време
     const asp=iw/ih,k=Math.min(dt*60,2),B=[A.bassA,A.midA,A.trebA],mt=MT;
-    for(let i=0;i<3;i++){const a=mt*.15*(i%2?-1:1)+i*2.094,e=Math.max(0,B[i]-.7)+.5*A.beatLo,X=Math.cos(a)*.3,Y=Math.sin(a)*.3,da=a+Math.PI/2+.7*Math.sin(mt*.3+i);
-      const f=(110+800*e*e)*k;
-      this.splat(.5+X/asp,.5+Y,Math.cos(da)*f,Math.sin(da)*f,hsl(t*.03+i*.33,.95,.5).map(c=>c*(.005+.05*e)*k),.0014);}
+    const n=cfg.n||3,r0=cfg.r0||.3;
+    for(let i=0;i<n;i++){const a=mt*.15*(cfg.sp||1)*(i%2?-1:1)+i*Math.PI*2/n,e=Math.max(0,B[i%3]-.7)+.5*A.beatLo,X=Math.cos(a)*r0,Y=Math.sin(a)*r0,da=a+Math.PI/2+.7*Math.sin(mt*.3+i);
+      const f=(110+800*e*e)*k*3/n;
+      this.splat(.5+X/asp,.5+Y,Math.cos(da)*f,Math.sin(da)*f,hsl(t*.03+(cfg.h||0)+i/n,.95,.5).map(c=>c*(.005+.05*e)*k*3/n),.0014);}
     if(A.beatLo>.05){const a=mt*.2,f=550*A.beatLo*k;
       for(let i=0;i<4;i++){const b=a+i*Math.PI/2;
-        this.splat(.5+Math.cos(b)*.04/asp,.5+Math.sin(b)*.04,Math.cos(b)*f,Math.sin(b)*f,hsl(t*.05+i*.12,.9,.5).map(c=>c*.03*A.beatLo*k),.0018);}}
+        this.splat(.5+Math.cos(b)*.04/asp,.5+Math.sin(b)*.04,Math.cos(b)*f,Math.sin(b)*f,hsl(t*.05+(cfg.h||0)+i*.12,.9,.5).map(c=>c*.03*A.beatLo*k),.0018);}}
     if(cfg.ring){const amp=.12+.1*A.vol;
       run(P.ring,{uSrc:this.vel.rd,uR0:.28,uAmpR:amp,uStr:50*k,uIsVel:1,uCol:[0,0,0]},this.vel.wr);this.vel.swap();
-      run(P.ring,{uSrc:this.dye.rd,uR0:.28,uAmpR:amp,uStr:.012*k,uIsVel:0,uCol:hsl(t*.04+.6,.9,.55)},this.dye.wr);this.dye.swap();}
+      run(P.ring,{uSrc:this.dye.rd,uR0:.28,uAmpR:amp,uStr:.012*k,uIsVel:0,uCol:hsl(t*.04+.6+(cfg.h||0),.9,.55)},this.dye.wr);this.dye.swap();}
     const d=Math.min(dt,1/30)*.55,tx=this.vel.rd.tx;
     run(P.curl,{uVel:this.vel.rd,uTxS:tx},this.curl);
     run(P.vort,{uVel:this.vel.rd,uCurl:this.curl,uTxS:tx,uCurlK:cfg.curl||28,uDt:d},this.vel.wr);this.vel.swap();
@@ -880,82 +882,122 @@ const CHM=[[1,2],[1,3],[2,3],[1,4],[3,4],[2,5],[3,5],[1,5],[4,5],[2,7],[3,7],[5,
 const RDP=[[.0545,.062],[.0367,.0649],[.039,.058],[.042,.0605],[.03,.057],[.025,.055]];
 const blobMat=st=>{const c=st.mp;return c<15?0:c<20?ease((c-15)/5):c<35?1:1-ease((c-35)/5);};
 const ease=x=>x*x*(3-2*x),rnd=(a,b)=>a+Math.random()*(b-a);
+// случайни числа за фигурите (закръглени — историята и записът остават кратки)
+const fR=(a,b)=>Math.round(rnd(a,b)*1e3)/1e3,fI=(a,b)=>a+Math.floor(Math.random()*(b-a+1)),fS=()=>Math.random()<.5?-1:1,fA=(n,g)=>[...Array(n)].map(g);
 const pick=(arr,not)=>{if(arr.length<2)return arr[0];let v;do v=arr[Math.floor(Math.random()*arr.length)];while(v===not);return v;};
 let NP=1<<17;
 const TY={
-  wave:{init:()=>({rot:0}),
-    draw(pr,st,dst,dt,t){const c=pr.cfg;st.rot+=dt*(c.spin||.2)*(.4+.6*A.spd);
+  // сцените без свое морфиране (wf): фигурата е набор случайни числа, смяната е през бяло; обхватите съдържат и досегашния вид
+  wave:{figs:()=>Infinity,wf:1,
+    gen(pr){const c=pr.cfg,p=pr.par(A,0,{}),n=c.waves.length;   // цвят, въртене, радиуси и сила на вълните, кръг ↔ спектър, огледала/лъчи, многоъгълници, следата
+      return {h:fR(0,1),sp:fR(.6,1.6)*fS(),r:fA(n,()=>fR(.8,1.2)),a:fA(n,()=>fR(.75,1.35)),m:fA(n,()=>fI(0,1)),n:fA((c.shapes||[]).length,()=>fI(3,8)),
+        k:p.kalA?pick([4,5,6,8,10,12]):p.foldA?pick([5,6,7,8,9,10,12]):0,fr:fR(.5,1.6)*fS(),fz:fR(.6,1.4),eo:fI(0,3)};},
+    init(pr,v){const c=pr.cfg;return {rot:0,v,cfg:Object.assign({},c,{spin:(c.spin||.2)*v.sp,
+      waves:c.waves.map((w,i)=>Object.assign({},w,{r:(w.r||0)*v.r[i],amp:w.amp*v.a[i],h:w.h+v.h,m:v.m[i]&&(w.m===0||w.m===3)?3-w.m:w.m})),
+      shapes:(c.shapes||[]).map((q,i)=>Object.assign({},q,{n:v.n[i],h:q.h+v.h}))})};},
+    vpar(v,p){p.rot*=v.fr;p.zoom=1+(p.zoom-1)*v.fz;if(v.k){if(p.kalA)p.kal=v.k;if(p.foldA)p.fold=v.k;}if(p.echo)p.echoO=v.eo;},
+    go:(pr,st,v)=>figWhite(st,v),
+    draw(pr,st,dst,dt,t){const c=st.cfg;st.rot+=dt*(c.spin||.2)*(.4+.6*A.spd);
       for(const s of c.shapes||[]){const a=MT*s.orb+s.ph;
         run(P.shape,{uPrev:FB.rd,uC:[Math.cos(a)*s.od*1.3,Math.sin(a)*s.od],uR:s.r*(1+.3*(A.bassA-1))+.03*A.beatLo,uN:s.n,uAng:MT*s.rs,uTh:s.th,uTex:s.tex,uFill:s.fill,uCol:hsl(t*.05+s.h,.85,.6)},dst,{blend:'over'});}
       for(const w of c.waves)run(P.line,{uN:512,uMode:w.m,uAmp:w.amp*(1+.2*A.beat),uR:(w.r||0)*(1+.15*(A.bassA-1)),uW:w.w*dst.h/900,uRotW:st.rot*(w.rs||1)+(w.ro||0),uSpan:w.span||1.3,uC:w.c||[0,0],uCol:hsl(t*w.hs+w.h,w.sat||.9,.6),uBr:(w.br||1)*(.7+.6*A.vol)},dst,{blend:'add',mode:gl.TRIANGLE_STRIP,n:1024});}},
-  fluid:{init:()=>({}),
-    draw(pr,st,dst,dt,t){if(!FL.ready)FL.init();FL.step(pr.cfg,dt,t);run(P.fdisp,{uDye:FL.dye.rd,uTxD:FL.dye.rd.tx},dst);}},
-  tun:{init:()=>({z:Math.random()*100}),
-    draw(pr,st,dst,dt,t){st.z+=dt*(.5+1.6*A.spd);run(P.tun,{uZ:st.z,uRoll:.3*Math.sin(t*.045)+.08*Math.sin(t*.13)},dst);}},
-  blob:{init:()=>({a:0,b:pick([1,2,3,4,5]),m:0,next:5,ry:0,mp:Math.random()*40}),
+  fluid:{figs:()=>Infinity,wf:1,gen:()=>({n:fI(2,5),r:fR(.2,.36),sp:fR(.6,1.6)*fS(),h:fR(0,1),c:fR(16,40),d:fR(.8,1.25),k:pick([3,4,5,6,8])}),   // струи, орбита, въртене, цвят, вихровост, разсейване, огледала
+    init:(pr,v)=>({v,cfg:Object.assign({},pr.cfg,{n:v.n,r0:v.r,sp:v.sp,h:v.h,curl:v.c,dis:pr.cfg.dis*v.d})}),
+    vpar(v,p){if(p.kalA)p.kal=v.k;},go:(pr,st,v)=>figWhite(st,v),
+    draw(pr,st,dst,dt,t){if(!FL.ready)FL.init();FL.step(st.cfg,dt,t);run(P.fdisp,{uDye:FL.dye.rd,uTxD:FL.dye.rd.tx},dst);}},
+  tun:{figs:()=>Infinity,wf:1,gen:()=>({k:fI(3,8),g:pick([12,14,16,18,20,24,30]),tw:fR(.4,1.1)*fS(),la:fR(.06,.16),h:fR(0,1)}),   // издутини, сегменти, усукване, дълбочина, цвят
+    init:(pr,v)=>({z:Math.random()*100,v}),go:(pr,st,v)=>figWhite(st,v),
+    draw(pr,st,dst,dt,t){const v=st.v;st.z+=dt*(.5+1.6*A.spd);run(P.tun,{uZ:st.z,uRoll:.3*Math.sin(t*.045)+.08*Math.sin(t*.13),uK:v.k,uG:v.g,uTw:v.tw,uLa:v.la,uH:v.h},dst);}},
+  // фигури (тук и в следващите сцени): figs — колко са, gen — нова случайна (различна от v), ok — годна ли е запазената, init(pr,v) — начало от v, go — преход към v
+  blob:{figs:()=>6,gen:(pr,v)=>({s:pick([0,1,2,3,4,5],v?v.s:-1)}),ok:(pr,v)=>v.s>=0&&v.s<6,
+    init:(pr,v)=>({a:0,b:v.s,m:v.s?0:1,next:5,ry:0,mp:Math.random()*40}),   // влиза от сферата във фигурата
+    go(pr,st,v){figMix(st,'m','a','b',v.s);st.next=rnd(9,15);},
     draw(pr,st,dst,dt,t){st.next-=dt;
-      if(st.m>=1&&(st.next<=0||(A.onLo>.5&&st.next<4))){st.a=st.b;st.b=pick([0,1,2,3,4,5],st.a);st.m=0;st.next=rnd(9,15);}
+      if(st.m>=1&&(st.next<=0||(A.onLo>.5&&st.next<4))){st.next=rnd(9,15);if(!pr.fig.lock)figGo(pr,st,1,1);}
       if(st.m<1)st.m=Math.min(1,st.m+dt/4);st.ry+=dt*(.05+.18*A.spd);
       st.mp=(st.mp+dt)%40;
       run(P.blob,{uA:st.a,uB:st.b,uM:ease(st.m),uMat:blobMat(st),uRY:st.ry,uRX:.35*Math.sin(t*.07)},dst);}},
   // смяна на формата: 0,5 с към бяло, в пика — новата форма (със свой път на камерата), 0,5 с от бяло; на силен бас, иначе до 4 с по-късно
-  frac:{init:()=>({tc:rnd(0,40),f:Math.floor(Math.random()*P.frac.length),next:rnd(20,30),ph:0,w:0}),
+  frac:{figs:()=>P.frac.length,gen:(pr,v)=>({f:pick(P.frac.map((p,i)=>i),v?v.f:-1)}),ok:(pr,v)=>v.f>=0&&v.f<P.frac.length,
+    nm:v=>['Аполониева мрежа','псевдо-Клайнов','готически арки','Менгерова решетка','Мандълбокс'][v.f],
+    init:(pr,v)=>({tc:rnd(0,40),f:v.f,to:v.f,next:rnd(20,30),ph:0,w:0}),
+    go(pr,st,v){st.to=v.f;if(!st.ph)st.ph=1e-4;else if(st.ph>=.5)st.ph=Math.min(.4999,1-st.ph);},   // в бялото — само новата цел; на излизане — обратно към бялото
     draw(pr,st,dst,dt,t){st.tc+=dt*(.035+.11*A.spd);st.next-=dt;
-      if(!st.ph&&st.next<=0&&(A.onLo||st.next<-4))st.ph=1e-4;
-      if(st.ph){const p0=st.ph;st.ph+=dt;if(p0<.5&&st.ph>=.5)st.f=pick(P.frac.map((p,i)=>i),st.f);if(st.ph>=1){st.ph=0;st.next=rnd(20,30);}}
+      if(!st.ph&&st.next<=0&&(A.onLo||st.next<-4)){st.next=rnd(20,30);if(!pr.fig.lock)figGo(pr,st,1,1);}
+      if(st.ph){const p0=st.ph;st.ph+=dt;if(p0<.5&&st.ph>=.5)st.f=st.to;if(st.ph>=1){st.ph=0;st.next=rnd(20,30);}}
       st.w=st.ph?ease(Math.min(1,st.ph<.5?st.ph*2:2-st.ph*2)):0;
       run(P.frac[st.f],{uS:1.17+.07*Math.sin(t*.07),uTc:st.tc,uQ:[Math.sin(t*.031),Math.sin(t*.023+1),Math.sin(t*.017+2),Math.sin(t*.027+3)]},dst);}},
-  part:{init:pr=>{const s=pr.cfg.shapes;const a=pick(s);return {a,b:a,m:1,next:rnd(3,5),hue:Math.random()};},
+  part:{figs:pr=>pr.cfg.shapes.length>1?pr.cfg.shapes.length:Infinity,wf:1,
+    gen:(pr,v)=>pr.cfg.shapes.length>1?{s:pick(pr.cfg.shapes,v?v.s:-1)}:{s:pr.cfg.shapes[0],h:fR(0,1),y:fR(-.35,.35),p:fR(-.72,-.4),d:fR(3,3.7),hs:fR(.8,1.4)},   // цвят, камера, релеф
+    ok:(pr,v)=>pr.cfg.shapes.includes(v.s)&&(pr.cfg.shapes.length>1||figOk(v,TY.part.gen(pr))),
+    init:(pr,v)=>{const a=v.s;return {a,b:a,m:1,next:rnd(3,5),hue:v.h!=null?v.h:Math.random(),v};},
+    go(pr,st,v){if(pr.cfg.shapes.length>1){figMix(st,'m','a','b',v.s);st.next=rnd(11,17);}else figWhite(st,v);},
     draw(pr,st,dst,dt,t){const c=pr.cfg;st.next-=dt;
-      if(c.shapes.length>1&&st.m>=1&&(st.next<=0||(A.onLo>.6&&st.next<2.5))){st.a=st.b;st.b=pick(c.shapes,st.a);st.m=0;st.next=rnd(11,17);}
+      if(c.shapes.length>1&&st.m>=1&&(st.next<=0||(A.onLo>.6&&st.next<2.5))){st.next=rnd(11,17);if(!pr.fig.lock)figGo(pr,st,1,1);}
       if(st.m<1)st.m=Math.min(1,st.m+dt/5);st.hue+=dt*.01;
-      const cam=[{yaw:t*.07,pitch:.35*Math.sin(t*.045),d:3.3,lift:0},{yaw:.22*Math.sin(t*.03),pitch:-.55,d:3.3,lift:-.05},{yaw:t*.05,pitch:.6*Math.sin(t*.04),d:3,lift:0}][c.cam||0];
-      run(P.part,{uN:NP,uA:st.a,uB:st.b,uMM:st.m,uPS:c.ps||2.2,uBr:(c.br||1)*.075*Math.sqrt((1<<17)/NP),uHue:st.hue,uYaw:cam.yaw,uPitch:cam.pitch,uCamD:cam.d,uLift:cam.lift,
+      const v=st.v,cam=[{yaw:t*.07,pitch:.35*Math.sin(t*.045),d:3.3,lift:0},v.y!=null?{yaw:.22*Math.sin(t*.03)+v.y,pitch:v.p,d:v.d,lift:-.05}:{yaw:.22*Math.sin(t*.03),pitch:-.55,d:3.3,lift:-.05},{yaw:t*.05,pitch:.6*Math.sin(t*.04),d:3,lift:0}][c.cam||0];
+      run(P.part,{uN:NP,uA:st.a,uB:st.b,uMM:st.m,uPS:c.ps||2.2,uBr:(c.br||1)*.075*Math.sqrt((1<<17)/NP),uHue:st.hue,uYaw:cam.yaw,uPitch:cam.pitch,uCamD:cam.d,uLift:cam.lift,uHS:v.hs||1.1,
         uHead:AU.head,uHist:HT,uSF:[3+5*(.5+.5*Math.sin(t*.045)),.35+1.2*(.5+.5*Math.sin(t*.03))+.2*(A.bassA-1),.3+1.6*(.5+.5*Math.sin(t*.055)),.3+1.6*(.5+.5*Math.cos(t*.04))]},
         dst,{blend:'add',mode:gl.POINTS,n:NP});}},
-  chla:{init:()=>{const a=pick(CHM),b=pick(CHM,a);return {md:[...a,...b],k:0,next:rnd(10,14),rot:0,init:1};},
+  chla:{figs:()=>CHM.length,gen:(pr,v)=>{let n;do n=pick(CHM);while(v&&n[0]===v.m[0]&&n[1]===v.m[1]);return {m:[n[0],n[1]]};},
+    ok:(pr,v)=>CHM.some(n=>n[0]===v.m[0]&&n[1]===v.m[1]),
+    init:(pr,v)=>{let a;do a=pick(CHM);while(a[0]===v.m[0]&&a[1]===v.m[1]);return {md:[...a,...v.m],k:0,next:rnd(10,14),rot:0,init:1};},
+    go(pr,st,v){if(st.k<.5){st.md[2]=v.m[0];st.md[3]=v.m[1];}else{st.md=[st.md[2],st.md[3],v.m[0],v.m[1]];st.k=0;}st.next=rnd(12,18);},
     draw(pr,st,dst,dt,t){const S=simDbl('chla',512,256,F32,gl.NEAREST);st.next-=dt;
-      if(st.k>=1&&st.next<=0){let n;do n=pick(CHM);while(n[0]===st.md[2]&&n[1]===st.md[3]);st.md=[st.md[2],st.md[3],n[0],n[1]];st.k=0;st.next=rnd(12,18);}
+      if(st.k>=1&&st.next<=0){st.next=rnd(12,18);if(!pr.fig.lock)figGo(pr,st,1,1);}
       if(st.k<1)st.k=Math.min(1,st.k+dt/6);const U={uMd:st.md,uMk:ease(st.k)};
       for(let i=0;i<2;i++){run(P.chup,Object.assign({uP:S.rd,uAmp:.35+.5*A.spd,uSeed:Math.random(),uInit:st.init||S.fresh?1:0},U),S.wr);S.swap();st.init=S.fresh=0;}
       st.rot+=dt*.008;const scl=.84*Math.min(1,iw/ih);
       run(P.chpl,Object.assign({uScl:scl,uRotP:st.rot,uGlow:.4+.8*A.vol},U),dst);
       run(P.chpt,{uP:S.rd,uSW:512,uScl:scl,uRotP:st.rot,uPS:Math.max(1,1.5*dst.h/1000),uBr:.3},dst,{blend:'add',mode:gl.POINTS,n:512*256});}},
-  ripl:{init:()=>({ph:0,acc:0,init:1}),
-    draw(pr,st,dst,dt,t){const [w,h]=aspSize(300),S=simDbl('ripl',w,h,TF,gl.LINEAR);if(st.init||S.fresh){clear(S.rd);clear(S.wr);st.init=S.fresh=0;}
-      const asp=w/h,B=[A.bassA,A.midA,A.trebA,.6+A.vol],src=k=>{const a=MT*.05*(k%2?-1:1)+k*1.5708+.4,r=.24+.07*Math.sin(MT*.06+k*2);
-        return [.5+Math.cos(a)*r/asp,.5+Math.sin(a)*r,.011*(.35+.65*Math.min(1.6,B[k])),st.ph];};
+  ripl:{figs:()=>Infinity,wf:1,gen:()=>({n:fI(2,4),r:fR(.16,.3),sp:fR(.5,1.6)*fS(),h:fR(-.3,.3)}),   // източници, разположение, въртене, цвят
+    init:(pr,v)=>({ph:0,acc:0,init:1,v}),go:(pr,st,v)=>figWhite(st,v),
+    draw(pr,st,dst,dt,t){const [w,h]=aspSize(300),S=simDbl('ripl',w,h,TF,gl.LINEAR),v=st.v;if(st.init||S.fresh){clear(S.rd);clear(S.wr);st.init=S.fresh=0;}
+      const asp=w/h,B=[A.bassA,A.midA,A.trebA,.6+A.vol],src=k=>{const a=MT*.05*v.sp*(k%2?-1:1)+k*Math.PI*2/v.n+.4,r=v.r+.07*Math.sin(MT*.06+k*2);
+        return [.5+Math.cos(a)*r/asp,.5+Math.sin(a)*r,k<v.n?.011*(.35+.65*Math.min(1.6,B[k])):0,st.ph];};
       st.acc+=dt;let n=0;while(st.acc>=1/60&&n<3){st.acc-=1/60;n++;st.ph+=.17;
         run(P.rpup,{uW:S.rd,uTxS:S.rd.tx,uS0:src(0),uS1:src(1),uS2:src(2),uS3:src(3),uDamp:.9985},S.wr);S.swap();}
-      run(P.rpdi,{uW:S.rd,uTxS:S.rd.tx,uGain:6,uS0:src(0),uS1:src(1),uS2:src(2),uS3:src(3)},dst);}},
-  rd:{init:()=>{const a=pick(RDP);return {a,b:a,k:1,next:rnd(18,26),acc:0,init:1,bt:Math.random()*6};},
+      run(P.rpdi,{uW:S.rd,uTxS:S.rd.tx,uGain:6,uHr:v.h,uS0:src(0),uS1:src(1),uS2:src(2),uS3:src(3)},dst);}},
+  rd:{figs:()=>RDP.length,gen:(pr,v)=>({p:pick(RDP.map((x,i)=>i),v?v.p:-1)}),ok:(pr,v)=>v.p>=0&&v.p<RDP.length,
+    init:(pr,v)=>{const a=RDP[v.p];return {a,b:a,k:1,kr:12,next:rnd(18,26),acc:0,init:1,bt:Math.random()*6};},
+    go(pr,st,v,auto){figMix(st,'k','a','b',RDP[v.p]);st.kr=auto?12:4;st.next=rnd(20,30);},   // ръчно — три пъти по-бързо
     draw(pr,st,dst,dt,t){const [w,h]=aspSize(280),S=simDbl('rd',w,h,F32,FL32?gl.LINEAR:gl.NEAREST);
       if(st.init||S.fresh){run(P.rdin,{uSeed:Math.random()},S.rd);st.init=S.fresh=0;}
-      st.next-=dt;if(st.k>=1&&st.next<=0){st.a=st.b;st.b=pick(RDP,st.a);st.k=0;st.next=rnd(20,30);}
-      if(st.k<1)st.k=Math.min(1,st.k+dt/12);const e=ease(st.k),f=st.a[0]+(st.b[0]-st.a[0])*e,kk=st.a[1]+(st.b[1]-st.a[1])*e;
+      st.next-=dt;if(st.k>=1&&st.next<=0){st.next=rnd(20,30);if(!pr.fig.lock)figGo(pr,st,1,1);}
+      if(st.k<1)st.k=Math.min(1,st.k+dt/st.kr);const e=ease(st.k),f=st.a[0]+(st.b[0]-st.a[0])*e,kk=st.a[1]+(st.b[1]-st.a[1])*e;
       st.bt+=dt*(.04+.06*A.spd);const br=[.5+Math.cos(st.bt)*.3*h/w,.5+Math.sin(st.bt*1.3)*.3,.012+.01*A.beatLo,.6];
       st.acc+=dt*60*(5+9*A.spd);let n=0;while(st.acc>=1&&n<24){st.acc-=1;n++;run(P.rdup,{uS:S.rd,uTxS:S.rd.tx,uF:f,uK:kk,uBr:br},S.wr);S.swap();}st.acc=Math.min(st.acc,2);
       run(P.rddi,{uS:S.rd,uTxS:S.rd.tx},dst);}},
-  phys:{init:()=>({init:1,ph:Math.random()*10}),
-    draw(pr,st,dst,dt,t){const AG=simDbl('physA',512,256,F32,gl.NEAREST),[w,h]=aspSize(420),TR=simDbl('physT',w,h,TF,gl.LINEAR);
-      if(st.init||AG.fresh||TR.fresh){run(P.phin,{uSeed:Math.random()},AG.rd);clear(TR.rd);clear(TR.wr);st.init=AG.fresh=TR.fresh=0;}
+  phys:{figs:()=>Infinity,wf:1,gen:()=>({sa:fR(.3,.75),ra:fR(.22,.5),sd:fR(8,22),dm:fR(.3,.7),h:fR(0,1),s:fR(0,1)}),   // поведение на агентите (сетива, завой), люлеене, цвят, семе
+    init:(pr,v)=>({init:1,ph:Math.random()*10,v}),go:(pr,st,v)=>figWhite(st,v),
+    draw(pr,st,dst,dt,t){const AG=simDbl('physA',512,256,F32,gl.NEAREST),[w,h]=aspSize(420),TR=simDbl('physT',w,h,TF,gl.LINEAR),v=st.v;
+      if(st.init||AG.fresh||TR.fresh){run(P.phin,{uSeed:v.s},AG.rd);clear(TR.rd);clear(TR.wr);st.init=AG.fresh=TR.fresh=0;}
       st.ph+=dt*(.02+.03*A.spd);const k=Math.min(2,dt*60);
-      run(P.phup,{uA:AG.rd,uTr:TR.rd,uSeed:Math.random(),uSA:.5+.3*Math.sin(st.ph),uRA:.35+.15*Math.sin(st.ph*1.3+1),uSD:14+8*Math.sin(st.ph*.7+2),uSS:(.5+.9*A.spd)*k,uTxT:TR.rd.tx},AG.wr);AG.swap();
+      run(P.phup,{uA:AG.rd,uTr:TR.rd,uSeed:Math.random(),uSA:v.sa+.3*v.dm*Math.sin(st.ph),uRA:v.ra+.15*v.dm*Math.sin(st.ph*1.3+1),uSD:v.sd+8*v.dm*Math.sin(st.ph*.7+2),uSS:(.5+.9*A.spd)*k,uTxT:TR.rd.tx},AG.wr);AG.swap();
       run(P.phdf,{uTr:TR.rd,uTxS:TR.rd.tx,uDec:Math.pow(.9,k)},TR.wr);
       run(P.phdp,{uA:AG.rd,uSW:512,uDep:.12*k},TR.wr,{blend:'add',mode:gl.POINTS,n:512*256});TR.swap();
-      run(P.phdi,{uTr:TR.rd,uGain:1.4},dst);}},
-  attr:{init:()=>{const a=Math.floor(Math.random()*4);return {a,b:a,k:1,next:rnd(14,20),init:1};},
+      run(P.phdi,{uTr:TR.rd,uGain:1.4,uHp:v.h},dst);}},
+  attr:{figs:()=>4,gen:(pr,v)=>{let a;do a=Math.floor(Math.random()*4);while(v&&a===v.a);return {a};},ok:(pr,v)=>v.a>=0&&v.a<4,
+    init:(pr,v)=>({a:v.a,b:v.a,k:1,next:rnd(14,20),init:1}),
+    go(pr,st,v){figMix(st,'k','a','b',v.a);st.next=rnd(16,24);},
     draw(pr,st,dst,dt,t){const S=simDbl('attr',512,256,F32,gl.NEAREST);st.next-=dt;
-      if(st.k>=1&&st.next<=0){st.a=st.b;do st.b=Math.floor(Math.random()*4);while(st.b===st.a);st.k=0;st.next=rnd(16,24);}
+      if(st.k>=1&&st.next<=0){st.next=rnd(16,24);if(!pr.fig.lock)figGo(pr,st,1,1);}
       if(st.k<1)st.k=Math.min(1,st.k+dt/6);
       run(P.atup,{uP:S.rd,uA:st.a,uB:st.b,uK:ease(st.k),uDt:.0045*(.6+A.spd)*Math.min(2,dt*60),uInit:st.init||S.fresh?1:0,uSeed:Math.random()},S.wr);S.swap();st.init=S.fresh=0;
       run(P.atdr,{uP:S.rd,uSW:512,uYaw:t*.06,uPitch:.3*Math.sin(t*.04),uCamD:2.7,uPS:1.6,uBr:.09,uHue:t*.01},dst,{blend:'add',mode:gl.POINTS,n:512*256});}},
-  aur:{init:()=>({}),draw(pr,st,dst,dt,t){lowDraw(P.aur,{uHA:.3*Math.sin(t*.02)+spAvg()*.6},dst,.75);}},
-  neb:{init:()=>({}),draw(pr,st,dst,dt,t){lowDraw(P.neb,{uHN:.6*Math.sin(t*.015)},dst,.5);}},
-  sea:{init:()=>({}),draw(pr,st,dst,dt,t){run(P.sea,{},dst);}},
-  bulb:{init:()=>({ry:Math.random()*6}),draw(pr,st,dst,dt,t){st.ry+=dt*(.03+.06*A.spd);lowDraw(P.bulb,{uPw:6.5+2.5*Math.sin(t*.02),uRY:st.ry,uRX:.4*Math.sin(t*.03)},dst,.75);}},
-  lava:{init:()=>({lt:Math.random()*100}),draw(pr,st,dst,dt,t){st.lt+=dt*(.5+.7*A.spd);run(P.lava,{uLT:st.lt},dst);}},
-  marb:{init:()=>({}),draw(pr,st,dst,dt,t){run(P.marb,{uWK:3.4+.4*Math.sin(t*.05),uSc:2.4},dst);}}};
+  aur:{figs:()=>Infinity,wf:1,gen:()=>({h:fR(0,6.283),s:fR(.7,1.4),d:fR(0,6.283),ht:fR(.65,1)}),init:(pr,v)=>({v}),go:(pr,st,v)=>figWhite(st,v),   // цвят, големина и посока на завесите, височина
+    draw(pr,st,dst,dt,t){const v=st.v;lowDraw(P.aur,{uHA:.3*Math.sin(t*.02)+spAvg()*.6+v.h,uAs:v.s,uAd:[Math.cos(v.d),Math.sin(v.d)],uAh:v.ht},dst,.75);}},
+  neb:{figs:()=>Infinity,wf:1,gen:()=>({h:fR(0,6.283),sc:fR(.38,.7),tw:fR(.1,.4)*fS(),th:fR(.48,.58),o:fA(3,()=>fR(0,50))}),init:(pr,v)=>({v}),go:(pr,st,v)=>figWhite(st,v),   // цвят, мащаб, усукване, гъстота, място в шума
+    draw(pr,st,dst,dt,t){const v=st.v;lowDraw(P.neb,{uHN:.6*Math.sin(t*.015)+v.h,uNs:v.sc,uNt:v.tw,uNth:v.th,uNo:v.o},dst,.5);}},
+  sea:{figs:()=>Infinity,wf:1,gen:()=>({h:fR(-1,1),cs:fR(1.4,2.8),ra:fR(-.3,.3),bd:fR(.62,.8),dr:fR(-.6,.6)}),init:(pr,v)=>({v}),go:(pr,st,v)=>figWhite(st,v),   // вода, отблясъци, лъчи, мехурчета, посока
+    draw(pr,st,dst,dt,t){const v=st.v;run(P.sea,{uHs:v.h,uCs:v.cs,uRa:v.ra,uBd:v.bd,uDr:v.dr},dst);}},
+  bulb:{figs:()=>Infinity,wf:1,gen:()=>({pw:fR(3,10),pa:fR(.3,1),rx:fR(.2,.6),h:fR(0,1)}),init:(pr,v)=>({ry:Math.random()*6,v}),go:(pr,st,v)=>figWhite(st,v),   // степен (и колко се люлее), наклон, цвят
+    draw(pr,st,dst,dt,t){const v=st.v;st.ry+=dt*(.03+.06*A.spd);lowDraw(P.bulb,{uPw:v.pw+v.pa*Math.sin(t*.02),uRY:st.ry,uRX:v.rx*Math.sin(t*.03),uHb:v.h},dst,.75);}},
+  lava:{figs:()=>Infinity,wf:1,gen:()=>({h:fR(0,1),n:fI(4,9),sz:fR(.8,1.2),sp:fR(.7,1.4)}),init:(pr,v)=>({lt:Math.random()*100,v}),go:(pr,st,v)=>figWhite(st,v),   // восък, капки, размер, скорост
+    draw(pr,st,dst,dt,t){const v=st.v;st.lt+=dt*(.5+.7*A.spd)*v.sp;run(P.lava,{uLT:st.lt,uHl:v.h,uLn:v.n,uLs:v.sz},dst);}},
+  marb:{figs:()=>Infinity,wf:1,gen:()=>({wk:fR(2.6,4.4),sc:fR(1.7,3.2),h:fR(0,1),rs:fR(.5,1.5)*fS()}),init:(pr,v)=>({v}),go:(pr,st,v)=>figWhite(st,v),   // изкривяване, мащаб, гама, въртене
+    draw(pr,st,dst,dt,t){const v=st.v;run(P.marb,{uWK:v.wk+.4*Math.sin(t*.05),uSc:v.sc,uHm:v.h,uRs:v.rs},dst);}}};
+for(const k in TY)if(TY[k].wf&&!TY[k].ok)TY[k].ok=(pr,v)=>figOk(v,TY[k].gen(pr));
 
 // пресетите: сцена + параметри на обратната връзка и крайния образ (интерполират се при смяна)
 const DEF={zoom:1,zoomExp:1,rot:0,cx:0,cy:0,dx:0,dy:0,sx:1,sy:1,warp:0,warpS:1,warpSpd:.45,flow:0,flowS:2,decay:.96,hue:0,sat:1,blur:0,over:1,add:1,fold:6,foldA:0,rip:0,edge:0,
@@ -975,7 +1017,7 @@ const PR=[
   {n:'Резонансен тунел',ty:'tun',par:a=>({over:.85,zoom:1.004+.004*a.beat,decay:.88,bloom:.8,ca:.8,vig:.5})},
   {n:'Течен кристал',ty:'blob',par:(a,t,st)=>{const m=blobMat(st);   // обратната връзка също преминава от единия материал към другия
     return {over:1,zoom:1.005-.002*m,rot:.0015*(1-m),warp:.3*(1-m),flow:1.2*m,decay:.92,hue:.005-.0075*m,blur:.25*(1-m),echo:.22*m,echoZ:.7,bloom:.6+.2*m};}},
-  {n:'Фрактален храм',ty:'frac',par:(a,t,st)=>({bloom:.15,ca:.1,vig:.35,expo:1.3,white:st.w})},
+  {n:'Фрактален храм',ty:'frac',par:()=>({bloom:.15,ca:.1,vig:.35,expo:1.3})},
   {n:'Рояк',ty:'part',cfg:{shapes:[0,1,2,3,4,5],cam:0},par:()=>({add:1,zoom:1.003,rot:.0012,warp:.2,decay:.92,blur:.4,bloom:1})},
   {n:'Спектрален пейзаж',ty:'part',cfg:{shapes:[6],cam:1,ps:1.8,br:1.6},par:()=>({add:1,decay:.7,bloom:.9})},
   {n:'Фибри на Хопф',ty:'part',cfg:{shapes:[7,8,9],cam:2,br:1.1},par:(a,t)=>({add:1,zoom:.998,rot:-.001,decay:.93,blur:.3,bloom:1.1})},
@@ -991,6 +1033,34 @@ const PR=[
   {n:'Мандълбулб',ty:'bulb',par:()=>({over:.9,decay:.8,bloom:.6})},
   {n:'Лава лампа',ty:'lava',par:()=>({bloom:.7,vig:.5})}];
 for(const p of PR)if(!HF&&['fluid','chla','ripl','rd','phys','attr'].includes(p.ty))p.off=true;
+
+/* ================= фигури: ↑ / ↓ — следваща / предишна, L — заключване ================= */
+// Всяка сцена със свое морфиране помни фигурите си (pr.fig: история до 50, курсор, заключване). ↑ върви напред по историята, а на края
+// генерира нова — както автоматичната смяна; ↓ — назад. Заключената фигура не се сменя сама и се пази между пусканията (rzviz.fig, по име).
+const figN=pr=>TY[pr.ty].figs?TY[pr.ty].figs(pr):0;
+function figPush(F,v){F.h.push(v);if(F.h.length>50)F.h.shift();F.c=F.h.length-1;}
+function figGo(pr,st,d,auto){const F=pr.fig;if(figN(pr)<2)return false;let v;
+  if(d>0){if(F.c<F.h.length-1)v=F.h[++F.c];else{v=TY[pr.ty].gen(pr,F.h[F.c]);figPush(F,v);}}
+  else{if(F.c<=0)return false;v=F.h[--F.c];}
+  TY[pr.ty].go(pr,st,v,auto);if(F.lock)figSave();return true;}
+// преливане a→b с дял k: до средата се сменя само целта, след нея — тръгва от досегашната цел (скокът е най-много половин преливане)
+function figMix(st,k,a,b,v){if(st[k]<.5)st[b]=v;else{st[a]=st[b];st[b]=v;st[k]=0;}}
+// смяна през бяло (сцени без свое морфиране): 0,5 с към бяло, в пика — новата фигура отначало (и чиста следа), 0,5 с обратно
+function figWhite(st,v){st.to=v;if(!st.wp)st.wp=1e-4;else if(st.wp>=.5)st.wp=Math.min(.4999,1-st.wp);}   // wp — фазата на бялото (ph е заето в някои сцени)
+function figWStep(sl,dt){if(!sl.st.wp)return;const p0=sl.st.wp;sl.st.wp+=dt;
+  if(p0<.5&&sl.st.wp>=.5){const pr=PR[sl.i],n=TY[pr.ty].init(pr,sl.st.to);n.wp=sl.st.wp;sl.st=n;clear(sl.fb.rd);clear(sl.fb.wr);if(pr.ty==='fluid')FL.free();}
+  const st=sl.st;if(st.wp>=1)st.wp=0;st.w=st.wp?ease(Math.min(1,st.wp<.5?st.wp*2:2-st.wp*2)):0;}
+// запазената фигура става, ако има същите полета (и масивите — същата дължина) като новогенерирана
+const figOk=(v,w)=>!!v&&typeof v==='object'&&Object.keys(w).every(k=>typeof v[k]===typeof w[k]&&(!Array.isArray(w[k])||Array.isArray(v[k])&&v[k].length===w[k].length));
+function figSave(){const o={};for(const p of PR)if(p.fig.lock)o[p.n]=p.fig.h[p.fig.c];lsSet('rzviz.fig',JSON.stringify(o));}
+{let o={};try{o=JSON.parse(lsGet('rzviz.fig','{}'))||{};}catch(e){}
+  for(const p of PR){p.fig={h:[],c:-1,lock:false};const v=o[p.n];
+    try{if(v&&figN(p)>1&&TY[p.ty].ok(p,v)){p.fig.h=[v];p.fig.c=0;p.fig.lock=true;}}catch(e){}}}
+const figTxt=pr=>{const F=pr.fig,nm=TY[pr.ty].nm;return 'фигура '+(F.c+1)+' / '+F.h.length+(nm?' · '+nm(F.h[F.c]):'')+(F.lock?' · 🔒 заключена':'');};
+function figKey(d){const sl=DR.b||DR.a,pr=PR[sl.i];if(figN(pr)<2){osd('тази сцена няма други фигури');return;}
+  const ok=figGo(pr,sl.st,d);osd(figTxt(pr)+(ok?'':' · това е първата'));}
+function figLock(){const sl=DR.b||DR.a,pr=PR[sl.i];if(figN(pr)<2){osd('тази сцена няма други фигури');return;}
+  pr.fig.lock=!pr.fig.lock;figSave();osd(figTxt(pr)+(pr.fig.lock?'':' · отключена'));}
 
 /* ================= цели за рисуване, качество ================= */
 const SL=[{k:0,fb:null,sc:null,i:0,st:null,wt:0},{k:1,fb:null,sc:null,i:-1,st:null,wt:0}];
@@ -1031,7 +1101,8 @@ const XF=1;
 const DR={a:SL[0],b:null,m:0,q:-1,left:50,lock:false,order:[]};
 const live=()=>PR.map((p,i)=>i).filter(i=>!PR[i].off);
 const tgt=()=>DR.q>=0?DR.q:DR.b?DR.b.i:DR.a.i;
-function initSt(i){return TY[PR[i].ty].init(PR[i]);}
+function initSt(i){const pr=PR[i],Y=TY[pr.ty];if(figN(pr)<2)return Y.init(pr);
+  const F=pr.fig;if(!F.lock)figPush(F,Y.gen(pr,F.h[F.c]));return Y.init(pr,F.h[F.c]);}
 function goTo(i){if(PR[i].off)return;DR.left=rnd(45,70);
   if(DR.b){DR.q=i===DR.b.i?-1:i;osd();return;}   // по време на преливане — следващата се нарежда след него
   if(i===DR.a.i)return;
@@ -1045,21 +1116,21 @@ function drUpdate(dt){
   if(DR.b){DR.m+=dt/XF;if(DR.m>=1){DR.a=DR.b;DR.b=null;if(DR.q>=0){const q=DR.q;DR.q=-1;goTo(q);}}}
   else if(!DR.lock&&running){DR.left-=dt;if(DR.left<=0&&(A.onLo||DR.left<-4))goTo(rndNext());}}
 SL[0].st=initSt(0);
-function params(i,st,t){return Object.assign({},DEF,PR[i].par(A,t,st));}
+function params(i,st,t){const p=Object.assign({},DEF,PR[i].par(A,t,st),{white:st.w||0}),Y=TY[PR[i].ty];if(Y.vpar&&st.v)Y.vpar(st.v,p);return p;}
 
 /* ================= кадър ================= */
-let RAF=0,last=performance.now(),T=0,MT=0,frameNo=0,running=false,fpsS=60;
+let RAF=0,last=performance.now(),T=0,MT=0,frameNo=0,running=false,fpsS=60,figTi=-1;
 function frame(now){
   RAF=0;if(SLP.on)return;RAF=requestAnimationFrame(frame);if(PAUSE){last=now;return;}
   const dt=Math.min(.05,Math.max(.001,(now-last)/1000));last=now;T+=dt;frameNo++;fpsS+=(1/dt-fpsS)*.05;
   audioUpdate(dt,T);
   MT+=dt*A.spd;
   Object.assign(G,{uT:T,uMT:MT,uBass:A.bassA,uMid:A.midA,uTreb:A.trebA,uBassA:A.bassA,uMidA:A.midA,uTrebA:A.trebA,uBeat:A.beat,uBeatLo:A.beatLo,uBeatHi:A.beatHi,uVol:A.vol,uAud:AT,uNT:NT});
-  drUpdate(dt);
+  drUpdate(dt);{const ti=tgt();if(ti!==figTi){figTi=ti;document.body.classList.toggle('nofig',figN(PR[ti])<2);}}
   const slots=DR.b?[DR.a,DR.b]:[DR.a],wB=DR.b?ease(Math.min(1,DR.m)):0,k=Math.min(3,Math.max(.25,dt*60));
   if(titleT<ttlEnd()+.4)titleT+=dt;
   slots.forEach((sl,j)=>{
-    FB=sl.fb;clear(sl.sc);TY[PR[sl.i].ty].draw(PR[sl.i],sl.st,sl.sc,dt,T);
+    FB=sl.fb;if(TY[PR[sl.i].ty].wf)figWStep(sl,dt);clear(sl.sc);TY[PR[sl.i].ty].draw(PR[sl.i],sl.st,sl.sc,dt,T);
     const p=params(sl.i,sl.st,T);sl.wt+=dt*p.warpSpd;
     run(P.warp,{uPrev:FB.rd,uSc1:sl.sc,uTx:FB.rd.tx,uZoom:Math.pow(p.zoom,k),uZoomExp:p.zoomExp,uRot:p.rot*k,uCx:p.cx,uCy:p.cy,uDx:p.dx*k,uDy:p.dy*k,
       uSx:Math.pow(p.sx,k),uSy:Math.pow(p.sy,k),uWarp:p.warp*k,uWarpT:sl.wt,uWarpS:p.warpS,uFlow:p.flow*k,uFlowS:p.flowS,uDecay:Math.pow(p.decay,k),uHue:p.hue*k,uSat:p.sat,
@@ -1076,12 +1147,12 @@ function frame(now){
 
 /* ================= интерфейс ================= */
 // версия на визуализатора — сменя се при всяка промяна (видима в ⓘ; така се познава стара версия от кеша на телефона)
-const VER='2026-10-11.6';
+const VER='2026-10-12.2';
 let osdT=0,infoOn=false,idleT=0,digBuf='',digT=0;
 function osd(extra){const i=tgt(),el=$('#osd');
   el.innerHTML=String(i+1).padStart(2,'0')+' · '+PR[i].n+(DR.lock?' 🔒':'')+(extra?'<small>'+extra+'</small>':'');el.classList.add('on');clearTimeout(osdT);osdT=setTimeout(()=>el.classList.remove('on'),3800);}
 function info(){const bar=v=>'█'.repeat(Math.max(0,Math.min(20,Math.round(v*8))));
-  $('#info').textContent=`кадри/с  ${fpsS.toFixed(0)}\nекран    ${WL&&!WL.released?'буден':'wakeLock' in navigator?'може да угасне':'(не се поддържа)'}\nизобр.   ${iw}×${ih} (${QN[qMode]}${qMode?'':' '+Math.round(qMul*100)+'%'})\nизточник ${AU.mode||'—'}\nниски    ${bar(A.bassA)}\nсредни   ${bar(A.midA)}\nвисоки   ${bar(A.trebA)}\nудар     ${bar(A.beat*2.5)}\nсцена    ${tgt()+1}/${PR.length}${DR.lock?' (заключена)':''}\nверсия   ${VER} · ${APP?'приложение':'браузър'}`;}
+  $('#info').textContent=`кадри/с  ${fpsS.toFixed(0)}\nекран    ${WL&&!WL.released?'буден':'wakeLock' in navigator?'може да угасне':'(не се поддържа)'}\nизобр.   ${iw}×${ih} (${QN[qMode]}${qMode?'':' '+Math.round(qMul*100)+'%'})\nизточник ${AU.mode||'—'}\nниски    ${bar(A.bassA)}\nсредни   ${bar(A.midA)}\nвисоки   ${bar(A.trebA)}\nудар     ${bar(A.beat*2.5)}\nсцена    ${tgt()+1}/${PR.length}${DR.lock?' (заключена)':''}\nфигура   ${figN(PR[tgt()])>1&&PR[tgt()].fig.c>=0?(PR[tgt()].fig.c+1)+'/'+PR[tgt()].fig.h.length+(PR[tgt()].fig.lock?' (заключена)':''):'—'}\nверсия   ${VER} · ${APP?'приложение':'браузър'}`;}
 function infoToggle(){infoOn=!infoOn;$('#info').classList.toggle('on',infoOn);if(infoOn)info();}
 // цял екран: винаги се пробва (iPhone може да казва, че не поддържа, а пак да го прави); ако не стане — обяснение
 const D=document,APP=matchMedia('(display-mode: fullscreen),(display-mode: standalone)').matches||navigator.standalone===true;
@@ -1094,13 +1165,12 @@ function full(){const el=D.documentElement;let r=null;
   if(r&&r.catch)r.catch(()=>{});
   // не се получи — обяснение в средата на екрана
   clearTimeout(fsT);fsT=setTimeout(()=>{if(!inFs())tip(IOS?'Safari на iPhone не позволява на страница\nда скрие лентите си.\n\nПлъзни картината нагоре — Safari ги прибира.\nИли: Сподели ⬆ → „Добави към начален екран“\nи отваряй от иконата — винаги на цял екран.':'Браузърът не позволи цял екран.');},1500);}
-function muteKey(){AU.mute=!AU.mute;setVol();osd(AU.mute?'звукът е изключен':'звукът е включен');}
 const fr0=document.getElementById('game');fr0.addEventListener('focus',()=>{fr0.blur();window.focus();});
 addEventListener('keydown',e=>{
   if(!running){if(e.code==='Enter'||e.code==='Space'){e.preventDefault();start();}return;}
   if(e.metaKey||e.ctrlKey||e.altKey)return;
   const c=e.code;let h=true;
-  if(SLP.on){if(c==='KeyZ'||c==='Escape')sleepOff();else if(c==='KeyF')full();else if(c==='KeyM')sleepMute();else sleepShowUi();e.preventDefault();return;}
+  if(SLP.on){if(c==='KeyZ'||c==='Escape')sleepOff();else if(c==='KeyF')full();else sleepShowUi();e.preventDefault();return;}
   if(c==='KeyZ'){sleepOn();e.preventDefault();return;}
   if(e.target.closest&&e.target.closest('#mus')){if(c==='Escape'||c==='KeyS'){musToggle();e.target.blur();e.preventDefault();}return;}
   if(c==='KeyS'){musToggle();e.preventDefault();return;}
@@ -1110,9 +1180,8 @@ addEventListener('keydown',e=>{
   else if(c==='KeyF')full();
   else if(c==='KeyH'||e.key==='?')$('#help').classList.toggle('on');
   else if(c==='KeyI')infoToggle();
-  else if(c==='KeyM')muteKey();
-  else if(e.key==='+'||e.key==='='||c==='NumpadAdd'||c==='ArrowUp'){AU.vol=Math.min(1,AU.vol+.05);AU.mute=false;setVol();osd('сила на звука '+Math.round(AU.vol*100)+'%');}
-  else if(e.key==='-'||c==='NumpadSubtract'||c==='ArrowDown'){AU.vol=Math.max(0,AU.vol-.05);setVol();osd('сила на звука '+Math.round(AU.vol*100)+'%');}
+  else if(c==='ArrowUp'||c==='ArrowDown')figKey(c==='ArrowUp'?1:-1);
+  else if(c==='KeyL')figLock();
   else if(c==='KeyQ'){qMode=(qMode+1)%4;lsSet('rzviz.q',qMode);if(!qMode)qMul=1;alloc(true);osd('качество: '+QN[qMode]);}
   else if(c==='KeyT')titleT=0;
   else if(/^(Digit|Numpad)\d$/.test(c)){digBuf+=c.slice(-1);clearTimeout(digT);const go=()=>{const n=digBuf==='0'?10:+digBuf;digBuf='';if(n>=1&&n<=PR.length)goTo(n-1);};
@@ -1232,7 +1301,7 @@ musUI();
 
 // телефон/таблет: без букви за клавиши в надписите — само бутоните и плъзгането
 if(matchMedia('(pointer:coarse)').matches){document.body.classList.add('touch');$('#hint').textContent='плъзни ← → за друга сцена'+(IOSWEB?' · ↑ без лентите':'');$('.keys').textContent='плъзни ← → за друга сцена · докосни екрана за бутоните';}
-$('#sndBtn').addEventListener('click',muteKey);$('#tip').addEventListener('click',()=>$('#tip').classList.remove('on'));$('#fsBtn').addEventListener('click',full);
+$('#figUp').addEventListener('click',()=>figKey(1));$('#figDn').addEventListener('click',()=>figKey(-1));$('#tip').addEventListener('click',()=>$('#tip').classList.remove('on'));$('#fsBtn').addEventListener('click',full);
 if(APP){$('#fsBtn').style.display='none';$('#slFs').style.display='none';}
 // вграден режим (?embed): без начален екран и подсказки — за демото на интрото (intro-demo.html)
 const EMBED=new URLSearchParams(location.search).has('embed');
@@ -1241,7 +1310,7 @@ else prepLive().then(()=>{goBtn.disabled=false;goBtn.textContent='▶ ПУСНИ
 function setScene(i){const s=DR.a;if(PR[i].ty==='fluid')FL.free();s.i=i;s.st=initSt(i);s.wt=0;clear(s.fb.rd);clear(s.fb.wr);DR.b=null;DR.q=-1;}
 function showTitle(o){Object.assign(TTL,o||{});titleT=0;}
 function hideTitle(){titleT=1e9;}
-function attach(ctx,node,mode){AU.vol=1;AU.mute=false;hook(ctx,node);AU.mode=mode;}   // чужд звуков изход (демото на интрото)
+function attach(ctx,node,mode){AU.vol=1;hook(ctx,node);AU.mode=mode;}   // чужд звуков изход (демото на интрото)
 
 /* ================= режим сън ================= */
 // Черен екран: спира WebGL, анализа на всеки кадър и рисуването на скритата игра (музиката продължава).
@@ -1264,23 +1333,18 @@ function sleepTick(){
     b=.5+.5*Math.sin(t*Math.PI/5),n=Math.min(1,SLP.lvl/SLP.pk);
   slt.style.transform='translate('+x.toFixed(1)+'px,'+y.toFixed(1)+'px)';slt.style.opacity=(.1+.08*b+.05*n).toFixed(3);SLP.drawn=true;}
 function sleepUI(){document.querySelectorAll('#sleepUi [data-t]').forEach(b=>b.classList.toggle('on',+b.dataset.t===SLP.mins));
-  $('#slDot').textContent=SLP.blank?'напълно черно':'надпис';$('#slMute').innerHTML=(AU.mute||SLP.faded?'звук изкл.':'звук вкл.')+'<i class="kb"> (M)</i>';$('#slMute').classList.toggle('on',AU.mute||SLP.faded);if(!SLP.end)$('#slLeft').textContent='';}
+  $('#slDot').textContent=SLP.blank?'напълно черно':'надпис';if(!SLP.end)$('#slLeft').textContent='';}
 function sleepShowUi(){$('#sleep').classList.add('ui');clearTimeout(SLP.uiT);SLP.uiT=setTimeout(()=>$('#sleep').classList.remove('ui'),3000);}
 function sleepOn(){if(SLP.on||!running)return;SLP.on=true;
   for(const id of ['#help','#info','#mus'])$(id).classList.remove('on');infoOn=false;
   cv.style.display='none';$('#sleep').classList.add('on');SLP.drawn=true;SLP.iv=setInterval(sleepTick,100);sleepUI();sleepShowUi();}
 function sleepOff(){if(!SLP.on)return;SLP.on=false;wakeOn();clearInterval(SLP.iv);clearTimeout(SLP.uiT);$('#sleep').classList.remove('on','ui');cv.style.display='';
-  if(SLP.faded){SLP.faded=false;AU.mute=false;}if(AU.ctx&&AU.ctx.state==='suspended')AU.ctx.resume();SLP.end=0;SLP.mins=0;setVol();last=performance.now();if(!RAF)RAF=requestAnimationFrame(frame);}
+  SLP.faded=false;if(AU.ctx&&AU.ctx.state==='suspended')AU.ctx.resume();SLP.end=0;SLP.mins=0;setVol();last=performance.now();if(!RAF)RAF=requestAnimationFrame(frame);}
 document.querySelectorAll('#sleepUi [data-t]').forEach(b=>b.addEventListener('click',()=>{SLP.mins=+b.dataset.t;SLP.end=SLP.mins?Date.now()+SLP.mins*60000:0;
   if(SLP.faded&&AU.ctx){AU.ctx.resume();SLP.faded=false;setVol();wakeOn();}sleepUI();sleepTick();sleepShowUi();}));
 $('#slDot').addEventListener('click',()=>{SLP.blank=!SLP.blank;lsSet('rzviz.blank',SLP.blank?'1':'0');sleepUI();sleepShowUi();});
 $('#slOut').addEventListener('click',sleepOff);$('#infBtn').addEventListener('click',infoToggle);$('#slpBtn').addEventListener('click',sleepOn);
-// M в съня: изключва/включва музиката; изключена — звуковият двигател спира изцяло (нула натоварване), включена — продължава
-function sleepMute(){if(!AU.ctx)return;
-  if(SLP.faded){SLP.faded=false;SLP.end=0;SLP.mins=0;AU.mute=false;wakeOn();}else AU.mute=!AU.mute;
-  setVol();if(AU.mute)setTimeout(()=>{if(SLP.on&&AU.mute&&AU.ctx)AU.ctx.suspend();},300);else AU.ctx.resume();
-  sleepUI();sleepShowUi();}
-$('#slMute').addEventListener('click',sleepMute);$('#slFs').addEventListener('click',full);
+$('#slFs').addEventListener('click',full);
 $('#sleep').addEventListener('pointermove',sleepShowUi);$('#sleep').addEventListener('pointerdown',sleepShowUi);$('#sleep').addEventListener('dblclick',full);
 
 alloc(true);RAF=requestAnimationFrame(frame);
