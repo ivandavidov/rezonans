@@ -439,6 +439,8 @@ const FRACF=[
 #define GL 1.
 #define GK 30.
 #define CAM_LOOP
+#define MST 300   // с 200 × 1,0 до 3% от лъчите (към края на коридорите) не стигат стената и се оцветяват като течност;
+#define MSF 1.3   // 300 × 1,3 — 0,02%, картината е като при 400 × 1,0, а кадърът е по-евтин
 float mapA(vec3 p,out vec4 tr){float sc=1.;tr=vec4(1000.);   // Аполониева мрежа: куполи и сферични кухини
   for(int i=0;i<8;i++){p=-1.+2.*fract(.5*p+.5);float r2=dot(p,p);tr=min(tr,vec4(abs(p),r2));float k=uS/r2;p*=k;sc*=k;}
   return .25*abs(p.y)/sc;}`,
@@ -469,9 +471,13 @@ void cam(float tm,out vec3 ro,out vec3 ta,out float rl){   // по безкра�
 #define GK 30.
 #define CAM_LOOP
 #define MST 300   // гъста дантела: с 200 стъпки 7–14% от лъчите не стигат стената и се оцветяват размазано
-#define MSF 1.3
+#define MSF 1.5   // ×1,5: −16% време, пръстените остават; при ×1,7 в далечината се отварят дупки
+#define MAPD
 float mapA(vec3 p,out vec4 tr){float sc=1.,K=1.25+.08*uQ.z;tr=vec4(1000.);   // готически арки: сгъването на Аполониевия, накрая — цилиндри вместо плочи
   for(int i=0;i<8;i++){p=-1.+2.*fract(.5*p+.5);float r2=dot(p,p);tr=min(tr,vec4(abs(p.x),abs(length(p.xz)-.45),abs(p.z),r2));float k=K/r2;p*=k;sc*=k;}   // капанът на мрежата следи цилиндъра
+  return .25*(length(p.xz)-.45)/sc;}
+float mapD(vec3 p){float sc=1.,K=1.25+.08*uQ.z;   // същото разстояние без капаните (те трябват само в крайната точка)
+  for(int i=0;i<8;i++){p=-1.+2.*fract(.5*p+.5);float r2=dot(p,p);float k=K/r2;p*=k;sc*=k;}
   return .25*(length(p.xz)-.45)/sc;}`,
 `#define CY 6.
 #define CZ 2.
@@ -507,6 +513,11 @@ const FRAC=`uniform float uS,uTc;uniform vec4 uQ;
 #ifndef MSF
 #define MSF 1.
 #endif
+#ifdef MAPD   // формата има отделно разстояние без капаните — капаните се смятат веднъж, в крайната точка
+#define MD(q) mapD(q)
+#else
+#define MD(q) mapA(q,tq)
+#endif
 #ifdef CAM_LOOP
 void cam(float tm,out vec3 ro,out vec3 ta,out float rl){   // обиколка (Аполониевият; арките и Мандълбоксът са нагласени по нея)
   ro=vec3(2.8*cos(.1+.33*tm),.4+.3*cos(.37*tm),2.8*cos(.5+.35*tm));ta=vec3(1.9*cos(1.2+.41*tm),.4+.1*cos(.27*tm),1.9*cos(2.+.38*tm));rl=.2*cos(.1*tm);}
@@ -524,16 +535,21 @@ void main(){
   vec3 rd=normalize(sp.x*cu+sp.y*cv+2.*cw);
   // лъч, който не е стигнал точността, пак се оцветява: иначе подът под полегат ъгъл остава тъмна ивица
   vec4 tr;float t=.01,h=1.;
+#ifdef MAPD
+  for(int i=0;i<MST;i++){h=mapD(ro+rd*t);if(h<.0004*t||t>20.)break;t+=h*MSF;}
+  mapA(ro+rd*t,tr);
+#else
   for(int i=0;i<MST;i++){h=mapA(ro+rd*t,tr);if(h<.0004*t||t>20.)break;t+=h*MSF;}
+#endif
   vec3 col=pal(.62+uT*.01)*.02;
 #ifdef NRMA
   if(t<20.){vec3 p=ro+rd*t;vec4 tq;
     vec3 n=nrmA(p);
 #else
   if(t<20.){vec3 p=ro+rd*t;vec4 tq;vec2 e=vec2(1.,-1.)*.0005*t;
-    vec3 n=normalize(e.xyy*mapA(p+e.xyy,tq)+e.yyx*mapA(p+e.yyx,tq)+e.yxy*mapA(p+e.yxy,tq)+e.xxx*mapA(p+e.xxx,tq));
+    vec3 n=normalize(e.xyy*MD(p+e.xyy)+e.yyx*MD(p+e.yyx)+e.yxy*MD(p+e.yxy)+e.xxx*MD(p+e.xxx));
 #endif
-    float oc=0.,w=1.;for(int k=0;k<5;k++){float hh=.02+.06*float(k);oc+=(hh-4.*mapA(p+n*hh,tq))*w;w*=.7;}   // засенчване в ъглите (подът до стените)
+    float oc=0.,w=1.;for(int k=0;k<5;k++){float hh=.02+.06*float(k);oc+=(hh-4.*MD(p+n*hh))*w;w*=.7;}   // засенчване в ъглите (подът до стените)
     float key=clamp(dot(vec3(.577,.577,-.577),n),0.,1.),bac=clamp(.2+.8*dot(vec3(-.707,0.,.707),n),0.,1.),amb=.7+.3*n.y,
       ao=pow(clamp(tr.w*CW,0.,1.),1.2)*clamp(1.-oc*1.5,0.,1.);
     vec3 br=(vec3(.25)*amb+vec3(1.)*key*(.9+.15*uBassA)+vec3(.25)*bac)*ao;
@@ -1177,7 +1193,7 @@ function frame(now){
 
 /* ================= интерфейс ================= */
 // версия на визуализатора — сменя се при всяка промяна (видима в ⓘ; така се познава стара версия от кеша на телефона)
-const VER='2026-10-12.5';
+const VER='2026-10-12.7';
 let osdT=0,infoOn=false,idleT=0,digBuf='',digT=0;
 function osd(extra){const i=tgt(),el=$('#osd');
   el.innerHTML=String(i+1).padStart(2,'0')+' · '+PR[i].n+(DR.lock?' 🔒':'')+(extra?'<small>'+extra+'</small>':'');el.classList.add('on');clearTimeout(osdT);osdT=setTimeout(()=>el.classList.remove('on'),3800);}
