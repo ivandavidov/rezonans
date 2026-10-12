@@ -83,10 +83,10 @@ iframe{position:fixed;width:1px;height:1px;left:-10px;top:-10px;border:0;opacity
 <canvas id="c"></canvas>
 <div id="osd"></div>
 <div id="help">
-<b>→ / ←</b> следваща / предишна сцена по номер<br>
+<b>→ / ←</b> следваща / предишна сцена по номер (със случаен модел и стойности, освен заключената фигура)<br>
 <b>1 … 24</b> избор на сцена (две цифри — бързо една след друга)<br>
 <b>Интервал</b> заключи / отключи сцената<br>
-<b>↑ / ↓</b> следващ / предишен модел на сцената (в разбъркан ред, без повторение)<br>
+<b>↑ / ↓</b> следващ / предишен модел на сцената, подред<br>
 <b>+ / −</b> нови / предишни случайни стойности за модела<br>
 <b>L</b> заключи / отключи фигурата — модел и стойности (помни се и след затваряне)<br>
 без натискане сцените се сменят сами, в случаен ред<br>
@@ -1061,7 +1061,8 @@ for(const p of PR)if(!HF&&['fluid','chla','ripl','rd','phys','attr'].includes(p.
 
 /* ================= фигури: ↑ / ↓ — модел, + / − — стойности, L — заключване ================= */
 // Модел — отделна форма или строеж на сцената (TY.models; без тях — един), стойности — случайните числа за модела (TY.gen).
-// ↑ — следващият модел в разбъркан ред без повторение (изчерпят ли се — нов разбъркан ред), ↓ — назад по реда; + — нови стойности
+// ↑ / ↓ — следващият / предишният модел подред (след последния — първият). Сама и при влизане в сцената (← / →, без заключена фигура)
+// сцената взима модела в разбъркан ред без повторение (изчерпят ли се — нов разбъркан ред) с нови стойности; + — нови стойности
 // (или напред, ако сме се връщали), − — предишните. Всеки модел помни стойностите си (до 50). Сцена с един модел: ↑ / ↓ = + / −.
 // Ново влизане в сцената — следващият модел с нови стойности. Заключената фигура не се сменя сама и се пази (rzviz.fig, по име).
 const figMs=pr=>(TY[pr.ty].models&&TY[pr.ty].models(pr))||[null];
@@ -1078,7 +1079,8 @@ function figVal(pr,mi,d){const V=pr.fig.val[mi]||(pr.fig.val[mi]={h:[],c:-1});  
   if(d===0&&V.c>=0||d===1&&V.c<V.h.length-1){if(d===1)V.c++;return true;}
   V.h.push(TY[pr.ty].gen(pr,figMs(pr)[mi]));if(V.h.length>50)V.h.shift();V.c=V.h.length-1;return true;}
 function figStep(pr,st,kind,d,auto){const F=pr.fig,n=figMs(pr).length;if(n<2)kind='v';
-  if(kind==='m'){if(!figModel(F,n,d))return false;figVal(pr,F.seq[F.c],0);}else if(!figVal(pr,F.seq[F.c],d))return false;
+  if(kind==='m'&&!auto){const mi=(F.seq[F.c]+d+n)%n;F.seq.length=F.c+1;F.seq.push(mi);F.c++;if(F.seq.length>120){F.seq.splice(0,F.seq.length-120);F.c=F.seq.length-1;}figVal(pr,mi,0);}   // ↑ / ↓ — съседният модел подред
+  else if(kind==='m'){if(!figModel(F,n,d))return false;figVal(pr,F.seq[F.c],0);}else if(!figVal(pr,F.seq[F.c],d))return false;
   TY[pr.ty].go(pr,st,figCur(pr),kind,auto);if(F.lock)figSave();return true;}
 // преливане a→b с дял k: до средата се сменя само целта, след нея — тръгва от досегашната цел (скокът е най-много половин преливане)
 function figMix(st,k,a,b,v){if(st[k]<.5)st[b]=v;else{st[a]=st[b];st[b]=v;st[k]=0;}}
@@ -1193,7 +1195,7 @@ function frame(now){
 
 /* ================= интерфейс ================= */
 // версия на визуализатора — сменя се при всяка промяна (видима в ⓘ; така се познава стара версия от кеша на телефона)
-const VER='2026-10-12.8';
+const VER='2026-10-12.9';
 let osdT=0,infoOn=false,idleT=0,digBuf='',digT=0;
 function osd(extra){const i=tgt(),el=$('#osd');
   el.innerHTML=String(i+1).padStart(2,'0')+' · '+PR[i].n+(DR.lock?' 🔒':'')+(extra?'<small>'+extra+'</small>':'');el.classList.add('on');clearTimeout(osdT);osdT=setTimeout(()=>el.classList.remove('on'),3800);}
