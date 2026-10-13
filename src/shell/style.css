@@ -84,3 +84,18 @@ body.has-e .acts{grid-template-columns:repeat(5,56px)}
   body.has-e .acts [data-k=jump]{grid-area:3/1}
   body.has-e .acts [data-k=fire]{grid-area:3/2}
 }
+/* интро (engine/intro.js): затъмненият фрактал с надписа е и началният екран; без WebGL2 се маха и остава старият */
+#intro{position:fixed;inset:0;z-index:50;background:#000;transition:opacity .5s linear;touch-action:none;user-select:none;-webkit-user-select:none}
+#intro.gone{opacity:0;pointer-events:none}
+#intro.off{display:none}
+#intro.idle{cursor:none}
+#intro canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:auto;filter:none}
+#intro .cov{position:absolute;inset:0;display:grid;place-items:center;background:radial-gradient(ellipse at center,#0a142080 0%,#000000d8 75%);opacity:0;transition:opacity 1s}
+#intro .cov.on{opacity:1}
+#intro .pn{text-align:center;padding:24px;max-width:640px}
+#intro h1{font:500 clamp(30px,7vw,64px) Unbounded,'Russo One',sans-serif;letter-spacing:.08em;margin:0 0 30px;background:linear-gradient(90deg,#7ef3ff,#c58cff,#ff8fc8);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 18px #6be2ff55)}
+#intro .go{padding:15px 30px;border:1px solid #8fe9ff;border-radius:40px;background:#0b1a26c0;color:#e6fbff;font:600 15px 'IBM Plex Mono',monospace;letter-spacing:.16em;cursor:pointer;box-shadow:0 0 30px #38cfff55,inset 0 0 18px #38cfff22;transition:transform .15s,box-shadow .15s}
+#intro .go:hover{transform:scale(1.04);box-shadow:0 0 44px #38cfff88,inset 0 0 18px #38cfff33}
+#intro .kh{margin-top:22px;color:#5f8193;font:12px 'IBM Plex Mono',monospace;letter-spacing:.04em}
+#intro .osd{position:absolute;left:22px;top:18px;font:500 13px 'IBM Plex Mono',monospace;letter-spacing:.08em;color:#fff;text-shadow:0 0 8px #000,0 0 16px #000;opacity:0;transition:opacity 1.2s;pointer-events:none}
+#intro .osd.on{opacity:.92;transition:opacity .3s}

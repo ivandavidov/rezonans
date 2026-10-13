@@ -48,11 +48,11 @@ function toMenu(sel){ SURV=false; bossMul=1; ehpMul=1; TRN=null; msg=null; loadM
   setMusic(GAME.menuMusic||LVL.music); if(AC&&AC.state==='suspended') AC.resume(); }
 function enterGame(id,sel){ setGame(id); toMenu(sel); }
 function followLink(id){ const i=GHIST.indexOf(id); if(i>=0) GHIST.length=i; else GHIST.push(GAME.id); enterGame(id,2); }
-function menuBack(){ if(!GHIST.length){ state='title'; return; } const from=GAME.id; setGame(GHIST.pop()); toMenu(Math.max(0,menuItems().findIndex(m=>m.id===from))); }
+function menuBack(){ const from=GAME.id; setGame(GHIST.pop()); toMenu(Math.max(0,menuItems().findIndex(m=>m.id===from))); }
 function gmenuInput(){
   const it=menuItems(), n=it.length;
   if(pressed.up){ gSel=(gSel+n-1)%n; SFX.menu(); } if(pressed.down){ gSel=(gSel+1)%n; SFX.menu(); }
-  if(pressed.esc||pressed.jump){ SFX.menu(); menuBack(); return; }
+  if(pressed.esc||pressed.jump){ if(GHIST.length){ SFX.menu(); menuBack(); } else if(pressed.esc&&!(INTRO&&INTRO.open())) state='title'; return; }   // в главното меню Esc — интрото отначало (без него — старият начален екран)
   if(!ok()) return; SFX.menuOk(); const m=it[gSel];
   if(m.k==='game') followLink(m.id);
   else if(m.k==='intro') GAME.intro(true);
@@ -76,5 +76,5 @@ function renderSplash(){
   overlay(0.62); glitchTitle('РЕЗОНАНС',W/2,96,46);
   if(blink()) centerText('Натисни Z или докосни екрана, за да започнеш',166,'600 10px "IBM Plex Mono",monospace','#f3e6cf');
   centerText('← → движение · Z стрелба · X скок · C клякане · Q оръжие',224,'600 7px "IBM Plex Mono",monospace','#7f8e97');
-  centerText('M звук · N музика · B ефекти · P / Esc пауза',238,'600 7px "IBM Plex Mono",monospace','#7f8e97');
+  centerText('M звук · N музика · B ефекти · P / Esc пауза · F цял екран',238,'600 7px "IBM Plex Mono",monospace','#7f8e97');
 }

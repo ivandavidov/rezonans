@@ -16,7 +16,7 @@ final class GameWindow: NSWindow {
     }
 }
 
-final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKScriptMessageHandler {
     var window: GameWindow!
     var web: WKWebView!
     let args = CommandLine.arguments
@@ -28,6 +28,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
         cfg.mediaTypesRequiringUserActionForPlayback = []
         cfg.userContentController.addUserScript(WKUserScript(
             source: "window.__errs=[];addEventListener('error',e=>__errs.push(String(e.message)));",
+            injectionTime: .atDocumentStart, forMainFrameOnly: true))
+        // F в играта — цял екран на прозореца (като менюто „Цял екран“)
+        cfg.userContentController.add(self, name: "rzFull")
+        cfg.userContentController.addUserScript(WKUserScript(
+            source: "window.rzFullscreen=()=>webkit.messageHandlers.rzFull.postMessage(0);",
             injectionTime: .atDocumentStart, forMainFrameOnly: true))
         web = WKWebView(frame: .zero, configuration: cfg)
         web.navigationDelegate = self
@@ -49,6 +54,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
         let url = Bundle.main.url(forResource: "index", withExtension: "html")!
         web.loadHTMLString(try! String(contentsOf: url, encoding: .utf8), baseURL: ORIGIN)
         NSApp.activate(ignoringOtherApps: true)
+    }
+
+    func userContentController(_ c: WKUserContentController, didReceive m: WKScriptMessage) {
+        if m.name == "rzFull" { window.toggleFullScreen(nil) }
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ app: NSApplication) -> Bool { true }

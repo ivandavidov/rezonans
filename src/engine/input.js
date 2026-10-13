@@ -2,6 +2,12 @@
 const keys={}, pressed={};
 const CODES={ArrowLeft:'left',ArrowRight:'right',ArrowUp:'up',ArrowDown:'down',KeyZ:'fire',KeyX:'jump',KeyC:'crouch',KeyQ:'swap',Digit1:'w1',Digit2:'w2',Digit3:'w3',Digit4:'w4',Digit5:'w5',Digit6:'w6',KeyM:'mute',KeyN:'music',KeyB:'sfx',KeyE:'era',KeyP:'pause',Escape:'esc',Enter:'enter',Space:'enter'};
 addEventListener('keydown',e=>{ const k=CODES[e.code]; if(!k) return; e.preventDefault(); initAudio(); if(!keys[k]) pressed[k]=true; keys[k]=true; if(!e.repeat){ if(k==='mute') toggleMute(); else if(k==='music') toggleMus(); else if(k==='sfx') toggleSfx(); } });
+// F — цял екран; в приложенията за Mac и Windows — през прозореца им (rzFullscreen), иначе през браузъра
+function toggleFull(){ const d=document; let r=null; if(window.rzFullscreen) return rzFullscreen();
+  try{ if(d.fullscreenElement||d.webkitFullscreenElement) r=d.exitFullscreen?d.exitFullscreen():d.webkitExitFullscreen&&d.webkitExitFullscreen();
+  else { const el=d.documentElement; r=el.requestFullscreen?el.requestFullscreen():el.webkitRequestFullscreen&&el.webkitRequestFullscreen(); } }catch(e){}
+  if(r&&r.catch) r.catch(()=>{}); }
+addEventListener('keydown',e=>{ if(e.code!=='KeyF'||e.metaKey||e.ctrlKey||e.altKey) return; e.preventDefault(); if(!e.repeat) toggleFull(); });
 addEventListener('keyup',e=>{ const k=CODES[e.code]; if(!k) return; keys[k]=false; });
 addEventListener('blur',()=>{ for(const k in keys) keys[k]=false; if(state==='play'){ state='paused'; if(AC) AC.suspend(); } });
 cv.addEventListener('pointerdown',()=>{ initAudio(); cv.focus(); if(state==='title') pressed.enter=true; });

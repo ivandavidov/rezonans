@@ -8,7 +8,7 @@ function audApply(){
   muted=!musOn&&!sfxOn;
   for(const [id,on] of [['bmus',musOn],['bsfx',sfxOn]]){ const b=document.getElementById(id); if(b) b.classList.toggle('off',!on); }
   if(!AC) return; const t=AC.currentTime;
-  musBus.gain.setTargetAtTime(musOn?0.5:0,t,0.05); sfxBus.gain.setTargetAtTime(sfxOn?0.9:0,t,0.03);
+  musOut.gain.setTargetAtTime(musOn?0.5:0,t,0.05); sfxBus.gain.setTargetAtTime(sfxOn?0.9:0,t,0.03);
 }
 function audSet(m,s){ musOn=m; sfxOn=s; store.set('rz.audio',(m?'1':'0')+(s?'1':'0')); audT=titleT; audApply(); }
 function toggleMute(){ if(musOn||sfxOn) audSet(false,false); else audSet(true,true); }

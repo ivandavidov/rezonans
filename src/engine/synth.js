@@ -1,5 +1,6 @@
 /* ================= AUDIO ================= */
-let AC=null,master,sfxBus,musBus,noiseBuf,muted=false,mNext=0,mStep=0,mInt=0,bossMusic=false,mTr=0,mBpm=108,mAlien=false,droneOs=[];
+let AC=null,master,sfxBus,musBus,musOut,noiseBuf,muted=false,mNext=0,mStep=0,mInt=0,bossMusic=false,mTr=0,mBpm=108,mAlien=false,droneOs=[];
+let mCue=null;   // (интро) вика се преди всяка стъпка с времето ѝ — сменя mInt точно на такта
 function initAudio(){
   if(AC){ if(AC.state==='suspended'&&state!=='paused') AC.resume(); return; }
   try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ AC=null; return; }
@@ -7,7 +8,9 @@ function initAudio(){
   master=AC.createGain(); master.gain.value=0.85; master.connect(comp); comp.connect(AC.destination);
   const conv=AC.createConvolver(); conv.buffer=impulse(2.4,2.8); const wet=AC.createGain(); wet.gain.value=0.3; conv.connect(wet); wet.connect(master);
   sfxBus=AC.createGain(); sfxBus.gain.value=sfxOn?0.9:0; sfxBus.connect(master); const s2=AC.createGain(); s2.gain.value=0.22; sfxBus.connect(s2); s2.connect(conv);
-  musBus=AC.createGain(); musBus.gain.value=musOn?0.5:0; musBus.connect(master); const m2=AC.createGain(); m2.gain.value=0.35; musBus.connect(m2); m2.connect(conv);
+  // musOut — изходът на музиката (сила, вкл./изкл., ехо); musBus — каналът, в който се пускат нотите (сменя се при musRestart)
+  musOut=AC.createGain(); musOut.gain.value=musOn?0.5:0; musOut.connect(master); const m2=AC.createGain(); m2.gain.value=0.35; musOut.connect(m2); m2.connect(conv);
+  musBus=AC.createGain(); musBus.connect(musOut);
   noiseBuf=AC.createBuffer(1,AC.sampleRate*2,AC.sampleRate); const d=noiseBuf.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
   startDrone(); mNext=AC.currentTime+0.15; setInterval(mSched,30);
 }
@@ -105,8 +108,11 @@ function startDrone(){
   const g=AC.createGain(); g.gain.value=0.1; const lp=AC.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=150; lp.Q.value=4;
   const lfo=AC.createOscillator(); lfo.frequency.value=0.07; const lg=AC.createGain(); lg.gain.value=70; lfo.connect(lg); lg.connect(lp.frequency); lfo.start();
   [36.71,36.95,55].forEach(f=>{const o=AC.createOscillator(); o.type='sawtooth'; o.frequency.value=f*Math.pow(2,mTr/12); o.connect(lp); o.start(); droneOs.push([o,f]);});
-  lp.connect(g); g.connect(musBus);
+  lp.connect(g); g.connect(musOut);
 }
+// музиката отначало (интрото и менюто след него): вече насрочените ноти заглъхват заедно със стария канал, новите тръгват в нов от такт 1
+function musRestart(){ if(!AC) return; const old=musBus,t=AC.currentTime; old.gain.setTargetAtTime(0,t,0.02); setTimeout(()=>{ try{ old.disconnect(); }catch(e){} },3000);
+  musBus=AC.createGain(); musBus.connect(musOut); mStep=0; mNext=t+0.05; }
 function setMusic(m){ mTr=m.tr; mBpm=m.bpm; mAlien=!!m.alien; if(AC) for(const [o,f] of droneOs) o.frequency.setTargetAtTime(f*Math.pow(2,mTr/12),AC.currentTime,0.6); }
 const PROG=[{b:38,ch:[62,65,69]},{b:34,ch:[58,62,65]},{b:36,ch:[60,64,67]},{b:33,ch:[57,61,64]}];
 const BASSPAT=[0,null,0,12,null,0,7,null,0,null,12,0,null,10,null,7];
@@ -123,7 +129,7 @@ function arp(f,t,d){ osc({t0:t,type:mAlien?'triangle':'square',f,t:d,v:mAlien?0.
 function mSched(){
   if(!AC||AC.state!=='running'||!musOn) return;
   if(mNext<AC.currentTime) mNext=AC.currentTime+0.05;
-  while(mNext<AC.currentTime+0.15){ const spb=60/(bossMusic?132:mBpm)/4; mPlay(mStep,mNext,spb); mNext+=spb; mStep=(mStep+1)%64; }
+  while(mNext<AC.currentTime+0.15){ const spb=60/(bossMusic?132:mBpm)/4; if(mCue) mCue(mNext); mPlay(mStep,mNext,spb); mNext+=spb; mStep=(mStep+1)%64; }
 }
 function mPlay(s,t,spb){
   const bar=Math.floor(s/16)%4, st=s%16, P=(GAME.prog||PROG)[bar], I=mInt, tr=mTr;
