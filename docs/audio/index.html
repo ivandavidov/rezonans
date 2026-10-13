@@ -92,7 +92,7 @@ iframe{position:fixed;width:1px;height:1px;left:-10px;top:-10px;border:0;opacity
 без натискане сцените се сменят сами, в случаен ред<br>
 <b>M</b> музика вкл. / изкл.<br>
 <b>F</b> цял екран (и двоен клик)<br>
-<b>Q</b> качество: авто / високо / средно / ниско<br>
+<b>Q</b> качество: авто (при задъхване — първо по-малко точки, после по-малко кадри) / високо (100%) / средно (75%) / ниско (55%, 30 кадъра/с)<br>
 <b>T</b> надписът „Резонанс“<br>
 <b>I</b> сведения (кадри, нива на звука)<br>
 <b>S</b> настройки на музиката<br>
@@ -1127,12 +1127,57 @@ function alloc(force){
   for(let i=0,w=nw>>1,h=nh>>1;i<6&&w>2&&h>2;i++,w>>=1,h>>=1){BL.push(rt(w,h));BU.push(rt(w,h));}
   const asp=iw/ih;iw=nw;ih=nh;if(FL.ready&&Math.abs(asp-iw/ih)>.01)FL.free();
   NP=qMode===3||(qMode===0&&qMul<.7)?1<<16:1<<17;}
-let adT=0,adN=0,adGood=0,adCool=0;
-function adapt(dt){if(qMode||!running)return;adT+=dt;adN++;adCool-=dt;
-  if(adT<1.5)return;const avg=adT/adN;adT=adN=0;
-  if(avg>1/42&&qMul>.42&&adCool<=0){qMul=Math.max(.42,qMul*.85);adGood=0;adCool=2;alloc();}
-  else if(avg<1/57){adGood++;if(adGood>=4&&qMul<1){qMul=Math.min(1,qMul*1.1);adGood=0;adCool=2;alloc();}}else adGood=0;}
-addEventListener('resize',()=>alloc());
+// Q — качество. Авто: при задъхване първо по-ниска разделителна способност (до 60% по страна), после 30 к/с, после пак разделителна
+// способност (до 42%) и накрая 20 к/с; връщането — по обратния път (първо кадрите). Високо: 100% и колкото кадри стигне (както досега).
+// Средно: 75%, при задъхване 30 / 20 к/с. Ниско: 55%, винаги 30 к/с (при задъхване 20).
+// Кадрите са равна част от опресняването на екрана (иначе движението подскача), с таван 60 и при 120 Hz. Не се броят: преливането между
+// сцени, сънят, скритият раздел, смяната на размера. Ако по-малко точки не помагат (процесорът, таван от браузъра) — разделителната
+// способност се връща и падат кадрите. Колко струва кадърът при свалени кадри: времето на видеокартата (EXT_disjoint_timer_query), а без
+// него (Safari) — проба за 1,5 s на пълни кадри през ~12 s. Намереното се пази за всяка сцена.
+const QF=[1,1,1,2];   // най-малко: всеки кадър / всеки втори (ниско — 30 к/с)
+let vI=1/60,fDiv=QF[qMode],rawL=0,cal=12,calA=[],lastR=0,qNg=0,qWhy='',QS={},qTi=-1,
+  adT=0,adN=0,adGood=0,adCool=0,adSkip=1,adPrev=0,adNo=0,adQs=1,adRes=0,adResW=0,prT=12,prI=12,prF=0,prOn=0;
+const frB=()=>Math.max(1,Math.round(1/60/vI)),frN=()=>frB()*fDiv,frT=()=>frN()*vI;   // делител до 60 к/с; целият делител; времето на кадъра
+function snapHz(x){let b=60;for(const r of [240,165,144,120,100,90,75,60,50,48,30,24])if(Math.abs(1/r-x)<Math.abs(1/b-x))b=r;return 1/b;}
+function qCal(){cal=12;calA=[];}   // ново измерване на опресняването на екрана (12 кадъра без рисуване)
+// пропуснат кадър? (по-малко кадри; измерване на опресняването)
+function fpGate(now){const ri=(now-rawL)/1000;rawL=now;
+  if(cal>0){if(ri>0&&ri<.1)calA.push(ri);if(--cal===0){calA.sort((a,b)=>a-b);vI=snapHz(calA[calA.length>>1]||1/60);adSkip=1;}last=now;return true;}
+  if(frN()>1&&(now-lastR)/1000<(frN()-.5)*vI)return true;lastR=now;return false;}
+// времето на видеокартата (Chrome, Edge, Firefox): заявка около всеки кадър, резултатите — няколко кадъра по-късно
+const TQ=gl.getExtension('EXT_disjoint_timer_query_webgl2');let tqP=[],tqA=0,tqN=0,tqOn=false,tqBad=0;
+function tqBegin(){if(!TQ||tqP.length>5)return;const q=gl.createQuery();gl.beginQuery(TQ.TIME_ELAPSED_EXT,q);tqP.push(q);tqOn=true;}
+function tqEnd(){if(tqOn){gl.endQuery(TQ.TIME_ELAPSED_EXT);tqOn=false;}
+  while(tqP.length&&gl.getQueryParameter(tqP[0],gl.QUERY_RESULT_AVAILABLE)){const q=tqP.shift();if(!gl.getParameter(TQ.GPU_DISJOINT_EXT)){tqA+=gl.getQueryParameter(q,gl.QUERY_RESULT)/1e9;tqN++;}gl.deleteQuery(q);}}
+function qSet(q,f,res){if(q!==qMul){qMul=q;alloc();}fDiv=f;adT=adN=0;adCool=2;adGood=0;adRes=res||0;adResW=2;}   // ефектът от по-малко точки — едва във втория прозорец (първият носи опашката от тежките кадри)
+function qReset(){QS={};qNg=0;qWhy='';prOn=0;prT=prI=12;prF=0;adNo=0;adRes=0;qMul=1;fDiv=QF[qMode];adSkip=1;alloc(true);}
+function qDown(avg){qWhy=qNg?'не от видеокартата':'задъхване';
+  if(qMode===0&&!qNg){const q0=qMul;
+    if(!adNo)adQs=q0;
+    if(fDiv===1&&qMul>.601)return qSet(Math.max(.6,qMul*.85),1,avg);
+    if(fDiv===2&&qMul>.421)return qSet(Math.max(.42,qMul*.85),2,avg);}
+  if(fDiv<3)qSet(qMul,fDiv+1);}
+// по-нагоре, ако ще се побере с 20% резерв: C — колко струва кадърът сега (при сегашната разделителна способност)
+function qUp(C){let q=qMul,f=fDiv;
+  if(qMode===0&&!qNg){if(f===3)f=2;else if(f===2&&qMul<.599)q=Math.min(.6,qMul*1.1);else f=1;}else f=Math.max(QF[qMode],f-1);
+  if((q!==qMul||f!==fDiv)&&C*(q/qMul)**2<=.8*frB()*f*vI){qSet(q,f);if(f===QF[qMode]&&(qMode||q>=.6)){qWhy='';qNg=0;}return true;}return false;}
+function adapt(dt){if(!running)return;
+  const ti=tgt();if(ti!==qTi){if(qTi>=0)QS[qTi]={q:qMul,f:fDiv,ng:qNg,w:qWhy,pi:prI,pf:prF};const o=QS[ti]||{q:qMode?qMul:1,f:QF[qMode],ng:0,w:'',pi:12,pf:0};qTi=ti;
+    prOn=0;prI=prT=o.pi;prF=o.pf;qNg=o.ng;qWhy=o.w;adNo=0;qSet(qMode?qMul:o.q,qMode===1?1:o.f);adSkip=1;}
+  if(qMode===1)return;
+  if(DR.b||adSkip||document.hidden){adT=adN=0;tqA=tqN=0;adSkip=0;return;}
+  adT+=dt;adN++;adCool-=dt;prT-=dt;if(adT<1.5)return;
+  const avg=adT/adN;let gpu=tqN>4&&!qNg?tqA/tqN:0;adT=adN=0;tqA=tqN=0;if(gpu>1.1*avg){tqBad=1;gpu=0;}if(tqBad)gpu=0;   // таймерът показва повече от кадъра (Chrome на Mac) — не му се вярва
+  if(prOn){const f=prOn;prOn=0;fDiv=f;adCool=2;   // проба на пълни кадри: avg — колко струва кадърът (държи пълните — има място)
+    if(qUp(avg<1.05*frB()*vI?0:avg)){prF=0;prI=12;}else{prF++;prI*=2;}prT=prI;return;}   // неуспешна — следващата след двойно време; след 3 поредни — край (за сцената)
+  if(adRes&&--adResW>0)return;
+  if(adRes){const r=avg/adRes;adRes=0;if(r<.9)adNo=0;else if(r>.97&&++adNo>=2){qNg=1;adNo=0;qSet(adQs,fDiv);qWhy='не от видеокартата';return;}}   // с 28% по-малко точки кадърът не поевтинява изобщо — пречката е другаде
+  const tI=frT();
+  if(avg>(fDiv===1?1.4:1.15)*tI&&adCool<=0)return qDown(avg);   // при 60 к/с — под 43; при свалени кадри по-строго (неравните 22 са по-лоши от равните 20)
+  if(fDiv===1&&qMode===0){if(avg<1.05*tI&&(!gpu||gpu*1.21<=.85*tI)){if(++adGood>=4&&qMul<1)qSet(Math.min(1,qMul*1.1),1);}else adGood=0;return;}
+  if(fDiv>QF[qMode]&&adCool<=0){if(gpu)qUp(gpu);else if(prT<=0&&prF<3){prOn=fDiv;fDiv=1;adT=adN=0;}}}
+addEventListener('resize',()=>{alloc();qCal();});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')qCal();});
 
 /* ================= надпис ================= */
 const TXT=gl.createTexture();let titleT=99,PAUSE=false;
@@ -1175,7 +1220,8 @@ function params(i,st,t){const p=Object.assign({},DEF,PR[i].par(A,t,st),{dark:st.
 let RAF=0,last=performance.now(),T=0,MT=0,frameNo=0,running=false,fpsS=60,figTi=-1;
 function frame(now){
   RAF=0;if(SLP.on)return;RAF=requestAnimationFrame(frame);if(PAUSE){last=now;return;}
-  const dt=Math.min(.05,Math.max(.001,(now-last)/1000));last=now;T+=dt;frameNo++;fpsS+=(1/dt-fpsS)*.05;
+  if(fpGate(now))return;tqBegin();
+  const rdt=Math.min(.5,Math.max(.001,(now-last)/1000)),dt=Math.min(.05,rdt);last=now;T+=dt;frameNo++;fpsS+=(1/rdt-fpsS)*.05;   // rdt — истинското време (за качеството), dt — за анимацията
   audioUpdate(dt,T);
   MT+=dt*A.spd;
   Object.assign(G,{uT:T,uMT:MT,uBass:A.bassA,uMid:A.midA,uTreb:A.trebA,uBassA:A.bassA,uMidA:A.midA,uTrebA:A.trebA,uBeat:A.beat,uBeatLo:A.beatLo,uBeatHi:A.beatHi,uVol:A.vol,uAud:AT,uNT:NT});
@@ -1196,16 +1242,16 @@ function frame(now){
     let src=BL[BL.length-1];for(let i=BL.length-2;i>=0;i--){run(P.bup,{uSrc:src,uTx:src.tx,uAdd:BL[i]},BU[i]);src=BU[i];}
     run(P.comp,{uFB:FB.rd,uBl:src,uFade:j?wB:1-wB,uBloom:p.bloom*.3,uEcho:p.echo,uEchoZ:p.echoZ,uEchoO:p.echoO,uKal:p.kal,uKalA:p.kalA,uKalR:p.kalR,uCA:p.ca*(1+.5*A.beat),uVig:p.vig,
       uExpo:p.expo*(running?1:.55),uGrain:p.grain,uFlash:0,uGam:p.gam,uDark:p.dark},null,j?{blend:'add'}:null);});
-  adapt(dt);if(infoOn&&frameNo%10===0)info();}
+  tqEnd();adapt(rdt);if(infoOn&&frameNo%10===0)info();}
 
 /* ================= интерфейс ================= */
 // версия на визуализатора — сменя се при всяка промяна (видима в ⓘ; така се познава стара версия от кеша на телефона)
-const VER='2026-10-13.1';
+const VER='2026-10-13.3';
 let osdT=0,infoOn=false,idleT=0,digBuf='',digT=0;
 function osd(extra){const i=tgt(),el=$('#osd');
   el.innerHTML=String(i+1).padStart(2,'0')+' · '+PR[i].n+(DR.lock?' 🔒':'')+(extra?'<small>'+extra+'</small>':'');el.classList.add('on');clearTimeout(osdT);osdT=setTimeout(()=>el.classList.remove('on'),3800);}
 function info(){const bar=v=>'█'.repeat(Math.max(0,Math.min(20,Math.round(v*8))));
-  $('#info').textContent=`кадри/с  ${fpsS.toFixed(0)}\nекран    ${WL&&!WL.released?'буден':'wakeLock' in navigator?'може да угасне':'(не се поддържа)'}\nизобр.   ${iw}×${ih} (${QN[qMode]}${qMode?'':' '+Math.round(qMul*100)+'%'})\nизточник ${AU.mode||'—'}\nниски    ${bar(A.bassA)}\nсредни   ${bar(A.midA)}\nвисоки   ${bar(A.trebA)}\nудар     ${bar(A.beat*2.5)}\nсцена    ${tgt()+1}/${PR.length}${DR.lock?' · 🔒 заключена':''}\nфигура   ${figN(PR[tgt()])&&PR[tgt()].fig.c>=0?figTxt(PR[tgt()]):'—'}\nверсия   ${VER} · ${APP?'приложение':'браузър'}`;}
+  $('#info').textContent=`кадри/с  ${fpsS.toFixed(0)}\nекран    ${WL&&!WL.released?'буден':'wakeLock' in navigator?'може да угасне':'(не се поддържа)'}\nизобр.   ${iw}×${ih} (${QN[qMode]}${qMode?'':' '+Math.round(qMul*100)+'%'})\nцел      ${Math.round(1/frT())} к/с · екран ${Math.round(1/vI)} Hz${prOn?' · проба':qWhy?' · '+qWhy:''}${fDiv>QF[qMode]&&!(TQ&&!tqBad)?prF>=3?' · без повече проби':' · проба след '+Math.max(0,Math.ceil(prT))+' s':''}\nизточник ${AU.mode||'—'}\nниски    ${bar(A.bassA)}\nсредни   ${bar(A.midA)}\nвисоки   ${bar(A.trebA)}\nудар     ${bar(A.beat*2.5)}\nсцена    ${tgt()+1}/${PR.length}${DR.lock?' · 🔒 заключена':''}\nфигура   ${figN(PR[tgt()])&&PR[tgt()].fig.c>=0?figTxt(PR[tgt()]):'—'}\nверсия   ${VER} · ${APP?'приложение':'браузър'}`;}
 function infoToggle(){infoOn=!infoOn;$('#info').classList.toggle('on',infoOn);if(infoOn)info();}
 // цял екран: винаги се пробва (iPhone може да казва, че не поддържа, а пак да го прави); ако не стане — обяснение
 const D=document,APP=matchMedia('(display-mode: fullscreen),(display-mode: standalone)').matches||navigator.standalone===true;
@@ -1238,7 +1284,7 @@ addEventListener('keydown',e=>{
   else if(e.key==='+'||e.key==='='||c==='NumpadAdd')figKey('v',1);
   else if(e.key==='-'||c==='NumpadSubtract')figKey('v',-1);
   else if(c==='KeyL')figLock();
-  else if(c==='KeyQ'){qMode=(qMode+1)%4;lsSet('rzviz.q',qMode);if(!qMode)qMul=1;alloc(true);osd('качество: '+QN[qMode]);}
+  else if(c==='KeyQ'){qMode=(qMode+1)%4;lsSet('rzviz.q',qMode);qReset();osd('качество: '+QN[qMode]);}
   else if(c==='KeyT')titleT=0;
   else if(/^(Digit|Numpad)\d$/.test(c)){digBuf+=c.slice(-1);clearTimeout(digT);const go=()=>{const n=digBuf==='0'?10:+digBuf;digBuf='';if(n>=1&&n<=PR.length)goTo(n-1);};
     if(digBuf.length>=2)go();else digT=setTimeout(go,650);}
@@ -1394,7 +1440,7 @@ function sleepShowUi(){$('#sleep').classList.add('ui');clearTimeout(SLP.uiT);SLP
 function sleepOn(){if(SLP.on||!running)return;SLP.on=true;
   for(const id of ['#help','#info','#mus'])$(id).classList.remove('on');infoOn=false;
   cv.style.display='none';$('#sleep').classList.add('on');SLP.drawn=true;SLP.iv=setInterval(sleepTick,100);sleepUI();sleepShowUi();}
-function sleepOff(){if(!SLP.on)return;SLP.on=false;wakeOn();clearInterval(SLP.iv);clearTimeout(SLP.uiT);$('#sleep').classList.remove('on','ui');cv.style.display='';
+function sleepOff(){if(!SLP.on)return;SLP.on=false;wakeOn();qCal();clearInterval(SLP.iv);clearTimeout(SLP.uiT);$('#sleep').classList.remove('on','ui');cv.style.display='';
   SLP.faded=false;if(AU.ctx&&AU.ctx.state==='suspended')AU.ctx.resume();SLP.end=0;SLP.mins=0;setVol();last=performance.now();if(!RAF)RAF=requestAnimationFrame(frame);}
 document.querySelectorAll('#sleepUi [data-t]').forEach(b=>b.addEventListener('click',()=>{SLP.mins=+b.dataset.t;SLP.end=SLP.mins?Date.now()+SLP.mins*60000:0;
   if(SLP.faded&&AU.ctx){AU.ctx.resume();SLP.faded=false;setVol();wakeOn();}sleepUI();sleepTick();sleepShowUi();}));
