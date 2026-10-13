@@ -3934,17 +3934,51 @@ void main(){
     gl.bindTexture(gl.TEXTURE_2D,SDF); gl.texImage2D(gl.TEXTURE_2D,0,gl.R16F,LW,LH,0,gl.RED,gl.FLOAT,out); }
   mkLogo(); if(document.fonts&&document.fonts.load) document.fonts.load('500 132px Unbounded').then(()=>{ if(!gl.isContextLost()) mkLogo(); },()=>{});
 
-  /* ---------- размер и качество (като alloc/adapt във визуализатора: 42–57 кадъра/с чрез разделителната способност) ---------- */
-  let iw=0,ih=0,FB=null,BL=[],BU=[],qMul=1,adT=0,adN=0,adGood=0,adCool=0;
+  /* ---------- размер и качество — като „авто“ (Q) във визуализатора ----------
+     При задъхване: по-ниска разделителна способност до 60% по страна → 30 к/с → до 42% → 20 к/с; връщането — по обратния път.
+     Кадрите са равна част от опресняването на екрана, с таван 60. Ако по-малко точки не помагат (процесорът, таван от браузъра) —
+     разделителната способност се връща и падат кадрите. Колко струва кадърът при свалени кадри: времето на видеокартата, ако е
+     правдоподобно (в Chrome на Mac не е), иначе проба за 1,5 s на пълни кадри; след неуспешна — двойно по-късно, след 3 — край. */
+  let iw=0,ih=0,FB=null,BL=[],BU=[],qMul=1,adT=0,adN=0,adGood=0,adCool=0,adSkip=1,adNo=0,adQs=1,adRes=0,adResW=0,qNg=0,
+    vI=1/60,fDiv=1,rawL=0,cal=12,calA=[],lastR=0,prT=12,prI=12,prF=0,prOn=0;
   function alloc(){ const dpr=Math.min(devicePixelRatio||1,2),W=innerWidth,H=innerHeight;
     const cw=Math.round(W*Math.min(dpr,1.5)),ch=Math.round(H*Math.min(dpr,1.5)); if(cv2.width!==cw||cv2.height!==ch){ cv2.width=cw; cv2.height=ch; }
     const s=Math.min(dpr,Math.sqrt((matchMedia('(pointer:coarse)').matches?1e6:2.1e6)/(W*H)))*qMul,nw=Math.max(64,Math.round(W*s)),nh=Math.max(64,Math.round(H*s));
     if(nw===iw&&nh===ih) return; iw=nw; ih=nh;
     for(const r of [FB,...BL,...BU]) if(r) r.del(); FB=rt(iw,ih); BL=[]; BU=[];
     for(let i=0,w=iw>>1,h=ih>>1;i<6&&w>2&&h>2;i++,w>>=1,h>>=1){ BL.push(rt(w,h)); BU.push(rt(w,h)); } }
-  function adapt(dt){ adT+=dt; adN++; adCool-=dt; if(adT<1.5) return; const avg=adT/adN; adT=adN=0;
-    if(avg>1/42&&qMul>.42&&adCool<=0){ qMul=Math.max(.42,qMul*.85); adGood=0; adCool=2; alloc(); }
-    else if(avg<1/57){ adGood++; if(adGood>=4&&qMul<1){ qMul=Math.min(1,qMul*1.1); adGood=0; adCool=2; alloc(); } } else adGood=0; }
+  const frB=()=>Math.max(1,Math.round(1/60/vI)),frT=()=>frB()*fDiv*vI;   // делител до 60 к/с; времето на кадъра
+  function snapHz(x){ let b=60; for(const r of [240,165,144,120,100,90,75,60,50,48,30,24]) if(Math.abs(1/r-x)<Math.abs(1/b-x)) b=r; return 1/b; }
+  function qCal(){ cal=12; calA=[]; }   // ново измерване на опресняването на екрана (12 кадъра без рисуване)
+  function fpGate(now){ const ri=(now-rawL)/1000; rawL=now;   // пропуснат кадър? (по-малко кадри; измерване на опресняването)
+    if(cal>0){ if(ri>0&&ri<.1) calA.push(ri); if(--cal===0){ calA.sort((a,b)=>a-b); vI=snapHz(calA[calA.length>>1]||1/60); adSkip=1; } last=now; return true; }
+    const n=frB()*fDiv; if(n>1&&(now-lastR)/1000<(n-.5)*vI) return true; lastR=now; return false; }
+  const TQ=gl.getExtension('EXT_disjoint_timer_query_webgl2'); let tqP=[],tqA=0,tqN=0,tqOn=false,tqBad=0;   // времето на видеокартата
+  function tqBegin(){ if(!TQ||tqP.length>5) return; const q=gl.createQuery(); gl.beginQuery(TQ.TIME_ELAPSED_EXT,q); tqP.push(q); tqOn=true; }
+  function tqEnd(){ if(tqOn){ gl.endQuery(TQ.TIME_ELAPSED_EXT); tqOn=false; }
+    while(tqP.length&&gl.getQueryParameter(tqP[0],gl.QUERY_RESULT_AVAILABLE)){ const q=tqP.shift(); if(!gl.getParameter(TQ.GPU_DISJOINT_EXT)){ tqA+=gl.getQueryParameter(q,gl.QUERY_RESULT)/1e9; tqN++; } gl.deleteQuery(q); } }
+  function qSet(q,f,res){ if(q!==qMul){ qMul=q; alloc(); } fDiv=f; adT=adN=0; adCool=2; adGood=0; adRes=res||0; adResW=2; }
+  function qDown(avg){ if(!qNg){ if(!adNo) adQs=qMul;
+      if(fDiv===1&&qMul>.601) return qSet(Math.max(.6,qMul*.85),1,avg);
+      if(fDiv===2&&qMul>.421) return qSet(Math.max(.42,qMul*.85),2,avg); }
+    if(fDiv<3) qSet(qMul,fDiv+1); }
+  function qUp(C){ let q=qMul,f=fDiv;   // по-нагоре, ако ще се побере с 20% резерв (C — колко струва кадърът сега)
+    if(!qNg){ if(f===3) f=2; else if(f===2&&qMul<.599) q=Math.min(.6,qMul*1.1); else f=1; } else f=Math.max(1,f-1);
+    if((q!==qMul||f!==fDiv)&&C*(q/qMul)**2<=.8*frB()*f*vI){ qSet(q,f); if(f===1&&q>=.6) qNg=0; return true; } return false; }
+  function adapt(dt){
+    if(adSkip||document.hidden){ adT=adN=0; tqA=tqN=0; adSkip=0; return; }
+    adT+=dt; adN++; adCool-=dt; prT-=dt; if(adT<1.5) return;
+    const avg=adT/adN; let gpu=tqN>4&&!qNg?tqA/tqN:0; adT=adN=0; tqA=tqN=0; if(gpu>1.1*avg) tqBad=1; if(tqBad) gpu=0;   // таймерът показва повече от кадъра — не му се вярва
+    if(prOn){ const f=prOn; prOn=0; fDiv=f; adCool=2;   // проба на пълни кадри; неуспешна — следващата след двойно време, след 3 поредни — край
+      if(qUp(avg<1.05*frB()*vI?0:avg)){ prF=0; prI=12; } else { prF++; prI*=2; } prT=prI; return; }
+    if(adRes&&--adResW>0) return;   // ефектът от по-малко точки — едва във втория прозорец
+    if(adRes){ const r=avg/adRes; adRes=0; if(r<.9) adNo=0; else if(r>.97&&++adNo>=2){ qNg=1; adNo=0; qSet(adQs,fDiv); return; } }   // с 28% по-малко точки — не по-евтино: пречката е другаде
+    const tI=frT();
+    if(avg>(fDiv===1?1.4:1.15)*tI&&adCool<=0) return qDown(avg);
+    if(fDiv===1){ if(avg<1.05*tI&&(!gpu||gpu*1.21<=.85*tI)){ if(++adGood>=4&&qMul<1) qSet(Math.min(1,qMul*1.1),1); } else adGood=0; return; }
+    if(adCool<=0){ if(gpu) qUp(gpu); else if(prT<=0&&prF<3){ prOn=fDiv; fDiv=1; adT=adN=0; } } }
+  function onResize(){ alloc(); qCal(); }
+  function onVis(){ if(document.visibilityState==='visible') qCal(); }
   function free(){ for(const r of [FB,...BL,...BU]) if(r) r.del(); FB=null; BL=[]; BU=[]; iw=ih=0; }
 
   /* ---------- звук: анализ като във визуализатора (ленти, удари, „скорост на музиката“) ---------- */
@@ -4005,9 +4039,10 @@ void main(){
   // отначало — при зареждане и с Esc от главното меню: случайни гама, място по пътя и фаза на „дишането“ (K); музиката — заглушена до натискане
   function open(){ if(dead) return false; if(ph!=='done') return true;
     V={h:Math.random(),c:Math.random()*60,q:Math.random()*370}; ph='cover'; T=0; tc=V.c; tB=tBT=Infinity; tL=-1; lk=0; look=null; swAt=-1; swl=[]; last=performance.now(); idleT=0;
-    state='title'; mCue=null; mInt=0; bossMusic=false; ramp(0,.12); if(AC) mNext=AC.currentTime+1e6; qMul=1; alloc();   // музиката спира (нищо ново не се насрочва) до натискане
+    state='title'; mCue=null; mInt=0; bossMusic=false; ramp(0,.12); if(AC) mNext=AC.currentTime+1e6;
+    qMul=1; fDiv=1; qNg=0; adNo=0; adRes=0; prOn=0; prT=prI=12; prF=0; qCal(); alloc();   // музиката спира (нищо ново не се насрочва) до натискане
     box.classList.remove('off','gone','idle'); cov.classList.remove('on'); setTimeout(()=>{ if(ph==='cover') cov.classList.add('on'); },30);
-    addEventListener('keydown',onKey,true); addEventListener('resize',alloc); raf=requestAnimationFrame(frame); return true; }
+    addEventListener('keydown',onKey,true); addEventListener('resize',onResize); document.addEventListener('visibilitychange',onVis); raf=requestAnimationFrame(frame); return true; }
   function start(){ if(ph!=='cover') return; ph='run'; t0=T; cov.classList.remove('on');
     if(store.get('rz.audio','')==='') audSet(true,true);   // никога не е избирал — интрото е с музика (като M); иначе — неговият избор
     initAudio(); const spb=60/mBpm/4; barD=16*spb; tBT=T+.05+64*spb;
@@ -4019,7 +4054,7 @@ void main(){
     box.classList.add('gone'); setTimeout(finish,550); }
   function finish(){ if(ph==='done') return; const was=ph; ph='done'; cancelAnimationFrame(raf); mCue=null;
     if(was!=='menu'&&AC&&master){ const g=master.gain; g.cancelScheduledValues(AC.currentTime); g.setValueAtTime(master0,AC.currentTime); }
-    removeEventListener('keydown',onKey,true); removeEventListener('resize',alloc);
+    removeEventListener('keydown',onKey,true); removeEventListener('resize',onResize); document.removeEventListener('visibilitychange',onVis);
     if(U.an){ try{ musOut.disconnect(U.an); }catch(e){} U.an=null; }
     if(AC&&mNext>AC.currentTime+60) mNext=AC.currentTime+.05;   // спряната в началния екран музика продължава
     free(); box.classList.add('off'); if(typeof cv.focus==='function') cv.focus(); }
@@ -4035,8 +4070,10 @@ void main(){
   cv2.addEventListener('webglcontextlost',()=>{ dead=true; if(ph!=='done'&&ph!=='menu') finish(); });   // без картина — старият начален екран
   if(matchMedia('(pointer:coarse)').matches) box.querySelector('.kh').textContent='или докосни екрана';
 
-  function frame(now){ raf=requestAnimationFrame(frame); const dt=Math.min(.05,Math.max(.001,(now-last)/1000)); last=now; T+=dt;
+  function frame(now){ raf=requestAnimationFrame(frame);
     if(state!=='title'&&ph!=='menu'){ finish(); return; }   // извън началния екран по друг път (проверките) — интрото изчезва
+    if(fpGate(now)) return; tqBegin();
+    const rdt=Math.min(.5,Math.max(.001,(now-last)/1000)),dt=Math.min(.05,rdt); last=now; T+=dt;   // rdt — истинското време (за качеството), dt — за анимацията
     audio(dt,T); tc+=dt*(.035+.11*A.spd);
     if(ph==='run'&&T-idleT>3) box.classList.add('idle');
     let fade=ph==='cover'?Math.min(1,T):1,expo=.55;
@@ -4053,11 +4090,11 @@ void main(){
     for(let i=1;i<BL.length;i++) run(P.bdown,{uSrc:BL[i-1].t,uTx:BL[i-1].tx},BL[i]);
     let src=BL[BL.length-1]; for(let i=BL.length-2;i>=0;i--){ run(P.bup,{uSrc:src.t,uTx:src.tx,uAdd:BL[i].t},BU[i]); src=BU[i]; }
     run(P.comp,{uFB:FB.t,uBl:src.t,uFade:fade,uBloom:.15*.3,uCA:.1*(1+.5*Math.max(A.beatLo,A.beatHi*.7)),uVig:.35,uExpo:1.3*expo,uGrain:.03},null);
-    adapt(dt); }
+    tqEnd(); adapt(rdt); }
   open();
   return {open,get ph(){ return ph; },get T(){ return T; },start,skip,finish,dbg:o=>{ if(o.tL!=null) tL=o.tL; if(o.tc!=null) tc=o.tc; if(o.q!=null) V.q=o.q; if(o.h!=null) V.h=o.h;
     if('hold' in o) V.hold=o.hold; if('look' in o) V.look=o.look;
-    return {T,tL,tc,V,qMul,iw,ih,t0,tB,swAt,swl,barD,tLac,lk,look,mInt,mStep,ac:acNow(),gain:master?master.gain.value:null,musOn}; }};
+    return {T,tL,tc,V,qMul,fDiv,vI,qNg,prF,prI,prOn,tqBad,iw,ih,t0,tB,swAt,swl,barD,tLac,lk,look,mInt,mStep,ac:acNow(),gain:master?master.gain.value:null,musOn}; }};
 })();
 
 /* ================= ИГРА: r1 ================= */
