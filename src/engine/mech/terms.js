@@ -6,6 +6,7 @@ defMech('terms',{
   TERMS=(L.terms||[]).map(t=>({...t,prog:0,done:false,spawnT:2.5}));
   },
   respawn(){ for(const t of TERMS) if(!t.done) t.prog=0; },
+  bot(L){ for(const t of TERMS) if(!t.done) L.push({x:t.x*T+8,fy:t.y*T,key:'up',hold:true,ref:t}); },
   update(dt){ const p=player;
   // terminals
   for(const t of TERMS){ if(t.done) continue; const r={x:t.x*T-6,y:t.y*T-28,w:28,h:28}; t.near=!p.dead&&ov(p,r);

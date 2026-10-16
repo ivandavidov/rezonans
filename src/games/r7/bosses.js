@@ -16,6 +16,7 @@ const bite7=(b,dt,dmg,kx)=>{ const p=player; if(!p.dead&&ov(b,p)){ b.bite=(b.bit
 const glow7=(x,y,col,r,a)=>{ ctx.save(); ctx.globalCompositeOperation='lighter'; const g=ctx.createRadialGradient(x,y,1,x,y,r); g.addColorStop(0,`rgba(${col},${a})`); g.addColorStop(1,`rgba(${col},0)`); ctx.fillStyle=g; ctx.fillRect(x-r,y-r,r*2,r*2); ctx.restore(); };
 
 /* ---------- 1. ?SYNTAX ERROR ---------- */
+defBoss('syntax',{bot:{vuln:b=>b.state==='open'}});   // автопилотът: курсорите FIX (POKE) са задачи на механиката
 const SYN_FIX=[[29,14,'FIX 10'],[40,8,'FIX 20'],[52,14,'FIX 30']];
 defBoss('syntax',{make:()=>{ dropBossCursors(); for(const [tx,row,l] of SYN_FIX) addCursor('POKE',ax7(tx),row,{label:l,boss:true,syn:1});
   return {type:'syntax',x:AX()+8*T,y:3*T,w:13*10,h:18,hp:700*D.bhp,max:700*D.bhp,state:'intro',t:2,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,fireT:1.5,rainT:3,open:0}; }});
@@ -119,6 +120,7 @@ defBoss('copy',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; const 
   if(fr&&!b.dead&&Math.floor(b.anim*4)%2){ ctx.font='600 6px "IBM Plex Mono",monospace'; ctx.fillStyle='#ffffff'; ctx.textAlign='center'; ctx.fillText('BUFFER EMPTY',x,Math.round(b.y)-6); ctx.textAlign='left'; } }});
 
 /* ---------- 5. НУЛАТА ---------- */
+defBoss('nula',{bot:{vuln:b=>b.phase<3&&b.shield<=0.4,tasks:b=>b.state==='intro'?[]:CURS.filter(c=>c.o.boss&&c.cd<=0&&(b.phase<3?c.cmd==='BREAK'&&b.openT<=0:c.cmd==='RUN')).map(c=>({x:c.tx*T+8,fy:(c.row+1)*T,key:'era',ref:c}))}});   // автопилотът: BREAK сваля щита, накрая RUN
 defBoss('nula',{make:()=>{ dropBossCursors(); for(const tx of [29,52]) addCursor('BREAK',ax7(tx),14,{label:'BREAK',boss:true,r:10,t:4,cd:8});
   return {type:'nula',x:AX()+13*T,y:2*T,w:4*T,h:4*T,hp:1500*D.bhp,max:1500*D.bhp,state:'intro',t:2.5,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,shield:1,openT:0,fireT:2,aimT:4,sumT:8,mech:true}; }});
 defBoss('nula',{onCmd:c=>{ const b=boss; if(c.cmd==='BREAK'&&b.phase<3){ b.openT=b.phase>1?3.6:4.5; showMsg('BREAK! Защитният щит падна!',1.2); for(let i=0;i<30;i++) part(b.x+b.w/2,b.y+b.h/2,rnd(-120,120),rnd(-120,120),0.6,'#ffffff',2,0); }

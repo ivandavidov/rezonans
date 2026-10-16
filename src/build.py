@@ -14,7 +14,7 @@
 Части (обикновен код — сборката само ги сглобява, без замени по кода):
   shell/index.html        разметката; /*@@STYLE@@*/ ← shell/style.css (целият CSS); @@FONT_FAMILIES@@ и /*@@GAME_CSS@@*/ — от game.json
   engine/*.js             двигателят: основата по раздели (BASE; engine/lib/ — общи теми и небета), после регистърът на
-                          игрите, кампанията, плочките, механиките (engine/mech/), оцеляването и звукът
+                          игрите, кампанията, плочките, механиките (engine/mech/), оцеляването, звукът, чийтовете и автопилотът
   games/<id>/game.json    манифест: файлове, шрифтове, CSS на играта
   games/<id>/*.js         съдържанието на играта; последният файл вика registerGame({...})
   engine/loop.js          главният цикъл и window.__rz; /*@@FONT_LOADS@@*/ — шрифтовете на частите
@@ -70,7 +70,7 @@ BASE=['core.js','defs.js','difficulty.js','synth.js','lib/themes.js','map.js','p
 # механиките (engine/mech/) — core.js първи; редът на куките е в MECH_ORDER (core.js), не тук
 MECH=['core','water','levers','escort','flips','shifters','allies','eras','gens','chase','sun','winds','echo','plates','cams','terms','snow',
       'freqsonar','trance','tone','cursors']
-code=['/* ================= ДВИГАТЕЛ ================= */']+[rd('engine',f) for f in ['series.js','campaign.js','world.js']+['mech/'+m+'.js' for m in MECH]+['survival.js','svsave.js','episodes.js','audio.js','cheats.js','intro.js']]
+code=['/* ================= ДВИГАТЕЛ ================= */']+[rd('engine',f) for f in ['series.js','campaign.js','world.js']+['mech/'+m+'.js' for m in MECH]+['survival.js','svsave.js','episodes.js','audio.js','cheats.js','bot.js','intro.js']]
 for gid,g in games:   # всяка част — в свой блок: имената ѝ не се виждат от другите части (с двигателя говори само през регистрите)
     code+=[f'/* ================= ИГРА: {gid} ================= */','{']+[rd('games',gid,f) for f in g['files']]+['}']
 code.append("if(!GAMES.length) throw new Error('Няма регистрирани игри'); setGame(GAMES[0].id);")

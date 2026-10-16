@@ -130,7 +130,7 @@ function station(t0,t1,fy,label){ const x=t0*T,w=(t1-t0+1)*T,top=fy-7*T; R(x,top
   R(x+w/2-10,fy-30,20,30,'#1d2125'); R(x+w/2-10,fy-30,20,1,'#4a5058'); drawSign(t0+1,Math.floor(top/T)+1,label,'#f2e6c8','#3a2b1a'); }
 function prerender(){
   LV.width=COLS*T*S; LV.height=ROWS*T*S; lx=LV.getContext('2d'); lx.setTransform(S,0,0,S,0,0); lx.imageSmoothingEnabled=false;
-  lx.clearRect(0,0,COLS*T,ROWS*T); crystals=[]; zTiles=[];
+  MAPV++; lx.clearRect(0,0,COLS*T,ROWS*T); crystals=[]; zTiles=[];
   for(let ty=0;ty<ROWS;ty++) for(let tx=0;tx<COLS;tx++) drawTile(tx,ty);
   LVL.deco(); if(!GAME.classic) for(let ty=0;ty<ROWS;ty++) for(let tx=0;tx<COLS;tx++) if('B=-H'.includes(map[ty][tx])) drawTile(tx,ty);   // в r1 декорът остава над тях
   convTiles=[]; for(let ty=0;ty<ROWS;ty++) for(let tx=0;tx<COLS;tx++){ if(map[ty][tx]==='Z') zTiles.push([tx,ty]); if(CONV[map[ty][tx]]) convTiles.push([tx,ty,CONV[map[ty][tx]]]); }
@@ -142,6 +142,7 @@ function prerender(){
     if(LVL.alarm&&tx%23===11){ R(tx*T+5,cy,6,2,'#3a3f44'); beacons.push({x:tx*T+8,y:cy+4}); }
   }
 }
-function redrawCols(x0,x1){ for(let tx=x0;tx<=x1;tx++){ lx.clearRect(tx*T,0,T,ROWS*T); for(let ty=0;ty<ROWS;ty++) drawTile(tx,ty); } }
+let MAPV=0;   // картата е сменена (автопилотът строи графа си наново — engine/bot.js)
+function redrawCols(x0,x1){ MAPV++; for(let tx=x0;tx<=x1;tx++){ lx.clearRect(tx*T,0,T,ROWS*T); for(let ty=0;ty<ROWS;ty++) drawTile(tx,ty); } }
 function setDoor(d,ch){ const [tx,r0,r1]=d; for(let ty=r0;ty<=r1;ty++) map[ty][tx]=ch; redrawCols(tx,tx); }
 

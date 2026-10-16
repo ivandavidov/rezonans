@@ -2,6 +2,8 @@
    LVL.plates: [{x,y,door}] — вратата е отворена, докато някой (ти или ехото) стои на плочата. */
 let PLATES=[];
 defMech('plates',{
+  bot(L){ if(!GAME.echo) return; const eb=echoNow();   // автопилотът: ехото да стои на плочата
+    for(const pl of PLATES){ const x0=pl.x*T, fy=pl.y*T; if(!(eb&&eb.x+10>x0+2&&eb.x<x0+2*T-2&&Math.abs(eb.y+eb.h-fy)<7)) L.push({x:x0+16,fy,key:'rec',ref:pl}); } },
   load(){ const L=LVL;
   PLATES=(L.plates||[]).map(p=>({...p,on:false,was:false}));
   },

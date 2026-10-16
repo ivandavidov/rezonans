@@ -568,4 +568,10 @@ defBosses('intro',{worm:'Гигантският червей! Стреляй, д
 defBosses('name',{warden:'НАДЗИРАТЕЛЯТ',colossus:'КОЛОС',heli:'БОЕН ХЕЛИКОПТЕР',worm:'ЧЕРВЕЯТ',guardian:'ПАЗИТЕЛЯТ',exo:'КОМАНДИРЪТ',tank:'ТАНКЪТ',hunter:'ЛОВЕЦЪТ',queen:'МАЙКАТА',titan:'„ТИТАН“'});
 defBosses('col',{warden:'#c77dff',heli:'#ffb53a',colossus:'#9dff5a',worm:'#a6ff6a',guardian:'#8ad8ff',exo:'#c9c3b4',tank:'#ffb53a',hunter:'#7fd8ff',queen:'#ff6ad5',titan:'#ff5a45'});
 defBosses('sfx',{warden:'warden',heli:'chop',tank:'engine',titan:'warden',exo:'stomp',hunter:'screech'});
+// автопилотът (engine/bot.js): опасностите на босовете — кога и къде удрят
+defBosses('bot',{guardian:{vuln:b=>b.shieldDown,threats(b){ const L=[];
+  if(b.state==='beamW'||b.state==='beam'){ const t0=b.state==='beam'?0:b.t, t1=b.state==='beam'?b.t:t0+0.35, y=b.beamY; L.push({d:25,hit:(s,t)=>t>=t0-0.03&&t<=t1+0.03&&s.y<y+5&&s.y+s.h>y-5}); }
+  if(b.state==='stompW'){ const t0=b.t, cx=b.x+b.w/2; L.push({d:15,hit:(s,t)=>Math.abs(t-t0)<0.03&&s.onGround&&Math.abs(s.x+s.w/2-cx)<84});
+    for(const sd of [-1,1]) L.push({d:12,hit:(s,t)=>{ if(t<t0) return false; const x=cx+sd*24+sd*140*D.bspd*(t-t0), y=15*T-8; return Math.hypot(clamp(x,s.x,s.x+s.w)-x,clamp(y,s.y,s.y+s.h)-y)<10; }}); }
+  return L; }}});
 defFoes('upd',{egg:updEgg,pylon:updPylon}); defFoes('draw',{egg:drawEgg,pylon:drawPylon});

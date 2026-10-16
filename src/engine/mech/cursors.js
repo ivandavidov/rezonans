@@ -48,7 +48,7 @@ function tapeUpdate(dt){ const tp=TAPE; if(tp.done) return; tp.t+=dt;
   for(const e of enemies) if(!e.dead&&e.x>tp.x*T-4) e.stunT=Math.max(e.stunT||0,0.05);   // незаредените врагове чакат
   if(tp.t<0) return;
   tp.x+=tp.speed*dt; let c0=tp.next;
-  while(tp.next<=Math.min(COLS-1,Math.floor(tp.x))){ const col=tp.cols[tp.next]; if(col) for(let ty=0;ty<ROWS;ty++) map[ty][tp.next]=col[ty]; tp.next++; }
+  while(tp.next<=Math.min(COLS-1,Math.floor(tp.x))){ const col=tp.cols[tp.next]; if(col){ for(let ty=0;ty<ROWS;ty++) map[ty][tp.next]=col[ty]; MAPV++; } tp.next++; }
   if(tp.next>c0) redrawCols(c0,tp.next-1);
   if(tp.next>=COLS){ tp.done=true; showMsg(tp.doneMsg,1.5); }
   if(AC&&Math.random()<dt*14) osc({type:'square',f:Math.random()<0.5?1200:2400,t:0.03,v:0.015}); }
@@ -67,4 +67,5 @@ function curDrawWorld(){
 function curLights(L){ for(const c of CURS) if(!c.done) L.push([c.tx*T+8,(c.row+1)*T-10,26,0.5]); if(TAPE&&!TAPE.done) L.push([TAPE.x*T,8*T,90,0.6]); }
 function curChips(chip){ if(TAPE&&!TAPE.done) chip('▶ '+TAPE.label+' · '+Math.min(99,Math.floor(TAPE.x/COLS*100))+'%','#ffd84a');
   const c=CURS.find(c=>!c.done&&curNear(c)); if(c) chip('▌ '+c.cmd+(c.cd>0?' · '+c.cd.toFixed(1)+' s':' · E — изпълни'),'#9aff8a'); }
-defMech('cursors',{load:curLoad,respawn:curRespawn,update:curUpdate,drawWorld:curDrawWorld,lights:curLights,chips:curChips});
+defMech('cursors',{load:curLoad,respawn:curRespawn,update:curUpdate,drawWorld:curDrawWorld,lights:curLights,chips:curChips,
+  bot(L){ for(const c of CURS) if(!c.done&&(c.cmd==='POKE'||c.cmd==='RUN'&&c.o.once)) L.push({x:c.tx*T+8,fy:(c.row+1)*T,key:'era',ref:c}); }});

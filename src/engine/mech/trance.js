@@ -130,4 +130,4 @@ defFoe('bat',{draw:e=>{ if(e.dead&&e.deadT>0.6) return; const x=Math.round(e.x+e
   ctx.beginPath(); ctx.moveTo(x-1,y-1); ctx.lineTo(x-8,y-3-f*4); ctx.lineTo(x-5,y+1); ctx.lineTo(x-1,y+1); ctx.closePath(); ctx.fill();
   ctx.beginPath(); ctx.moveTo(x+1,y-1); ctx.lineTo(x+8,y-3-f*4); ctx.lineTo(x+5,y+1); ctx.lineTo(x+1,y+1); ctx.closePath(); ctx.fill();
   if(!e.dead){ ctx.fillStyle='#ff5a4a'; ctx.fillRect(x-1,y-1,1,1); ctx.fillRect(x+1,y-1,1,1); } }});
-defMech('trance',{load:tranceLoad,respawn:tranceRespawn,exitOk:tranceExitOk,update:tranceUpdate,drawBack:tranceDrawBack,drawWorld:tranceDrawWorld,lights:tranceLights,chips:tranceChips});
+defMech('trance',{bot(L){ for(const s of SLEEPERS) if(!s.ok&&!(s.fall>0)) L.push({x:s.x+s.w/2,fy:s.y+s.h,key:'up',hold:true,ref:s}); },load:tranceLoad,respawn:tranceRespawn,exitOk:tranceExitOk,update:tranceUpdate,drawBack:tranceDrawBack,drawWorld:tranceDrawWorld,lights:tranceLights,chips:tranceChips});

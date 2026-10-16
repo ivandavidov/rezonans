@@ -377,7 +377,7 @@ function render(){
   if(dmgFlash>0){ ctx.fillStyle=`rgba(200,20,10,${dmgFlash*0.45})`; ctx.fillRect(0,0,W,H); }
   if(flash>0){ ctx.globalAlpha=Math.min(1,flash); ctx.fillStyle=flashCol; ctx.fillRect(0,0,W,H); ctx.globalAlpha=1; }
   if(player.hp<=25&&!player.dead){ const g=ctx.createRadialGradient(W/2,H/2,H*0.35,W/2,H/2,H*0.85); g.addColorStop(0,'rgba(160,0,0,0)'); g.addColorStop(1,`rgba(160,0,0,${0.25+Math.sin(titleT*5)*0.1})`); ctx.fillStyle=g; ctx.fillRect(0,0,W,H); }
-  if(state==='play'||state==='dead'||state==='paused') drawHUD();
+  if(state==='play'||state==='dead'||state==='paused'){ drawHUD(); botHud(); }
   if(state==='dead'){ overlay(Math.min(0.7,deadT*0.8)); ctx.fillStyle=`rgba(120,0,0,${Math.min(0.25,deadT*0.3)})`; ctx.fillRect(0,0,W,H);
     centerText('ЗАГИНА',122,'30px '+DFONT(),'#ff5a45');
     if(deadT>1) centerText(SURV?(survLives>1?'Z — продължи ('+(survLives-1===1?'остава 1 живот':'остават '+(survLives-1)+' живота')+')':'Z — край на оцеляването'):'Z — опитай отново от последната контролна точка',148,'600 10px "IBM Plex Mono",monospace','#f3e6cf'); }

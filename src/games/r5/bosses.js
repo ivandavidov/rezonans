@@ -15,6 +15,9 @@ const alive5=tag=>enemies.filter(e=>e.tag===tag&&!e.dead);
 const crystalFx=(x,y,col,t)=>{ ctx.save(); ctx.globalCompositeOperation='lighter'; const g=ctx.createRadialGradient(x,y,1,x,y,16); g.addColorStop(0,`rgba(${col},${0.7+0.3*Math.sin(t*6)})`); g.addColorStop(1,`rgba(${col},0)`); ctx.fillStyle=g; ctx.fillRect(x-16,y-16,32,32); ctx.restore(); };
 
 /* ---------- 1. КОМБАЙНЪТ ---------- */
+defBoss('combine',{bot:{vuln:b=>b.state==='stun',contact:false,threats(b){   // автопилотът: накъде ще се засили комбайнът
+  const sp=(b.phase>1?1.3:1)*D.bspd*170, x0=AX()+T, x1=AX()+29*T-b.w, pos=t=>b.state==='drive'?clamp(b.x+b.face*sp*t,x0,x1):b.state==='aim'&&t>b.t?clamp(b.x+b.face*sp*(t-b.t),x0,x1):b.x;
+  return [{d:24,hit:(s,t)=>{ const x=pos(t); return s.x<x+b.w&&s.x+s.w>x&&s.y<b.y+b.h&&s.y+s.h>b.y; }}]; }}});
 defBoss('combine',{make:()=>({type:'combine',x:AX()+20*T,y:15*T-44,w:84,h:44,hp:900*D.bhp,max:900*D.bhp,state:'intro',t:2,face:-1,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,baleT:3,act:0,mech:true})});
 defBoss('combine',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
   if(b.state!=='stun'){ sparks(b.x+b.w/2+rnd(-20,20),b.y+8,3,'#d8a040'); hint5(b,'Челото е от закалена стомана. Изчакай комбайнът да се блъсне и да заседне в края!'); b.hp-=d*0.05; return; }
@@ -41,6 +44,7 @@ defBoss('combine',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; con
   if(b.state==='stun'&&Math.floor(b.anim*6)%2){ ctx.fillStyle='#ffe6a0'; ctx.fillRect(x+34,y-10,12,2); } ctx.restore(); }});
 
 /* ---------- 2. КАСКАДАТА ---------- */
+defBoss('cascade',{bot:{vuln:b=>b.state==='open'}});   // автопилотът: уязвима, щом кристалите паднат
 defFoes('dims',{rim:[16,16,90]});
 defFoe('rim',{upd:(e,dt)=>{ e.anim+=dt; e.alert=false; e.mech=true; }});
 defFoe('rim',{draw:e=>{ if(e.dead&&e.deadT>0.5) return; const x=Math.round(e.x+e.w/2-cam), y=Math.round(e.y+e.h/2); crystalFx(x,y,'90,220,210',e.anim);
@@ -68,6 +72,10 @@ defBoss('cascade',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; con
   ctx.fillStyle='#0e3a36'; ctx.fillRect(cx-10,y+18,5,4); ctx.fillRect(cx+5,y+18,5,4); if(b.open>0.3){ crystalFx(cx,y+b.h*0.5,'255,255,255',b.anim); } ctx.restore(); }});
 
 /* ---------- 3. НОЩНИЦАТА ---------- */
+defBoss('moth',{bot:{vuln:b=>isLit(b.x+b.w/2,b.y+b.h/2),contact:false,   // автопилотът: ракета до себе си (нощницата се спуска към светлото) и къде ще се гмурне
+  tasks:b=>b.state!=='intro'&&flareCd<=0&&!FLARES.some(f=>Math.abs(f.x-player.x)<80)?[{key:'era',any:true,ref:'mothFlare'}]:[],
+  threats(b){ const pos=t=>{ if(b.state!=='dive'||t>b.t) return [b.x,b.y]; const k=Math.exp(-3*t); return [b.tx-b.w/2+(b.x-b.tx+b.w/2)*k,b.ty-b.h/2+(b.y-b.ty+b.h/2)*k]; };
+    return [{d:18,hit:(s,t)=>{ const [x,y]=pos(t); return s.x<x+b.w&&s.x+s.w>x&&s.y<y+b.h&&s.y+s.h>y; }}]; }}});
 defBoss('moth',{make:()=>({type:'moth',x:AX()+13*T,y:3*T,w:70,h:30,hp:950*D.bhp,max:950*D.bhp,state:'intro',t:2,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,diveT:4,spawnT:5,tx:0,ty:0})});
 defBoss('moth',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
   if(!isLit(b.x+b.w/2,b.y+b.h/2)){ for(let i=0;i<3;i++) part(b.x+rnd(b.w),b.y+rnd(b.h),rnd(-40,40),rnd(-40,40),0.4,'#2a2024',2,0); hint5(b,'В тъмнината роякът се разсейва и куршумите минават на халос. Освети я с ракета!'); return; }
@@ -94,6 +102,7 @@ defBoss('moth',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; const 
   ctx.restore(); }});
 
 /* ---------- 4. ВЪЛЧЕВ ---------- */
+defBoss('valchev',{bot:{vuln:b=>b.state==='charge'||b.state==='stun'}});   // автопилотът: щитът пада, докато зарежда
 const VALCH_POS=[[32.5,12],[40.5,9],[48.5,12]];
 defBoss('valchev',{make:()=>({type:'valchev',x:AX()+20*T,y:15*T-30,w:14,h:30,hp:850*D.bhp,max:850*D.bhp,state:'intro',t:2.2,face:-1,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,pos:1,fireT:1.4,spawnT:8,act:0})});
 defBoss('valchev',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
@@ -121,6 +130,7 @@ defBoss('valchev',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; beg
   else if(b.state!=='stun'){ ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.strokeStyle=`rgba(150,255,160,${0.35+0.15*Math.sin(b.anim*8)})`; ctx.lineWidth=2; ctx.beginPath(); ctx.ellipse(x,y,15,21,0,0,7); ctx.stroke(); ctx.restore(); ctx.lineWidth=1; } }});
 
 /* ---------- 5. ТРЕТИЯТ РЕЗОНАТОР ---------- */
+defBoss('resonator',{bot:{vuln:b=>b.open>=0.6}});   // автопилотът: пластините са отворени
 defBoss('resonator',{make:()=>({type:'resonator',x:AX()+12*T,y:2.5*T,w:5*T,h:5*T,hp:1600*D.bhp,max:1600*D.bhp,state:'intro',t:2.5,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,cyc:0,open:0,fireT:2,waveT:6,sleepT:3,mech:true})});
 defBoss('resonator',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
   if(b.open<0.6){ sparks(b.x+b.w/2+rnd(-20,20),b.y+b.h/2+rnd(-20,20),3,'#3fd0a0'); hint5(b,'Титаниевите пластини са плътно затворени. Изчакай цикъла им на отваряне!'); return; }

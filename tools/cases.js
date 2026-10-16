@@ -65,6 +65,13 @@ module.exports = ({ boot }) => {
         rz.state = 'paused'; press(rz, 'esc', frames.t += 20); rz.toggleMus(); return { best: ls.getItem('rz.best1'), sv: ls.getItem('rz.svSave1'), звук: ls.getItem('rz.audio') }; },
       очаквано: { best: null, sv: null, звук: '10' } },
     { име: 'начален сектор в оцеляването', f: rz => { rz.setDiff(1); rz.chtSet('start', 6); rz.svEnter(); return { survK: rz.survK, used: rz.CHT.used }; }, очаквано: { survK: 5, used: true } },
+    { име: 'автопилот: A — само след отключване; играе; стрелка поема; нищо не се записва', ls: { 'rz.unlocked': '2' }, f: (rz, ls, env) => {
+        const key = code => env.fire('keydown', { code, repeat: false, preventDefault() {} });
+        rz.startEpisode(2, false); rz.state = 'play'; key('KeyA'); const преди = !!rz.CHT.on.bot;
+        rz.chtUnlock(); key('KeyA'); const вкл = !!rz.CHT.on.bot, x0 = rz.player.x; frames(rz, 240); const ходи = rz.player.x > x0 + 32, used = rz.CHT.used;
+        key('ArrowRight'); const поема = [!!rz.CHT.on.bot, !!rz.keys.right]; rz.keys.right = false; rz.completeLevel();
+        return { преди, вкл, ходи, used, поема, запис: ls.getItem('rz.unlocked') }; },
+      очаквано: { преди: false, вкл: true, ходи: true, used: true, поема: [false, true], запис: '2' } },
     { име: 'всички режими и действия във всяка част — без грешки', f: rz => { const err = [], modes = ['god', 'ammo', 'fly', 'clip', 'inv', 'onehit', 'light', 'slow', 'secret', 'freeze', 'traps', 'unl'];
         for (const g of rz.GAMES) { rz.enterGame(g.id);
           for (const i of [1, rz.levels.length - 1]) try { rz.startEpisode(i, false); rz.state = 'play'; for (const m of modes) rz.chtSet(m, 1);

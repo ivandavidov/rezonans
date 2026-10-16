@@ -91,6 +91,10 @@ defBoss('mirror',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; cons
   draw({...(b.pose||{}),x:b.x,y:b.y,h:26},0.8,true); }});
 
 /* ---------- 4. ЛОВЕЦЪТ НА ЧЕСТОТИ ---------- */
+defBoss('stalker',{bot:{vuln:b=>b.state==='confused',contact:false,threats(b){   // автопилотът: накъде се хвърля ловецът (към шума — и към изстрелите ти)
+  const sp=(b.phase>1?340:290)*D.bspd, x0=AX()+T, x1=AX()+29*T-b.w, p=player, to=(tx,t)=>{ const g=clamp(tx-b.w/2,x0,x1); return b.x+Math.sign(g-b.x)*Math.min(Math.abs(g-b.x),sp*t); };
+  const pos=t=>b.state==='hunt'?to(b.tx,t):b.state==='wander'?clamp(b.x+b.face*40*t,x0,x1):b.state==='confused'&&t>b.t?to(p.x+p.w/2,t-b.t):b.x;
+  return [{d:28,hit:(s,t)=>{ if(b.state==='confused'&&t<b.t) return false; const x=pos(t); return s.x<x+b.w&&s.x+s.w>x&&s.y<b.y+b.h&&s.y+s.h>b.y; }}]; }}});
 defBoss('stalker',{make:()=>({type:'stalker',x:AX()+18*T,y:15*T-40,w:64,h:40,hp:800*D.bhp,max:800*D.bhp,state:'intro',t:2,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,face:-1,tx:0,lastT:-1,confT:0,hintT:0})});
 defBoss('stalker',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
   if(b.state==='confused'){ b.hp-=d*1.3; bHitFx(b,'#c86aff'); } else { b.hp-=d*0.1; sparks(b.x+b.w/2+rnd(-14,14),b.y+rnd(6,30),2,'#7a5a8a'); b.hintT-=1; if(b.hintT<=0){ b.hintT=30; showMsg('Плътната броня отбива изстрелите! Атакувай само докато е дезориентиран!',1.8); } }
@@ -120,6 +124,11 @@ defBoss('stalker',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; con
   ctx.restore(); }});
 
 /* ---------- 5. КАМЕРТОНЪТ ---------- */
+defBoss('fork',{bot:{vuln:b=>b.phase>=3,contact:false,threats(b){   // автопилотът: вълните по пода (и следващите, ако тръгват скоро)
+  const fast=b.phase===1?1:b.phase===2?1.35:1.6, v=170*fast*D.bspd, L=[], w0=b.waveT/fast, hitAt=x=>s=>Math.abs(s.x+s.w/2-x)<10&&s.y+s.h>15*T-16;
+  for(const w of b.waves) L.push({d:14,hit:(s,t)=>hitAt(w.x+w.dir*v*t)(s)});
+  if(w0<1) for(const dr of [-1,1]) L.push({d:14,hit:(s,t)=>t>w0&&hitAt(b.cx+dr*v*(t-w0))(s)});
+  return L; }}});
 defBoss('fork',{make:()=>{ const cx=AX()+15*T; return {type:'fork',cx,x:cx-14,y:3*T,w:28,h:6*T,hp:1600*D.bhp,max:1600*D.bhp,state:'intro',t:2.5,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,waveT:2.5,ringT:5,droneT:6,crys:[{hp:500*D.bhp,x:cx-58},{hp:500*D.bhp,x:cx+58}],waves:[]}; }});
 defBoss('fork',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
   if(b.phase<3){ sparks(b.cx+rnd(-10,10),b.y+40+rnd(-20,20),3,'#ffffff'); return; }

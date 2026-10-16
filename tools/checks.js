@@ -60,6 +60,7 @@ async function* sectors({ game = 'r1', seeds = 20, from = 1, ks = 40, dis = [0, 
 }
 
 const FOES_FLY = new Set(['flyer', 'drone', 'bat', 'mite', 'fish', 'jelly']);   // във въздуха или във водата — не стоят на земя
+const BOT_STD = new Set('n title cols grav music start theme loadout exit story end build deco spawns triggers alarm intro sky barks onLoad tick drawBack lightsExtra arena lifts seed themeName muts isBoss gen hdr'.split(' '));   // обичайните полета на нивото (останалите — механики)
 const SM_KEYS = ['left', 'right', 'up', 'down', 'fire', 'jump', 'crouch', 'swap', 'era', 'enter', 'esc', 'pause'];
 /* ---------- back: обратна проходимост на нивата от кампаниите ---------- */
 // Картата за модела: вратите — отворени (назад се минава, след като са отворени), скритите проходи и тоновите врати — минават
@@ -280,6 +281,42 @@ const C = {
       Math.random = rnd0; lsRestore(saved); window.requestAnimationFrame = raf;
       try { Z.setDiff(di0); Z.toMenu(2); } catch (e) {}
       if (raf) raf(tt => Z.frame(tt));               // пуска отново истинския цикъл
+    }
+    return res;
+  },
+  async bot({ games = null, eps = null, sectors = [], dis = [1], frames = 60 * 240, seed = 1 } = {}) {   // автопилотът: всяко ниво с бота, без ръце
+    const Z = z(), res = { нива: [], части: {} }, saved = lsSnap(), raf = window.requestAnimationFrame, rnd0 = Math.random, di0 = Z.DI;
+    let t = -1048576;
+    window.requestAnimationFrame = () => 0; const mus0 = Z.musOn; if (mus0) Z.toggleMus(); await new Promise(r => setTimeout(r, 100));
+    const one = async (g, di, name, start) => { Math.random = mkRng(hnum(g + ':' + name + ':' + di) ^ seed); Z.resetClock(); t -= 1e5; Z.setDiff(di);
+      start(); Z.chtSet('bot', true); if (Z.state === 'story') Z.state = 'play';
+      const pk = Z.pickups.filter(k => !k.respawn), t0 = performance.now(); let f = 0, deaths = 0, prev = Z.state, hpMin = 100, err = null, offK = 0, back = 0, maxX = 0, hits = Z.stats.hits, backWhy = '';
+      const alive = new Set(Z.enemies.filter(e => !e.dead)), seen = e => e.x >= Z.cam - 1 && e.x + e.w <= Z.cam + 481 && e.y >= 0 && e.y + e.h <= 272;
+      try { for (; f < frames; f++) { t += 1000 / 60; Z.frame(t); const st = Z.state; if (st === 'dead' && prev !== 'dead'){ deaths++; maxX = 0; } prev = st;   // след смърт — от контролната точка
+        if (Z.player && !Z.player.dead) hpMin = Math.min(hpMin, Z.player.hp);
+        if (st === 'play') { const hit = Z.stats.hits > hits; hits = Z.stats.hits;   // убит от изстрела на героя (попадение в този кадър) извън кадъра
+          for (const e of Z.enemies) { if (!e.dead) { alive.add(e); continue; } if (alive.delete(e) && hit && !seen(e)) offK++; }
+          const p = Z.player; maxX = Math.max(maxX, p.x); if (p.x < maxX - 480 * 1.5){ back++; const g = Z.BOT.goal; if (!backWhy) backWhy = g ? g.t + (g.X ? ' ' + g.X.type : g.q ? ' ' + g.q.key : g.k ? ' ' + g.k.type : '') : '—'; } }
+        if (st === 'levelEnd' || st === 'win' || st === 'survOver' || !Z.CHT.on.bot) break; if (f % 300 === 299) await pause(); } }
+      catch (e) { err = String(e && e.stack ? e.stack.split('\n').slice(0, 2).join(' | ') : e); }
+      const E = Z.enemies, b = Z.boss, left = pk.filter(k => !k.taken);
+      const r = { част: g, трудност: di, ниво: name, мина: ['levelEnd', 'win'].includes(Z.state) ? 1 : 0, смърти: deaths, 'мин. здраве': Math.round(hpMin),
+        врагове: E.filter(e => e.dead).length + '/' + E.length, бос: b ? (b.dead ? 'убит' : 'жив') : '—', предмети: (pk.length - left.length) + '/' + pk.length,
+        останали: left.map(k => k.type).join(' '), пропуснати: left.filter(k => !(k.type === 'health' && Z.player.hp >= 100) && !(k.type === 'battery' && Z.player.armor >= 100)).length, 'сек.': +(f / 60).toFixed(1), 'убити от героя извън кадъра': offK, 'кадри назад >1,5 екрана': back, 'назад — цел': backWhy, заседна: Z.BOT.stuck, предаде: Z.BOT.why ? 1 : 0, защо: Z.BOT.why || '', смърт: (Z.BOT.dlog || []).join(' | '), механики: Object.keys(Object.getPrototypeOf(Z.LVL)).filter(k => !BOT_STD.has(k)).join(' '), 'ms': Math.round(performance.now() - t0) };
+      if (err) r.грешка = err;
+      Z.chtSet('bot', false); for (const k of SM_KEYS) { Z.keys[k] = false; Z.pressed[k] = false; } try { Z.toMenu(2); } catch (e) {}
+      return r; };
+    try {
+      for (const g of games || Z.GAMES.map(q => q.id)) { Z.enterGame(g, 2); const S = { n: 0, мина: 0, смърти: 0, заседна: 0 };
+        for (const di of dis) {
+          for (let i = 0; i < Z.levels.length; i++) { if (eps && !eps.includes(i + 1)) continue; res.нива.push(await one(g, di, 'епизод ' + (i + 1), () => Z.startEpisode(i, false))); }
+          for (const k of sectors) res.нива.push(await one(g, di, 'сектор ' + (k + 1), () => Z.startSurv(k, { k, seed: 17919 + k, score: 0, w: ['wrench', 'pistol'], a: { pistol: [17, 51] }, ar: 0, hp: 100, cur: 'pistol' }))); }
+        for (const r of res.нива.filter(q => q.част === g)) { S.n++; S.мина += r.мина; S.смърти += r.смърти; S.заседна += r.заседна; }
+        res.части[g] = S; }
+    } finally {
+      if (mus0 && !Z.musOn) Z.toggleMus(); Math.random = rnd0; lsRestore(saved); window.requestAnimationFrame = raf;
+      try { Z.chtSet('bot', false); Z.setDiff(di0); Z.toMenu(2); } catch (e) {}
+      if (raf) raf(tt => Z.frame(tt));
     }
     return res;
   },

@@ -590,7 +590,7 @@ function station(t0,t1,fy,label){ const x=t0*T,w=(t1-t0+1)*T,top=fy-7*T; R(x,top
   R(x+w/2-10,fy-30,20,30,'#1d2125'); R(x+w/2-10,fy-30,20,1,'#4a5058'); drawSign(t0+1,Math.floor(top/T)+1,label,'#f2e6c8','#3a2b1a'); }
 function prerender(){
   LV.width=COLS*T*S; LV.height=ROWS*T*S; lx=LV.getContext('2d'); lx.setTransform(S,0,0,S,0,0); lx.imageSmoothingEnabled=false;
-  lx.clearRect(0,0,COLS*T,ROWS*T); crystals=[]; zTiles=[];
+  MAPV++; lx.clearRect(0,0,COLS*T,ROWS*T); crystals=[]; zTiles=[];
   for(let ty=0;ty<ROWS;ty++) for(let tx=0;tx<COLS;tx++) drawTile(tx,ty);
   LVL.deco(); if(!GAME.classic) for(let ty=0;ty<ROWS;ty++) for(let tx=0;tx<COLS;tx++) if('B=-H'.includes(map[ty][tx])) drawTile(tx,ty);   // в r1 декорът остава над тях
   convTiles=[]; for(let ty=0;ty<ROWS;ty++) for(let tx=0;tx<COLS;tx++){ if(map[ty][tx]==='Z') zTiles.push([tx,ty]); if(CONV[map[ty][tx]]) convTiles.push([tx,ty,CONV[map[ty][tx]]]); }
@@ -602,7 +602,8 @@ function prerender(){
     if(LVL.alarm&&tx%23===11){ R(tx*T+5,cy,6,2,'#3a3f44'); beacons.push({x:tx*T+8,y:cy+4}); }
   }
 }
-function redrawCols(x0,x1){ for(let tx=x0;tx<=x1;tx++){ lx.clearRect(tx*T,0,T,ROWS*T); for(let ty=0;ty<ROWS;ty++) drawTile(tx,ty); } }
+let MAPV=0;   // картата е сменена (автопилотът строи графа си наново — engine/bot.js)
+function redrawCols(x0,x1){ MAPV++; for(let tx=x0;tx<=x1;tx++){ lx.clearRect(tx*T,0,T,ROWS*T); for(let ty=0;ty<ROWS;ty++) drawTile(tx,ty); } }
 function setDoor(d,ch){ const [tx,r0,r1]=d; for(let ty=r0;ty<=r1;ty++) map[ty][tx]=ch; redrawCols(tx,tx); }
 
 /* ================= SKY ================= */
@@ -1291,6 +1292,7 @@ function svValidate(g,cols,sky,lowg,lifts,startX,exitX,o={}){
   for(let h=0;h<q4.length;h++){ const id=q4[h]; if(radjB[id]) for(const n of radjB[id]) if(!B[n]){ B[n]=1; q4.push(n); } }
   const bx=o.backX==null?cols:o.backX, backTraps=[]; for(let id=0;id<N;id++) if(RO[id]&&kind[id]&&!B[id]&&id%cols<bx) backTraps.push(id);
   if(o.back&&backTraps.length&&!o.all) return svValidate.dbg?{traps:backTraps}:null;
+  if(o.noRoute) return {kind,virt,R,Q,RO,traps,gyEq,cols,adj,adjB,B,backTraps,sid};   // автопилотът (engine/bot.js) — само графът
   // weighted route (walking is cheaper than jumping) for the bot and loot placement
   const dist=new Float64Array(N).fill(1e9), pr=new Int32Array(N).fill(-1), heap=[[0,sid]]; dist[sid]=0;
   const cost=(a,b)=>{ const ax=a%cols, ay=(a/cols)|0, bx=b%cols, by=(b/cols)|0; return (acid[b]?40:0)+((Math.abs(ax-bx)<=1&&by>=ay)?1:(ax===bx?2:3+Math.abs(ax-bx))); };
@@ -1808,7 +1810,7 @@ function render(){
   if(dmgFlash>0){ ctx.fillStyle=`rgba(200,20,10,${dmgFlash*0.45})`; ctx.fillRect(0,0,W,H); }
   if(flash>0){ ctx.globalAlpha=Math.min(1,flash); ctx.fillStyle=flashCol; ctx.fillRect(0,0,W,H); ctx.globalAlpha=1; }
   if(player.hp<=25&&!player.dead){ const g=ctx.createRadialGradient(W/2,H/2,H*0.35,W/2,H/2,H*0.85); g.addColorStop(0,'rgba(160,0,0,0)'); g.addColorStop(1,`rgba(160,0,0,${0.25+Math.sin(titleT*5)*0.1})`); ctx.fillStyle=g; ctx.fillRect(0,0,W,H); }
-  if(state==='play'||state==='dead'||state==='paused') drawHUD();
+  if(state==='play'||state==='dead'||state==='paused'){ drawHUD(); botHud(); }
   if(state==='dead'){ overlay(Math.min(0.7,deadT*0.8)); ctx.fillStyle=`rgba(120,0,0,${Math.min(0.25,deadT*0.3)})`; ctx.fillRect(0,0,W,H);
     centerText('ЗАГИНА',122,'30px '+DFONT(),'#ff5a45');
     if(deadT>1) centerText(SURV?(survLives>1?'Z — продължи ('+(survLives-1===1?'остава 1 живот':'остават '+(survLives-1)+' живота')+')':'Z — край на оцеляването'):'Z — опитай отново от последната контролна точка',148,'600 10px "IBM Plex Mono",monospace','#f3e6cf'); }
@@ -2197,11 +2199,13 @@ const LB={
 /* ================= МЕХАНИКИ: РЕГИСТЪР И РЕД НА КУКИТЕ =================
    Всяка механика (engine/mech/*.js) се описва с defMech(id,{куки}); двигателят ги вика на фиксирани места:
      load, respawn, preRespawn, setCp, update(dt), move(p,dt,dir,U,Dn) → true, ако е поела движението, force(p,dt),
-     drawBack, drawWorld, lights(L), chips(chip), postFx, exitOk → false, ако изходът е затворен.
+     drawBack, drawWorld, lights(L), chips(chip), postFx, exitOk → false, ако изходът е затворен;
+     bot(L) — задачите за автопилота (engine/bot.js): L.push({x, fy, key:'up'|'era', hold, ref}) — място (x на центъра, линия на пода)
+     и клавиш, който трябва да се натисне (hold — задържи, докато задачата изчезне).
    Механиката се включва от данните на нивото; в останалите нива куките ѝ не правят нищо.
    MECH_ORDER — редът на извикване за всяка кука (пази поведението и реда на случайните числа);
    механика, която не е в списъка, се вика след изброените, по реда на регистрация. */
-const MECHS={}, MECH_HOOKS='load respawn preRespawn setCp update move force drawBack drawWorld lights chips postFx exitOk'.split(' ');
+const MECHS={}, MECH_HOOKS='load respawn preRespawn setCp update move force drawBack drawWorld lights chips postFx exitOk bot'.split(' ');
 const MECH_ORDER={
   load:['core','water','levers','escort','flips','shifters','allies','eras','gens','chase','sun','winds','echo','cams','noise','plates','terms','snow','freqsonar','trance','tone','cursors'],
   update:['water','levers','eras','echo','noise','plates','cams','terms','level','gusts','snow','cursors','freqsonar','trance','tone','flips','shifters','chase','sun','winds','allies','gens'],
@@ -2345,7 +2349,7 @@ defItem('air',{draw:(k,x,y)=>{ const a=titleT*3+k.bob; for(let i=0;i<3;i++){ con
    LVL.levers: [{x,y,label,fn}] — ↑ до лоста го дърпа; drainRegion(x0,y0,x1,y1) източва водата в правоъгълника. */
 let LEVERS=[], DRAINS=[];
 function drainRegion(x0,y0,x1,y1){ DRAINS.push({x0,y0,x1,y1,t:0}); }
-function updDrains(dt){ for(const d of DRAINS){ d.t-=dt; if(d.t>0) continue; d.t=0.09; let done=true; for(let y=d.y0;y<=d.y1;y++){ let any=false; for(let x=d.x0;x<=d.x1;x++) if(map[y]&&map[y][x]==='w'){ map[y][x]='.'; any=true; } if(any){ done=false; break; } } if(done) d.done=true; } DRAINS=DRAINS.filter(d=>!d.done); }
+function updDrains(dt){ for(const d of DRAINS){ d.t-=dt; if(d.t>0) continue; d.t=0.09; let done=true; for(let y=d.y0;y<=d.y1;y++){ let any=false; for(let x=d.x0;x<=d.x1;x++) if(map[y]&&map[y][x]==='w'){ map[y][x]='.'; any=true; } if(any){ MAPV++; done=false; break; } } if(done) d.done=true; } DRAINS=DRAINS.filter(d=>!d.done); }
 defMech('levers',{
   load(){ LEVERS=[]; DRAINS=[]; const L=LVL;
   if(L.levers) LEVERS=L.levers.map(v=>({...v,on:false,near:false}));
@@ -2355,6 +2359,7 @@ defMech('levers',{
   for(const v of LEVERS){ const r={x:v.x*T,y:v.y*T-24,w:16,h:24}; v.near=ov(p,r); if(v.near&&!v.on&&pressed.up&&!p.dead){ v.on=true; SFX.armor(); shake=3; if(v.fn) v.fn(v); } }
   updDrains(dt);
   },
+  bot(L){ for(const v of LEVERS) if(!v.on) L.push({x:v.x*T+8,fy:v.y*T,key:'up',ref:v}); },
   drawBack(){
   for(const v of LEVERS){ const x=Math.round(v.x*T-cam), y=v.y*T; if(x<-20||x>W+20) continue;
     px(x+3,y-14,10,14,'#3a4248'); px(x+3,y-14,10,1,'#5a646c'); px(x+5,y-12,6,3,v.on?'#3dff7a':(Math.floor(titleT*3)%2?'#ff3b2e':'#5a1a14'));
@@ -2718,6 +2723,8 @@ defMech('echo',{
    LVL.plates: [{x,y,door}] — вратата е отворена, докато някой (ти или ехото) стои на плочата. */
 let PLATES=[];
 defMech('plates',{
+  bot(L){ if(!GAME.echo) return; const eb=echoNow();   // автопилотът: ехото да стои на плочата
+    for(const pl of PLATES){ const x0=pl.x*T, fy=pl.y*T; if(!(eb&&eb.x+10>x0+2&&eb.x<x0+2*T-2&&Math.abs(eb.y+eb.h-fy)<7)) L.push({x:x0+16,fy,key:'rec',ref:pl}); } },
   load(){ const L=LVL;
   PLATES=(L.plates||[]).map(p=>({...p,on:false,was:false}));
   },
@@ -2779,6 +2786,7 @@ defMech('terms',{
   TERMS=(L.terms||[]).map(t=>({...t,prog:0,done:false,spawnT:2.5}));
   },
   respawn(){ for(const t of TERMS) if(!t.done) t.prog=0; },
+  bot(L){ for(const t of TERMS) if(!t.done) L.push({x:t.x*T+8,fy:t.y*T,key:'up',hold:true,ref:t}); },
   update(dt){ const p=player;
   // terminals
   for(const t of TERMS){ if(t.done) continue; const r={x:t.x*T-6,y:t.y*T-28,w:28,h:28}; t.near=!p.dead&&ov(p,r);
@@ -3025,7 +3033,7 @@ defFoe('bat',{draw:e=>{ if(e.dead&&e.deadT>0.6) return; const x=Math.round(e.x+e
   ctx.beginPath(); ctx.moveTo(x-1,y-1); ctx.lineTo(x-8,y-3-f*4); ctx.lineTo(x-5,y+1); ctx.lineTo(x-1,y+1); ctx.closePath(); ctx.fill();
   ctx.beginPath(); ctx.moveTo(x+1,y-1); ctx.lineTo(x+8,y-3-f*4); ctx.lineTo(x+5,y+1); ctx.lineTo(x+1,y+1); ctx.closePath(); ctx.fill();
   if(!e.dead){ ctx.fillStyle='#ff5a4a'; ctx.fillRect(x-1,y-1,1,1); ctx.fillRect(x+1,y-1,1,1); } }});
-defMech('trance',{load:tranceLoad,respawn:tranceRespawn,exitOk:tranceExitOk,update:tranceUpdate,drawBack:tranceDrawBack,drawWorld:tranceDrawWorld,lights:tranceLights,chips:tranceChips});
+defMech('trance',{bot(L){ for(const s of SLEEPERS) if(!s.ok&&!(s.fall>0)) L.push({x:s.x+s.w/2,fy:s.y+s.h,key:'up',hold:true,ref:s}); },load:tranceLoad,respawn:tranceRespawn,exitOk:tranceExitOk,update:tranceUpdate,drawBack:tranceDrawBack,drawWorld:tranceDrawWorld,lights:tranceLights,chips:tranceChips});
 
 /* ================= МЕХАНИКА · ТОНЪТ =================
    Тонът (LVL.tone): E изпява тон — вълна, която зашеметява враговете наоколо (e.stunT)
@@ -3118,7 +3126,7 @@ function tapeUpdate(dt){ const tp=TAPE; if(tp.done) return; tp.t+=dt;
   for(const e of enemies) if(!e.dead&&e.x>tp.x*T-4) e.stunT=Math.max(e.stunT||0,0.05);   // незаредените врагове чакат
   if(tp.t<0) return;
   tp.x+=tp.speed*dt; let c0=tp.next;
-  while(tp.next<=Math.min(COLS-1,Math.floor(tp.x))){ const col=tp.cols[tp.next]; if(col) for(let ty=0;ty<ROWS;ty++) map[ty][tp.next]=col[ty]; tp.next++; }
+  while(tp.next<=Math.min(COLS-1,Math.floor(tp.x))){ const col=tp.cols[tp.next]; if(col){ for(let ty=0;ty<ROWS;ty++) map[ty][tp.next]=col[ty]; MAPV++; } tp.next++; }
   if(tp.next>c0) redrawCols(c0,tp.next-1);
   if(tp.next>=COLS){ tp.done=true; showMsg(tp.doneMsg,1.5); }
   if(AC&&Math.random()<dt*14) osc({type:'square',f:Math.random()<0.5?1200:2400,t:0.03,v:0.015}); }
@@ -3137,7 +3145,8 @@ function curDrawWorld(){
 function curLights(L){ for(const c of CURS) if(!c.done) L.push([c.tx*T+8,(c.row+1)*T-10,26,0.5]); if(TAPE&&!TAPE.done) L.push([TAPE.x*T,8*T,90,0.6]); }
 function curChips(chip){ if(TAPE&&!TAPE.done) chip('▶ '+TAPE.label+' · '+Math.min(99,Math.floor(TAPE.x/COLS*100))+'%','#ffd84a');
   const c=CURS.find(c=>!c.done&&curNear(c)); if(c) chip('▌ '+c.cmd+(c.cd>0?' · '+c.cd.toFixed(1)+' s':' · E — изпълни'),'#9aff8a'); }
-defMech('cursors',{load:curLoad,respawn:curRespawn,update:curUpdate,drawWorld:curDrawWorld,lights:curLights,chips:curChips});
+defMech('cursors',{load:curLoad,respawn:curRespawn,update:curUpdate,drawWorld:curDrawWorld,lights:curLights,chips:curChips,
+  bot(L){ for(const c of CURS) if(!c.done&&(c.cmd==='POKE'||c.cmd==='RUN'&&c.o.once)) L.push({x:c.tx*T+8,fy:(c.row+1)*T,key:'era',ref:c}); }});
 
 addUnique(MUT_NAME,{bats:'Рояци прилепи'},'MUT_NAME');   // мутацията е в двигателя (генераторът + mech/trance.js)
 /* ================= ДВИГАТЕЛ · ОЦЕЛЯВАНЕ (процедурни сектори) =================
@@ -3755,6 +3764,455 @@ function chtRender(){
   const c=R[CHT.sel]; if(c&&!c.h) centerText(c.desc,226,'600 7px "IBM Plex Mono",monospace','#cfd8dc');
   centerText('↑ ↓ избор · Z вкл./изкл. или изпълни · Esc / X назад',250,'600 7px "IBM Plex Mono",monospace','#7f8e97');
 }
+
+/* ================= ДВИГАТЕЛ · АВТОПИЛОТ =================
+   Чийтът „АВТОПИЛОТ“ (bot): героят играе сам — избива враговете, прибира предметите и стига до изхода, като избягва изстрелите
+   и капаните. В игра: A — вкл./изкл. (само след отключване на чийтовете); стрелка, Z, X … — поемаш ти (ботът се изключва).
+   Ботът натиска същите keys/pressed като клавиатурата преди всяка стъпка на update (loop.js): физиката и оръжията са общите.
+     граф    — местата за стоене и скоковете между тях: svValidate (engine/survgen.js) в режим exact върху картата в момента
+               (затворените врати — стени); строи се наново, щом картата се смени (MAPV в prerender.js, честотата)
+     цел     — най-близкият по пътя враг (място, откъдето изстрелът го улучва) или предмет; накрая изходът / босът
+     път     — Дейкстра от мястото под краката; скоковете и паданията — симулация на движението (botStep — формулите на updPlayer)
+               с разбег, задържане на скока и насочване към целта; изпълнява се кадър по кадър, при отклонение — наново
+     бой     — оръжието по врага и разстоянието, прицел (право, клекнал, нагоре), без изстрел в бъчва до себе си
+     защита  — всеки кадър изстрелите, гранатите, ракетите, враговете, босът и капаните се предвиждат BOT_K кадъра напред;
+               от няколко маневри (планът, стой, клекни, скочи, бягай…) се избира тази с най-малко щета
+   Враг или бос на частта може да подскаже своите опасности: defFoe/defBoss(id,{bot:{threats(e)→[{d, hit(s,t)}], contact:false, vuln(b)}})
+   — hit(s,t): удря ли героя s (кутия x,y,w,h, onGround) след t секунди; contact:false — допирът с него не наранява;
+   vuln(b) → false: босът сега не поема щета (щит) — не е цел, ботът стреля по друго. */
+const BOT_KEYS=['left','right','up','down','fire','jump','crouch','swap','w1','w2','w3','w4','w5','w6','era'];
+const BOT_TAKE=new Set(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','KeyZ','KeyX','KeyC','KeyQ','KeyE','Digit1','Digit2','Digit3','Digit4','Digit5','Digit6']);
+const BOT_K=45, BOT_RNG={wrench:22,pistol:400,shotgun:170,pulse:360,grenade:0,rocket:460};   // кадри напред за защитата; докъде стреля оръжието
+const BOT={g:null,gm:null,gv:'',d:null,pr:null,col:null,src:-1,n:-1,path:[],goal:null,ban:new Map(),bad:new Set(),prog:null,air:null,re:0,
+  best:1e9,bestT:0,gref:null,dodge:null,wT:0,fT:0,shot:null,shotHp:0,shotT:0,idleT:0,stuck:0,gave:false,mT:0,lvl:null};
+defCheat('bot',{name:'АВТОПИЛОТ',desc:'Героят играе сам: враговете, предметите, изходът. В игра: A вкл./изкл.; стрелка, Z или X — поемаш ти.',set(){ botReset(); }});
+function botReset(){ for(const k of BOT_KEYS) keys[k]=false; Object.assign(BOT,{why:BOT.gave?BOT.why:'',g:null,path:[],goal:null,prog:null,air:null,dodge:null,gref:null,best:1e9,bestT:lvT,progT:lvT,sig:-1,gave:false}); BOT.ban.clear(); BOT.bad.clear(); }
+const BOT_ST=new Set(['play','paused','dead','story','levelEnd']);
+addEventListener('keydown',e=>{ if(e.repeat||e.metaKey||e.ctrlKey||e.altKey) return;
+  if(e.code==='KeyA'&&CHT.open&&BOT_ST.has(state)){ chtSet('bot',!CHT.on.bot); showMsg(CHT.on.bot?'Автопилот: вкл. (A — изкл.)':'Автопилот: изкл.',1.6); return; }
+  if(CHT.on.bot&&state==='play'&&BOT_TAKE.has(e.code)){ const k=CODES[e.code]; chtSet('bot',false); keys[k]=true; pressed[k]=true; showMsg('Автопилот: изкл. — играеш ти',1.6); } });
+document.querySelectorAll('#touch button[data-k]').forEach(b=>b.addEventListener('pointerdown',()=>{ const k=b.dataset.k;
+  if(CHT.on.bot&&state==='play'&&BOT_KEYS.includes(k)){ chtSet('bot',false); keys[k]=true; showMsg('Автопилот: изкл. — играеш ти',1.6); } }));
+
+/* ---------- графът ---------- */
+// при епохи (ERAD) — два слоя: възелът на слой e е e*N+id, а смяната (E) е ребро към същото място в другия слой (или до
+// първото място под него), ако там тялото е свободно
+function botGraph(){
+  const C=COLS, N=C*ROWS, lifts=(LVL.lifts||[]).map(l=>({x0:l.x0,y0:l.y0,x1:l.x1,y1:l.y1,w:l.w||3}));
+  // честотите: плочките '1'–'3' — платформи, на които се стъпва отгоре (стените от тях — проходими); тонът се сменя по пътя (botFreq)
+  const fq=c=>c==='1'||c==='2'||c==='3', fm=m=>m.map((r,y)=>r.map((c,x)=>!fq(c)?c:(y>0&&fq(m[y-1][x]))||(y<ROWS-1&&fq(m[y+1][x]))?'.':'-'));
+  BOT.simMap=LVL.freq?fm(map):null;
+  const prep=m=>m.map(r=>r.map(c=>c==='D'?'#':c==='h'||c==='t'?'.':c));   // тоновите врати 't' — отварят се с E
+  const gs=ERAD?ERAD.maps.map(prep):[prep(BOT.simMap||map)];
+  const Vs=gs.map(g=>{ const V=svValidate(g,C,g[0].filter(c=>c==='.').length>C/2,G<800,lifts,LVL.start,C-3,{exact:true,all:true,noRoute:true}); V.free=botFree(V,g); return V; });
+  BOT.N=N; BOT.gm=ERAD?ERAD.maps[0]:map; BOT.gv=botGv(); BOT.prog=null; BOT.re=0; BOT.tele=new Set();
+  for(const [cmd,tx,row,o] of LVL.cursors||[]) if(cmd==='GOTO'&&o&&o.to) Vs.forEach((V,e)=>{ const a=(row+1)*C+tx, b=(o.to[1]+1)*C+o.to[0]; if(V.kind[a]&&V.kind[b]){ (V.adj[a]||(V.adj[a]=[])).push(b); BOT.tele.add((e*N+a)*1e5+e*N+b); } });   // телепорт (курсор GOTO, E)
+  if(Vs.length===1){ BOT.g=Vs[0]; BOT.free=Vs[0].free; BOT.wind=Vs[0].wind||null; return; }
+  const L=Vs.length, kind=new Int8Array(L*N), virt=new Uint8Array(L*N), free=new Uint8Array(L*N), adj=new Array(L*N), sol=(g,x,y)=>y>=0&&y<ROWS&&'#=BZ><^'.includes(g[y][x]);
+  Vs.forEach((V,e)=>{ for(let id=0;id<N;id++){ kind[e*N+id]=V.kind[id]; virt[e*N+id]=V.virt[id]; if(V.free) free[e*N+id]=V.free[id]; if(V.adj[id]) adj[e*N+id]=V.adj[id].map(n=>e*N+n); } });
+  for(let e=0;e<L;e++){ const f=1-e, gB=gs[f];
+    for(let id=0;id<N;id++){ const a=e*N+id; if(!kind[a]&&!free[a]) continue; const x=id%C, y=id/C|0, body=free[a]?[y]:[y-1,y-2];
+      if(body.some(yy=>yy<0||sol(gB,x,yy))) continue;
+      let t=-1; if(kind[f*N+id]||free[f*N+id]) t=f*N+id; else for(let ry=body[0]+1;ry<ROWS;ry++){ const c=f*N+ry*C+x; if(kind[c]||free[c]){ t=c; break; } if(sol(gB,x,ry)) break; }
+      if(t>=0) (adj[a]||(adj[a]=[])).push(t); } }
+  BOT.g={kind,virt,adj}; BOT.free=free.some(v=>v)?free:null; BOT.wind=null; }
+const botY=n=>((n%BOT.N)/COLS)|0, botLay=n=>(n/BOT.N)|0, botOff=()=>ERAD?ERA*BOT.N:0;
+// вода и безтегловност — свободно движение (като модела на проверката back, tools/checks.js): клетките на тялото, преходите
+// между тях, падането до първото място, излизането от повърхността (скок до 3 встрани и 2 нагоре) и влизането (сход, скок)
+function botFree(V,g){ const C=COLS, N=C*ROWS, free=new Uint8Array(N), sol=(x,y)=>x<0||x>=C||y<0||(y<ROWS&&'#=BZ><^'.includes(g[y][x])), adj=V.adj;
+  const zg=(x,y)=>LVL.zeroG||(LVL.zgZones&&LVL.zgZones.some(([x0,y0,x1,y1])=>x>=x0&&x<=x1&&y>=y0&&y<=y1));
+  const wind=new Uint8Array(N); for(const w of LVL.winds||[]) if(w[5]<0) for(let y=Math.max(0,w[1]);y<=Math.min(ROWS-1,w[3]);y++) for(let x=Math.max(0,w[0]);x<=Math.min(C-1,w[2]);x++) if(!sol(x,y)) wind[y*C+x]=1;   // възходящо течение
+  for(let y=0;y<ROWS;y++) for(let x=0;x<C;x++) if((g[y][x]==='w'||zg(x,y)||wind[y*C+x])&&!sol(x,y)) free[y*C+x]=1;
+  if(!free.some(v=>v)) return null; V.wind=wind.some(v=>v)?wind:null;
+  for(let a=0;a<N;a++) if(adj[a]&&V.kind[a]) adj[a]=adj[a].filter(b=>{ const ax=a%C, ay=a/C|0, bx=b%C, by=b/C|0;   // скок или падане през вода — не важи (там се плува)
+    for(let x=Math.min(ax,bx);x<=Math.max(ax,bx);x++) for(let y=Math.max(0,Math.min(ay,by)-2);y<Math.max(ay,by);y++) if(free[y*C+x]) return false; return true; });
+  const add=(a,b)=>{ (adj[a]||(adj[a]=[])).push(b); };
+  const fall=(x,y,from,dr=0)=>{ for(let cx=Math.max(0,x-dr);cx<=Math.min(C-1,x+dr);cx++) for(let ry=y;ry<ROWS;ry++){ const c=ry*C+cx; if(free[c]||(ry>y&&V.kind[c])){ add(from,c); break; } if(sol(cx,ry)) break; } };
+  for(let id=0;id<N;id++) if(free[id]){ const x=id%C, y=id/C|0;
+    for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){ const nx=x+dx, ny=y+dy; if(nx<0||nx>=C||ny<0||ny>=ROWS||sol(nx,ny)) continue; if(free[ny*C+nx]) add(id,ny*C+nx); else fall(nx,ny,id,2); }
+    const surf=y>0&&!free[id-C]&&!sol(x,y-1), r=surf?3:1;
+    for(let tx=Math.max(0,x-r);tx<=Math.min(C-1,x+r);tx++) for(let ty=Math.max(1,y-(surf?2:0));ty<=Math.min(ROWS-1,y+2);ty++){ const s=ty*C+tx; if(!V.kind[s]) continue;
+      const near=Math.abs(tx-x)<=1&&(ty-1===y||ty-2===y); if(near||surf) add(id,s); if(near) add(s,id); } }
+  for(let s=0;s<N;s++) if(V.kind[s]&&!free[s-C]&&!free[s-2*C]){ const x=s%C, y=s/C|0;   // влизане — от сухо място
+    for(const d of [-1,1]) if(x+d>=0&&x+d<C&&!sol(x+d,y-1)) fall(x+d,y-1,s);
+    for(let fy=Math.max(0,y-4);fy<y-1;fy++){ if(sol(x,fy)) continue; for(const d of [-1,1]) for(let fx=x+d,k=0;k<3&&fx>=0&&fx<C&&!sol(fx,fy);fx+=d,k++) if(free[fy*C+fx]) add(s,fy*C+fx); } }
+  return free; }
+const botGv=()=>MAPV+':'+(LVL.freq?1:0)+':'+(ERAD?1:0);
+const botMapOk=()=>BOT.gm===(ERAD?ERAD.maps[0]:map);
+// мястото (възел) под краката: плочката, на която стои (центърът или единият край на тялото)
+function botNodeOf(s){ const o=botOff(); if(BOT.wind&&!s.onGround){ const id=o+Math.floor((s.y+s.h/2)/T)*COLS+Math.floor((s.x+s.w/2)/T); if(BOT.wind[id]) return id; }
+  if(s.swim&&BOT.free) for(const k of [0.5,0.8]){ const id=o+Math.floor((s.y+s.h*k)/T)*COLS+Math.floor((s.x+s.w/2)/T); if(BOT.free[id]) return id; }
+  const V=BOT.g, fy=Math.floor((s.y+s.h+1)/T); if(!V||fy<1||fy>=ROWS||Math.abs(fy*T-(s.y+s.h))>2) return -1;
+  for(const x of [Math.floor((s.x+s.w/2)/T),Math.floor(s.x/T),Math.floor((s.x+s.w-0.01)/T)]) if(x>=0&&x<COLS&&V.kind[o+fy*COLS+x]) return o+fy*COLS+x; return -1; }
+const botAcid=n=>tileAt(n%COLS,botY(n)-1)==='~';
+function botCost(a,b){ if(BOT.N&&botLay(a)!==botLay(b)||BOT.tele&&BOT.tele.has(a*1e5+b)) return 3; const C=COLS, ax=a%C, ay=botY(a), bx=b%C, by=botY(b), k=BOT.g.kind[b], dx=Math.abs(ax-bx);
+  let c=by===ay&&dx===1?1:dx<=1&&by>ay?1+(by-ay)*0.15:dx===0?2+(ay-by)*0.4:3+dx*0.6+Math.max(0,ay-by)*0.4;
+  if(BOT.free&&BOT.free[b]) return 1.6+(BOT.free[a]?0:1); if(BOT.free&&BOT.free[a]) return 2.5;
+  if(k===3) c+=botAcid(b)?400:6; else if(k===2) c+=1; return c; }
+function botDij(src){ const V=BOT.g, N=V.kind.length, C=COLS;
+  if(!BOT.d||BOT.d.length!==N){ BOT.d=new Float64Array(N); BOT.pr=new Int32Array(N); }
+  const d=BOT.d, pr=BOT.pr, hk=[0], hv=[src], pen=botPen(); d.fill(1e9); pr.fill(-1); d[src]=0;   // двоична купчина
+  while(hv.length){ const k0=hk[0], v=hv[0], lk=hk.pop(), lv=hv.pop();
+    if(hv.length){ let i=0; for(;;){ let c=2*i+1; if(c>=hv.length) break; if(c+1<hv.length&&hk[c+1]<hk[c]) c++; if(hk[c]>=lk) break; hk[i]=hk[c]; hv[i]=hv[c]; i=c; } hk[i]=lk; hv[i]=lv; }
+    if(k0>d[v]) continue;
+    for(const n of V.adj[v]||[]){ if(BOT.bad.has(v*1e5+n)) continue; const nd=k0+botCost(v,n)+(pen[n]||0); if(nd<d[n]){ d[n]=nd; pr[n]=v;
+      let i=hv.length; hk.push(nd); hv.push(n); while(i>0){ const q=(i-1)>>1; if(hk[q]<=nd) break; hk[i]=hk[q]; hv[i]=hv[q]; i=q; } hk[i]=nd; hv[i]=n; } } }
+  const col=BOT.col&&BOT.col.length===C?BOT.col:(BOT.col=new Float64Array(C)); col.fill(1e9);
+  for(let id=0;id<N;id++) if(d[id]<col[id%C]) col[id%C]=d[id];
+  BOT.src=src; }
+// места до враг (допирът наранява) и до боса — по-скъпи: пътят ги заобикаля, ако може
+function botPen(){ const C=COLS, pen={}, p=player; let o=botOff(); const add=(X,r)=>{ const cx=X.x+X.w/2, fy=X.y+X.h, x0=Math.floor((cx-r)/T), x1=Math.floor((cx+r)/T), y0=Math.floor((X.y-r)/T), y1=Math.ceil((fy+r)/T);
+    for(let x=Math.max(0,x0);x<=Math.min(C-1,x1);x++) for(let y=Math.max(1,y0);y<=Math.min(ROWS-1,y1);y++){ const dd=Math.hypot(x*T+8-cx,Math.max(0,Math.max(X.y-y*T,y*T-26-fy))); if(dd<r) pen[o+y*C+x]=(pen[o+y*C+x]||0)+30*(1-dd/r); } };
+  for(const e of enemies){ if(e.dead||Math.abs(e.x-p.x)>500) continue; const F=FOES[e.type]; if(F.fixed||(F.bot&&F.bot.contact===false)) continue; add(e,40); }
+  if(boss&&!boss.dead&&!(BOSSES[boss.type].bot&&BOSSES[boss.type].bot.contact===false)) add(boss,48);
+  for(const q of SHIFT) if(q.st>=0&&q.left<2.5) for(const [x0,y0,x1,y1] of q.st?q.b:q.a) for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++) pen[botOff()+y*C+x]=(pen[botOff()+y*C+x]||0)+40;   // изчезва скоро
+  if(ERAD){ o=(1-ERA)*BOT.N; for(const e of ERAD.enem[1-ERA]) if(!e.dead&&Math.abs(e.x-p.x)<500&&!FOES[e.type].fixed) add(e,40); }
+  return pen; }
+// задачите на механиките (лостове, терминали, курсори) и на боса
+function botTasks(){ const L=[]; mechRun('bot',L); if(boss&&!boss.dead){ const H=BOSSES[boss.type].bot; if(H&&H.tasks) for(const q of H.tasks(boss)||[]) L.push(q); } return L; }
+function botPathTo(t){ const P=[]; for(let v=t;v>=0;v=BOT.pr[v]){ P.push(v); if(v===BOT.src) break; } return P.reverse(); }
+
+/* ---------- движението: симулация (формулите на updPlayer за земя и въздух) ---------- */
+function botS0(){ const p=player, j=lifts.indexOf(p.onLift);
+  return {swim:p.swim,x:p.x,y:p.y,w:p.w,h:p.h,vx:p.vx,vy:p.vy,onGround:p.onGround,coyote:p.coyote,dropThrough:p.dropThrough,padT:p.padT||0,crouch:p.crouch,climb:p.climb,T:lvT,lift:j,lp:j>=0?[p.onLift.x,p.onLift.y]:null}; }
+// асансьорите в момента t от нивото (liftPos чете lvT)
+function botLifts(t){ const L0=lvT; lvT=t; const r=lifts.map(liftPos); lvT=L0; return r; }
+function botStep(s,q){ const dt=1/60, dir=q.dir||0; s.T+=dt; let LP=null;
+  if(lifts.length){ LP=botLifts(s.T); if(s.lift>=0){ const L=LP[s.lift]; moveX(s,L[0]-s.lp[0]); s.y+=L[1]-s.lp[1]; s.lp=L; } }
+  if(q.cr&&!s.crouch&&!s.climb){ s.crouch=true; s.y+=12; s.h=14; } else if(!q.cr&&s.crouch&&!rectSolid(s.x,s.y-12,s.w,26)){ s.crouch=false; s.y-=12; s.h=26; }
+  if(s.climb){ s.vx=0; s.vy=q.up?-90:q.dn?90:0; moveY(s,s.vy*dt); return; }   // стълбата — грубо
+  const slime=rectHas(s.x,s.y+s.h-6,s.w,6,'~'), max=(s.crouch?55:115)*(slime?0.5:1), acc=s.onGround?1500:900;
+  if(dir) s.vx+=clamp(dir*max-s.vx,-acc*dt,acc*dt); else { const fr=(s.onGround?1800:350)*dt; s.vx+=clamp(-s.vx,-fr,fr); }
+  if(Math.abs(s.vx)>max&&s.onGround) s.vx*=0.9;
+  if(q.jp&&(s.onGround||s.coyote>0)){ if(q.dn&&onOneWay(s)) s.dropThrough=0.25; else { s.vy=JUMP*(slime?0.8:1); s.onGround=false; s.coyote=0; } }
+  s.padT=Math.max(0,s.padT-dt); if(!(q.jh||q.jp)&&s.vy<-150&&!(s.padT>0)) s.vy+=(-150-s.vy)*0.35;
+  s.vy=Math.min(s.vy+G*dt,520); if(LVL.winds||GWIND) windForce(s,dt);   // вятърът — както mechRun('force')
+  moveX(s,s.vx*dt); moveY(s,s.vy*dt);
+  s.lift=-1; if(LP&&s.vy>=0&&!(s.dropThrough>0)) for(let j=0;j<LP.length;j++){ const [lx,ly]=LP[j], lw=lifts[j].w; if(s.x+s.w>lx+1&&s.x<lx+lw-1&&s.y+s.h>=ly-2&&s.y+s.h<=ly+10){ s.y=ly-s.h; s.vy=0; s.onGround=true; s.lift=j; s.lp=LP[j]; break; } }
+  if(s.onGround) s.coyote=0.08; else s.coyote-=dt;
+  s.dropThrough=Math.max(0,s.dropThrough-dt);
+  const cv=convAt(s); if(cv) moveX(s,cv*60*dt);
+  if(s.onGround&&onTile(s,'^')){ s.vy=-Math.sqrt(2*G*175); s.onGround=false; s.padT=0.9; } }
+// посока към x (лявият край на тялото) със спиране навреме
+function botSteer(s,tx,dz=1.5){ const dx=tx-s.x; if(Math.abs(dx)<dz) return 0; if(Math.sign(s.vx)===Math.sign(dx)&&s.vx*s.vx/(2*(s.onGround?1800:350))>=Math.abs(dx)) return 0; return Math.sign(dx); }
+// скок или падане към P[i0] (или по-нататък по пътя): разбег w кадъра в посока d0, скок, задържане h кадъра, насочване от st
+function botPlan(P,i0,air){ const m0=map; if(BOT.simMap) map=BOT.simMap; try{ return botPlan0(P,i0,air); } finally { map=m0; } }
+function botPlan0(P,i0,air){ const p=player, C=COLS, b=P[i0], tx=(b%C)*T+8-p.w/2, idx=new Map(), tw=Math.sign(tx-p.x)||p.face, S=[[tw,0,0,0]];
+  for(let i=i0;i<P.length;i++) idx.set(P[i],i);
+  if(!air) for(const w of [0,3,6,10,14,19,25]) for(const h of [24,12,6,18,3]) for(const st of [0,9]) for(const d0 of [tw,0]) S.push([d0,w,h,st]);
+  for(const [d0,w,h,st] of S){ const s=botS0(), inp=[], pos=[]; let air=false, ok=-1;
+    for(let i=0;i<160;i++){ let q; if(i<w) q={dir:d0}; else if(!h) q={dir:botSteer(s,tx)}; else { const j=i-w; q={dir:j<st?d0:botSteer(s,tx),jp:j===0,jh:j<h}; }
+      inp.push([q.dir,!!q.jp,!!q.jh]); botStep(s,q); pos.push(s.x,s.y);
+      if(s.y>ROWS*T||rectHas(s.x,s.y+s.h-6,s.w,6,'~')) break;
+      if(!s.onGround){ air=true; continue; }
+      if(!air){ if(h?i>=w:i>w+50) break; continue; }
+      const m=botNodeOf(s); if(m>=0&&idx.has(m)) ok=i; break; }
+    if(ok>=0) return {inp:inp.slice(0,ok+1),pos:pos.slice(0,2*ok+2),i:0,tx}; }
+  return null; }
+
+/* ---------- целта ---------- */
+const botVuln=()=>{ const H=BOSSES[boss.type].bot; return !(H&&H.vuln&&!H.vuln(boss)); };   // бос с щит — не е цел, но спира изстрела
+const botFoes=()=>{ const L=enemies.filter(e=>!e.dead&&e.y<ROWS*T&&!(BOT.ban.get(e)>lvT)); if(boss&&!boss.dead&&bossActive&&!(BOT.ban.get(boss)>lvT)&&botVuln()) L.push(boss); return L; };
+const botCxy=X=>[X.x+X.w/2,X===boss?X.y+X.h*0.45:X.y+X.h/2];
+// местата, откъдето изстрел (право, клекнал или нагоре) улучва X — {n, face, up, cr}
+function botSpots(X,R,e){ const m0=map; if(e!=null&&ERAD&&e!==ERA) map=ERAD.maps[e]; try{ const o=e!=null&&ERAD?e*BOT.N:botOff(), S=botSpots0(X,R,o); return S.length?S:botSpots0(X,R,o,true); } finally { map=m0; } }   // няма място отдалеч — и отблизо
+function botSpots0(X,R,o,close){ const V=BOT.g, C=COLS, d=BOT.d, [cx,cy]=botCxy(X), ex=Math.floor(cx/T), r=Math.ceil(R/T), out=[], melee=R<40;
+  const near=melee||close?0:X===boss?56:(FOES[X.type]||{}).fixed?0:44;
+  for(let x=Math.max(1,ex-r);x<=Math.min(C-2,ex+r);x++) for(let y=1;y<ROWS;y++){ const n=o+y*C+x, k=V.kind[n]; if(!k||d[n]>=1e9||(k===3&&botAcid(n))) continue;
+    const px=x*T+8, fy=y*T, face=cx>=px?1:-1; if(Math.abs(cx-px)<near&&Math.abs(cy-(fy-13))<44) continue;
+    if(!botSeen(X,botCam(px-8+3,face))) continue;   // оттам целта трябва да е в кадъра
+    if(melee){ if(Math.abs(cx-px)<X.w/2+20&&cy>fy-30&&cy<fy+4) out.push({n,face,up:0,cr:0}); continue; }
+    for(const [up,cr] of k===2?[[0,1]]:[[0,0],[0,1],[1,0]]){ const ox=px+face*(up?5:9), oy=fy-(cr?10:18)-(up?4:0), dx=cx-ox, dy=cy-oy; if(Math.hypot(dx,dy)>R) continue;
+      const base=up?(face>0?-Math.PI/4:-3*Math.PI/4):(face>0?0:Math.PI); if(Math.abs(angDiff(Math.atan2(dy,dx),base))>D.aim*0.8||!botRay(ox-3,oy,cx,cy)||!botRay(ox+3,oy,cx,cy)) continue;
+      out.push({n,face,up,cr}); break; } }
+  return out; }
+// видимото: целта е изцяло в кадъра — ботът стреля само по нея (избягва и невидимите); botCam — къде ще е камерата, ако героят
+// стои на x с лице face (както в update(): в арената на боса — заключена)
+const botSeen=(X,c=cam,m=8)=>X.x>=c+m&&X.x+X.w<=c+W-m&&X.y>=0&&X.y+X.h<=H;   // m — запас: камерата се движи
+const botCam=(px,face)=>bossActive&&boss&&LVL.arena.lock!==false?lockCam():clamp(px+5-W/2+face*36,0,COLS*T-W);
+// колона x от ред y0 до y1 без твърда плочка (през платформа '-' се скача отдолу)
+function botClear(x,y0,y1){ for(let y=Math.max(0,y0);y<=y1;y++) if(isS(x,y)) return false; return true; }
+// линията на изстрела — със стъпката на hitscan (3 px), не по-грубата на los
+function botRay(ox,oy,cx,cy){ const L=Math.hypot(cx-ox,cy-oy), dx=(cx-ox)/L, dy=(cy-oy)/L; for(let d=0;d<L-3;d+=3) if(solidAt(ox+dx*d,oy+dy*d)) return false; return true; }
+const botWant=k=>{ const p=player; if(k.taken||BOT.ban.get(k)>lvT) return false; if(k.type==='air') return p.air<60;
+  if(k.respawn) return k.type==='health'?p.hp<50:k.type==='ammo'?botAmmo()<0.3:false;   // появява се отново — само при нужда
+  if(k.type==='health') return p.hp<100; if(k.type==='battery') return p.armor<100; if(k.type==='rockets') return p.ammo.rocket.mag<CAP.rocket; return true; };
+function botGoal(){ const p=player, V=BOT.g, C=COLS, d=BOT.d, col=BOT.col, cand=[], cm=x=>{ let m=1e9; for(let i=Math.max(0,x-3);i<=Math.min(C-1,x+3);i++) m=Math.min(m,col[i]); return m; };
+  if(p.air!=null&&BOT.free){ if(p.headWet&&p.air<45) BOT.airing=true; else if(p.air>=95||!p.swim) BOT.airing=false; }
+  if(BOT.airing&&BOT.free){ let m=-1; const N=V.kind.length;   // въздухът свършва — към повърхността
+    for(let n=2*C;n<N;n++) if(d[n]<1e9&&(V.kind[n]&&!BOT.free[n-C]&&!BOT.free[n-2*C]||BOT.free[n]&&!BOT.free[n-C]&&!SOLID.has(tileAt(n%C,botY(n)-1))&&tileAt(n%C,botY(n)-1)!=='w')&&(m<0||d[n]<d[m])) m=n; if(m>=0) return {t:'air',n:m}; }
+  if(CHASE&&!CHASE.done){ let m=-1; const N=V.kind.length, ex=LVL.chase.end+1;   // гонитба: само напред (враговете — по пътя)
+    for(let n=0;n<N;n++) if(V.kind[n]&&d[n]<1e9&&(n%C>=ex?m<0||m%C<ex||d[n]<d[m]:m<0||m%C<ex&&n%C>m%C)) m=n; if(m>=0) return {t:'run',n:m}; }
+  const exX=LVL.exit&&LVL.exit<C?Math.floor(LVL.exit):C-3; let open=!!exitPortal; for(let n=0;n<d.length&&!open;n++) if(d[n]<1e9&&n%C>=exX) open=true;
+  if(LVL.needHeal&&sleepersLeft()>0) open=false;   // изходът чака да събудиш всички
+  const R=botRange()*0.85, foes=botFoes(), ammo=botAmmo(), back=(x,foe)=>(open||!foe)&&x<BOT.maxX-W;   // назад — най-много един екран от най-далечното място (враг — и по-назад, ако изходът е затворен)
+  for(const X of foes){ if(X!==boss&&back(X.x+X.w,1)) continue; const [cx]=botCxy(X); cand.push({X,a:cm(Math.floor(cx/T))-(X.alert&&Math.abs(cx-p.x)<300?15:0)}); }
+  if(ERAD) for(const X of ERAD.enem[1-ERA]) if(!X.dead&&X.y<ROWS*T&&!(BOT.ban.get(X)>lvT)&&!back(X.x+X.w,1)) cand.push({X,e:1-ERA,a:cm(Math.floor((X.x+X.w/2)/T))+20});   // враговете от другата епоха
+  for(const k of pickups) if(botWant(k)&&!back(k.x+k.w)){ const b=(k.type==='health'?(p.hp<35?-60:p.hp<60?-25:0):k.type==='ammo'&&ammo<0.25?-20:0); cand.push({k,a:cm(Math.floor((k.x+6)/T))+b,b}); }
+  const tasks=botTasks(); for(const q of tasks) if(!(BOT.ban.get(q.ref)>lvT)&&!(q.x!=null&&back(q.x+8,1))){ if(!q.any) cand.push({q,a:cm(Math.floor(q.x/T))-10}); else {   // где да е: най-близкото място, откъдето може
+      if(!(q.key==='era'&&ERAD)) return {t:'task',q,n:BOT.src,v:0};   // тук и сега; смяна на епохата — откъдето може
+      const o=botOff(), N=C*ROWS; let m=-1; for(let n=o;n<o+N;n++) if(d[n]<1e9&&V.kind[n]&&(V.adj[n]||[]).some(b=>(b/N|0)!==(n/N|0))&&(m<0||d[n]<d[m])) m=n; if(m>=0) return {t:'task',q,n:m,v:0}; } }
+  cand.sort((u,v)=>u.a-v.a);
+  let best=null;
+  for(const c of cand.slice(0,6)){
+    if(c.X){ const S=botSpots(c.X,R,c.e); let m=null; for(const s of S) if(!m||d[s.n]<d[m.n]) m=s; if(!m){ if(c.a<1e8) BOT.ban.set(c.X,lvT+4); continue; }
+      const v=d[m.n]+(c.X.alert?-15:0); if(!best||v<best.v) best={t:'foe',X:c.X,n:m.n,s:m,v}; }
+    else if(c.q){ const q=c.q, tx=Math.floor(q.x/T), ty=Math.round(q.fy/T); let m=-1;   // задача: да стои там и да натисне клавиша
+      for(let o=0;o<V.kind.length;o+=C*ROWS) for(let x=tx-1;x<=tx+1;x++){ const n=o+ty*C+x; if(x<0||x>=C||!V.kind[n]||d[n]>=1e9||Math.abs(x*T+8-q.x)>12) continue; if(m<0||d[n]<d[m]) m=n; }
+      if(m<0){ BOT.ban.set(q.ref,lvT+3); continue; } const v=d[m]-10; if(!best||v<best.v) best={t:'task',q,X:null,k:null,n:m,v}; }
+    else { const k=c.k, tx=Math.floor((k.x+6)/T); let m=-1, jump=false;
+      for(let o=0;o<V.kind.length;o+=C*ROWS) for(let x=tx-1;x<=tx+1;x++) for(let y=1;y<ROWS;y++){ const n=o+y*C+x; if(x<0||x>=C||!V.kind[n]||d[n]>=1e9) continue; const fy=y*T, ov0=fy>k.y+1&&fy-26<k.y+k.h-1&&Math.abs(x*T+8-(k.x+6))<12, jp=!ov0&&fy>k.y&&fy-26-62<k.y+k.h&&Math.abs(x*T+8-(k.x+6))<10&&botClear(x,Math.floor(k.y/T),y-2)&&botClear(Math.floor((k.x+6)/T),Math.floor(k.y/T),y-2);   // скок до предмета — без таван между
+        if((ov0||jp)&&(m<0||d[n]+(jp?4:0)<d[m]+(jump?4:0))){ m=n; jump=jp; } }
+      if(BOT.free) for(let o=0;o<V.kind.length;o+=C*ROWS) for(let x=tx-1;x<=tx+1;x++) for(let y=Math.floor(k.y/T)-1;y<=Math.floor(k.y/T)+1;y++){ const n=o+y*C+x; if(x<0||x>=C||y<0||y>=ROWS||!BOT.free[n]||d[n]>=1e9) continue; if(Math.abs(x*T+8-(k.x+6))<12&&(m<0||d[n]<d[m])){ m=n; jump=false; } }
+      if(m<0){ BOT.ban.set(k,lvT+6); continue; } const v=d[m]+(jump?4:0)+c.b; if(!best||v<best.v) best={t:'item',k,n:m,jump,v}; } }
+  if(!best&&boss&&!boss.dead&&bossActive){ let m=null; for(const s of botSpots(boss,R)) if(d[s.n]<1e9&&(!m||d[s.n]<d[m.n])) m=s; if(m) best={t:'foe',X:boss,n:m.n,s:m,v:0}; }   // босът с щит — чакай на място за стрелба
+  if(best) return best;
+  // изход: портал, колоната на изхода или най-вдясно (там е и арената на боса)
+  let m=-1; const N=V.kind.length;
+  if(exitPortal){ for(let n=0;n<N;n++) if(V.kind[n]&&d[n]<1e9&&Math.abs((n%C)*T+8-exitPortal.x)<12&&Math.abs(botY(n)*T-13-exitPortal.y)<20&&(m<0||d[n]<d[m])) m=n; if(m>=0) return {t:'portal',n:m}; }
+  const ex=LVL.exit&&LVL.exit<C?Math.floor(LVL.exit):-1;
+  for(let n=0;n<N;n++) if(V.kind[n]&&d[n]<1e9&&(ex>=0?n%C>=ex&&(m<0||d[n]<d[m]):(m<0||n%C>m%C))) m=n;
+  if(m>=0) return {t:'exit',n:m};
+  // изходът е зад врата: първо неизпълнените тригери (сражение, което я отваря), после най-вдясно
+  for(const tr of triggers.filter(t=>!t.done&&(!t.cond||t.cond())).sort((a,b)=>a.x-b.x)){ for(let n=0;n<N;n++) if(V.kind[n]&&d[n]<1e9&&n%C>tr.x&&(m<0||d[n]<d[m])) m=n; if(m>=0) return {t:'trig',n:m}; }
+  for(let n=0;n<N;n++) if(V.kind[n]&&d[n]<1e9&&(m<0||n%C>m%C)) m=n;
+  return m>=0?{t:'far',n:m}:null; }
+
+/* ---------- бой ---------- */
+const botHas=w=>player.weapons[w]&&WEAPONS[w]&&(WEAPONS[w].kind==='melee'||hasAmmo(w));
+function botAmmo(){ const p=player; let a=0; for(const w of ['pistol','pulse','shotgun']) if(p.weapons[w]) a+=(p.ammo[w].mag+p.ammo[w].res)/(CAP[w]+RES_MAX[w]); return a; }
+function botRange(){ let r=0; for(const w of ['pistol','pulse','shotgun','rocket']) if(botHas(w)) r=Math.max(r,BOT_RNG[w]); return r||BOT_RNG.wrench; }
+function botWeap(X,dist){ const big=X&&(X===boss||X.hp>=150), has=botHas; if(!X) dist=200;
+  if(big&&has('rocket')&&dist>110&&dist<440) return 'rocket';
+  if(X&&dist<130&&has('shotgun')) return 'shotgun';
+  for(const w of ['pulse','pistol','shotgun']) if(has(w)&&dist<BOT_RNG[w]) return w;
+  if(has('rocket')&&dist>110) return 'rocket';
+  return has('pistol')?'pistol':'wrench'; }
+// кого улучва изстрел оттук в посока face (up — нагоре, cr — клекнал): като autoAim + hitscan, без последици
+function botTrace(face,up,cr){ const t=botTrace0(face,up,cr); return t&&botSeen(t.w?t:{x:t.x-3,y:t.y-3,w:6,h:6})?t:null; }   // само по видимото
+function botTrace0(face,up,cr){ const p=player, w=p.cur, G0=WEAPONS[w], feet=p.y+p.h;
+  if(G0.kind==='melee'){ const hb={x:face>0?p.x+p.w:p.x-20,y:feet-26,w:20,h:26}; for(const e of enemies) if(!e.dead&&ov(hb,e)) return e; return boss&&!boss.dead&&ov(hb,boss)?boss:null; }
+  if(w==='grenade') return null;
+  const R=BOT_RNG[w]||400, ox=p.x+p.w/2+face*(up?5:9), oy=feet-(cr?10:18)-(up?4:0), base=up?(face>0?-Math.PI/4:-3*Math.PI/4):(face>0?0:Math.PI);
+  const a=autoAim(ox,oy,base,R), dx=Math.cos(a), dy=Math.sin(a), L=enemies.filter(e=>!e.dead&&Math.abs(e.x-ox)<R+20), B=barrels.filter(b=>!b.dead&&Math.abs(b.x-ox)<R+20);
+  for(let d=0;d<R;d+=3){ const x=ox+dx*d, y=oy+dy*d; if(solidAt(x,y)) return null;
+    for(const e of L) if(x>=e.x&&x<=e.x+e.w&&y>=e.y&&y<=e.y+e.h) return e.fq!=null&&LVL.freq&&e.fq!==FREQ?null:e;
+    for(const b of B) if(x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h) return d<100?null:b;
+    for(const m of bmiss) if(!m.dead&&Math.abs(x-m.x)<5&&Math.abs(y-m.y)<5) return m;
+    if(boss&&!boss.dead&&x>=boss.x+4&&x<=boss.x+boss.w-4&&y>=boss.y&&y<=boss.y+boss.h) return botVuln()?boss:null; }
+  return null; }
+const botLadder=()=>{ const p=player; return ladderAt(p.x+p.w/2,p.y+p.h-2); };
+// оръжие и стрелба; при враг на мушка героят спира (ако може — клекнал) и стреля
+function botFight(mv){ const p=player; if(p.climb) return mv;
+  const G0=BOT.goal, X=G0&&G0.t==='foe'?G0.X:null, dist=X?Math.hypot(botCxy(X)[0]-p.x-5,botCxy(X)[1]-p.y-13):999;
+  BOT.wT-=1/60;
+  if(BOT.wT<=0&&!BOT.prog){ let near=X, nd=dist; for(const e of botFoes()){ const dd=Math.hypot(e.x+e.w/2-p.x-5,e.y+e.h/2-p.y-13); if(e.alert&&dd<nd){ near=e; nd=dd; } }
+    const w=botWeap(near,nd); if(w!==p.cur&&p.weapons[w]&&(p.reload<=0||nd<200)){ mv.wk='w'+(ORDER.indexOf(w)+1); BOT.wT=0.8; } }
+  if(p.cur==='grenade'||(BOT.prog&&(p.cur==='shotgun'||p.cur==='rocket'))) return mv;   // отката разваля скока
+  const up=!!mv.up&&!botLadder(), hostile=t=>t&&t!=='barrel'&&!barrels.includes(t);
+  let t=botTrace(p.face,up,p.crouch);
+  if(hostile(t)){ mv.fire=true; botShotT(t); }
+  if(p.swim){ if(!hostile(t)&&!(BOT.goal&&BOT.goal.t==='air')&&hostile(botTrace(-p.face,0,0))) mv.dir=-p.face; return mv; }   // във водата — само обръщане
+  if(BOT.prog||!p.onGround||CHASE&&!CHASE.done) return mv;   // в гонитба не спира
+  // друга стойка или посока: спира и стреля
+  const opts=[[p.face,0,1],[p.face,0,0],[p.face,1,0],[-p.face,0,1],[-p.face,0,0],[-p.face,1,0]];
+  for(const [f,u,c] of opts){ if(u&&botLadder()) continue;
+    const tt=f===p.face&&!!u===up&&!!c===p.crouch?t:botTrace(f,u,c); if(!hostile(tt)) continue;
+    const imp=tt.alert||tt===boss||tt===X||Math.abs(tt.x-p.x)<260; if(!imp) continue;
+    if(BOT.ban.get(tt)>lvT) continue;
+    return {dir:f!==p.face?f:0,up:u,cr:c,fire:f===p.face&&!!u===up&&!!c===p.crouch,wk:mv.wk,pol:()=>({dir:0,cr:c,up:u})}; }
+  return mv; }
+// стрелба по t: ако здравето му не пада 5 s — не се улучва (честота, неуязвимост): настрана за малко
+function botShotT(t){ if(t!==BOT.shot){ BOT.shot=t; BOT.shotHp=t.hp; BOT.shotT=lvT; return; } if(t.hp<BOT.shotHp-0.5){ BOT.shotHp=t.hp; BOT.shotT=lvT; BOT.progT=lvT; } else if(lvT-BOT.shotT>5){ BOT.ban.set(t,lvT+(t===boss?2:8)); BOT.shot=null; } }
+
+/* ---------- изпълнение на пътя ---------- */
+const BOT_0={dir:0};
+function botWalk(tx,cr){ const p=player; return {dir:botSteer(p,tx,2),cr,pol:(i,s)=>({dir:botSteer(s,tx,2),cr})}; }
+function botMove(n){ const p=player, V=BOT.g, C=COLS, P=BOT.path;
+  if(BOT.prog){ const g=BOT.prog, i=g.i;
+    if(i>0&&(Math.abs(p.x-g.pos[2*i-2])>1.5||Math.abs(p.y-g.pos[2*i-1])>1.5)){ BOT.air=g.tx; BOT.prog=null; }
+    else if(i<g.inp.length){ g.i++; const [dir,jp,jh]=g.inp[i]; return {dir,jp,jh,pol:(k,s)=>{ const q=g.inp[i+k]; return q?{dir:q[0],jp:q[1],jh:q[2]}:{dir:botSteer(s,g.tx)}; }}; }
+    else BOT.prog=null; }
+  if(p.climb){ const b=P[1]; return b!=null&&botY(b)*T<p.y+p.h-1?{up:1}:{dn:1}; }
+  if(BOT.wind&&(n>=0&&BOT.wind[n]||P.length>1&&P[0]===n&&BOT.wind[P[1]])){ let j=Math.max(0,P.indexOf(n))+1; while(j<P.length-1&&BOT.wind[P[j]]) j++; j=Math.min(j,P.length-1);   // течението: към първото място след него
+    const tx=(P[j]%C)*T+8-p.w/2; return {dir:Math.abs(tx-p.x)>3?Math.sign(tx-p.x):0,jh:!p.onGround}; }
+  if(BOT.free&&(p.swim||P.length>1&&P[0]===n&&BOT.free[P[1]])) return botSwim(n);
+  if(p.onLift){ const l=p.onLift, b=P[1];   // на асансьора: в средата, докато стигне следващото място
+    if(n<0||P[0]!==n||b==null||V.virt[b]&&!(botY(b)===botY(n)&&Math.abs(b%C-n%C)===1)) return botWalk(l.x+l.w/2-p.w/2); }
+  const pad=n>=0&&p.padT>0.8;   // батутът: тъкмо отскочил — като от земята (насочване във въздуха към следващото място)
+  if(!p.onGround&&!pad){ if(P.length>1&&lvT-(BOT.airT||0)>0.15){ BOT.airT=lvT; const g=botPlan(P,1,true); if(g){ BOT.prog=g; g.i=1; const [dir,jp,jh]=g.inp[0]; return {dir,jp,jh}; } }
+    const tx=BOT.air; return tx==null?BOT_0:{dir:botSteer(p,tx),jh:p.vy<0,pol:(i,s)=>({dir:botSteer(s,tx)})}; }
+  BOT.air=null;
+  if(n<0||!P.length||P[0]!==n) return BOT_0;
+  if(P.length<2) return botArrive();
+  if(BOT.N&&botLay(P[0])!==botLay(P[1])) return {era:1};   // смяна на епохата
+  if(LVL.tone&&SOLID.has('t')){ const ax=P[0]%C, ay=botY(P[0]), bx=P[1]%C, by=botY(P[1]);   // тонова врата по пътя — тон (E) и чакай
+    for(let x=Math.min(ax,bx);x<=Math.max(ax,bx);x++) for(let y=Math.max(0,Math.min(ay,by)-2);y<Math.max(ay,by);y++) if(map[y][x]==='t') return {era:1}; }
+  if(BOT.tele.has(P[0]*1e5+P[1])){ const tx=(P[0]%C)*T+8-p.w/2; return Math.abs(p.x-tx)>2?botWalk(tx):{era:1}; }   // телепорт
+  const a=P[0], b=P[1], ax=a%C, ay=botY(a), bx=b%C, by=botY(b);
+  if(V.virt[b]&&!V.virt[a]){ const l=lifts.find(l=>Math.abs(l.y-by*T)<1.5&&bx*T>=l.x-1&&bx*T<l.x+l.w-1); if(!l) return BOT_0; }   // асансьорът още не е тук
+  if(V.virt[a]&&V.virt[b]&&!(by===ay&&Math.abs(bx-ax)===1)) return p.onLift?botWalk(p.onLift.x+p.onLift.w/2-p.w/2):BOT_0;
+  if(by===ay&&Math.abs(bx-ax)===1){ let j=1, cr=V.kind[a]===2||V.kind[b]===2;
+    while(j+1<P.length){ const q=P[j+1]; if(botY(q)===ay&&Math.abs(q%C-P[j]%C)===1&&!V.virt[q]){ j++; if(V.kind[q]===2) cr=true; } else break; }
+    const t=P[j]; return botWalk(j===P.length-1?botGoalX(t):(t%C)*T+8-p.w/2,cr); }
+  const lx=ax*T+8-p.w/2;
+  if(bx===ax&&by<ay&&tileAt(ax,ay-1)==='H') return Math.abs(p.x-lx)>3?botWalk(lx):{up:1};   // стълба нагоре
+  if(bx===ax&&by>ay&&(tileAt(ax,ay)==='-'||tileAt(ax,ay)==='H')) return Math.abs(p.x-lx)>2?botWalk(lx):tileAt(ax,ay)==='H'?{dn:1}:{dn:1,jp:1,jh:1};   // надолу
+  const g=botPlan(P,1); if(g){ BOT.prog=g; g.i=1; const [dir,jp,jh]=g.inp[0]; return {dir,jp,jh,pol:(k,s)=>{ const q=g.inp[k]; return q?{dir:q[0],jp:q[1],jh:q[2]}:{dir:botSteer(s,g.tx)}; }}; }
+  BOT.bad.add(a*1e5+b); BOT.re=0; return BOT_0; }
+// във водата (и в безтегловност): към центъра на следващата клетка; на повърхността — скок към брега
+function botSwim(n){ const p=player, C=COLS, P=BOT.path, F=BOT.free, cx=p.x+p.w/2, cy=p.y+p.h/2;
+  let i=P.indexOf(n); if(i<0) i=0; const b=P[Math.min(i+1,P.length-1)]; if(b==null) return BOT_0;
+  const bx=b%C, by=botY(b), g=BOT.goal;
+  if(F[b]||!p.swim){ let tx=bx*T+8, ty=by*T+8; if(b===P[P.length-1]&&g&&g.t==='item'){ tx=g.k.x+6; ty=g.k.y+5; }
+    for(const x of [bx,Math.floor(cx/T)]){ let r=by; while(r>=0&&!isS(x,r)) r--; let f=by; while(f<ROWS&&!isS(x,f)) f++; ty=clamp(ty,(r+1)*T+14,f*T-14); }   // тялото (26 px) да се побере
+    if(!p.swim) return Math.abs(tx-cx)>3?botWalk(tx-p.w/2):(ty<p.y?{jp:1,jh:1}:{dn:1});
+    return {dir:Math.abs(tx-cx)>3?Math.sign(tx-cx):0,up:ty<cy-3,dn:ty>cy+3}; }
+  const tx=bx*T+8, top=by*T, surf=!isWater(cx,p.y-8);   // мястото на брега
+  if(surf&&Math.abs(tx-cx)<3.5*T&&top<=p.y+p.h+4){ BOT.air=tx-p.w/2; return {dir:Math.sign(tx-cx),jp:1,jh:1}; }
+  return {dir:Math.abs(tx-cx)>3?Math.sign(tx-cx):0,up:top<p.y+p.h-2,dn:top>p.y+p.h+2}; }
+// на крайното място: точният x за целта
+function botGoalX(n){ const p=player, g=BOT.goal, x=(n%COLS)*T+8-p.w/2; if(!g) return x;
+  if(g.t==='item') return clamp(g.k.x+6-p.w/2,x-6,x+6); if(g.t==='portal') return clamp(exitPortal.x-p.w/2,x-6,x+6); return x; }
+function botArrive(){ const p=player, g=BOT.goal; if(!g) return BOT_0;
+  if(g.t==='foe'){ const s=g.s, tx=(g.n%COLS)*T+8-p.w/2; if(Math.abs(p.x-tx)>2.5) return botWalk(tx,s.cr); return {dir:s.face!==p.face?s.face:0,up:s.up,cr:s.cr,pol:()=>({dir:0,cr:s.cr})}; }
+  if(g.t==='item'){ const tx=g.k.x+6-p.w/2; if(g.jump&&Math.abs(p.x-tx)<3){ if(p.onGround){ const k=g.k; k.botJ=(k.botJ||0)+1; if(k.botJ>2){ BOT.ban.set(k,lvT+30); BOT.re=0; return BOT_0; } }   // два неуспешни скока — стига
+      return {jp:1,jh:1,pol:(i,s)=>({jp:i===0,jh:i<24,dir:botSteer(s,tx)})}; } return botWalk(tx); }
+  if(g.t==='task'&&g.q.any) return g.q.key==='up'?{up:1}:{era:1};
+  if(g.t==='task'){ const q=g.q, tx=q.x-p.w/2; if(Math.abs(p.x-tx)>2.5) return botWalk(tx); if(q.key==='rec') return {era:ECHO.mode!=='rec'||ECHO.t>0.35};   // ехо: изчисти, запиши миг стоене, пусни
+    return q.key==='up'?{up:q.hold?1:!keys.up}:{era:1}; }
+  if(g.t==='portal'){ const tx=exitPortal.x-p.w/2; return Math.abs(p.x-tx)<3&&exitPortal.y<p.y?{jp:1,jh:1}:botWalk(tx); }
+  return {dir:LVL.exit&&LVL.exit*T<p.x?0:1}; }
+
+// честотите: тонът на платформата под краката (не я сменяй), на следващото място и стените по пътя; врагът — в своя тон
+function botFreq(mv){ if(!LVL.freq||ERAD||!BOT.g) return mv; const p=player, n=LVL.freqN||3, C=COLS, P=BOT.path, dig=(x,y)=>{ const c=tileAt(x,y); return c==='1'||c==='2'||c==='3'?+c-1:-1; };
+  const fy=Math.floor((p.y+p.h+1)/T), x0=Math.floor(p.x/T), x1=Math.floor((p.x+p.w-0.01)/T); let need=-1, on=false;
+  if(p.onGround) for(let x=x0;x<=x1;x++){ const d=dig(x,fy); if(d>=0){ need=d; on=true; } }
+  if(!on){ const b=P.length>1?P[1]:P[0]; if(b!=null){ const d=dig(b%C,botY(b)); if(d>=0) need=d; } }
+  if(need<0){ const dir=mv.dir||(p.vx>20?1:p.vx<-20?-1:0); if(dir){ const wx=Math.floor((dir>0?p.x+p.w+3:p.x-3)/T); for(let y=Math.floor(p.y/T);y<=Math.floor((p.y+p.h-1)/T);y++) if(dig(wx,y)===FREQ) need=(FREQ+1)%n; } }
+  const g=BOT.goal; if(need<0&&g&&g.t==='foe'&&g.X.fq!=null&&P.length<=1) need=g.X.fq;
+  if(need>=0&&need!==FREQ&&!on) mv.era=1;
+  return mv; }
+/* ---------- защита: прогноза на опасностите и избор на маневра ---------- */
+function botThreats(){ const L=[], p=player, Fz=chtOn('freeze');
+  if(!Fz){ for(const b of ebullets){ if(b.fq!=null&&b.fq===FREQ) continue; L.push({k:0,x:b.x,y:b.y,vx:b.vx,vy:b.vy,g:!!b.grav,h:!!b.hornet,r:b.r||0,d:b.dmg||7,life:b.life}); }
+    for(const o of orbs) L.push({k:1,x:o.x,y:o.y,vx:o.vx,r:o.r,d:12,life:o.life});
+    for(const m of bmiss) if(!m.dead) L.push({k:3,x:m.x,y:m.y,vx:m.vx,vy:m.vy,t:m.t,life:m.life,d:15}); }
+  for(const g of grenades) L.push({k:2,x:g.x,y:g.y,vx:g.vx,vy:g.vy,t:g.t,imp:!!g.impact,R:g.impact?56:66,d:g.impact?55:g.own?100:70});
+  for(const b of barrels) if(!b.dead&&b.fuse>=0) L.push({k:4,x:b.x+6,y:b.y+8,t:b.fuse,R:74,d:90});
+  for(const e of enemies){ if(e.dead||Math.abs(e.x-p.x)>300||Math.abs(e.y-p.y)>240) continue; const F=FOES[e.type], H=F.bot;
+    if(H&&H.threats&&!Fz) for(const o of H.threats(e)||[]) L.push({k:9,...o});
+    if(F.fixed||(H&&H.contact===false)||Fz||e.stunT>0) continue;
+    L.push({k:6,x:e.x-3,y:e.y,w:e.w+6,h:e.h,vx:e.vx,vy:e.vy,g:!F.fly&&!e.onGround,d:10}); }
+  if(boss&&!boss.dead&&!Fz){ const H=BOSSES[boss.type].bot; if(H&&H.threats) for(const o of H.threats(boss)||[]) L.push({k:9,...o});
+    if(!(H&&H.contact===false)) L.push({k:6,x:boss.x+4,y:boss.y+4,w:boss.w-8,h:boss.h-8,vx:boss.vx||0,vy:boss.vy||0,g:false,d:20}); }
+  for(const t of trains) L.push({k:7,x:t.x,dir:t.dir,sp:trainSpd()*(t.tr.fast?1.2:1),tr:t.tr,d:55});
+  for(const tr of tracks) if(tr.t<1&&!chtOn('traps')&&player.x>(tr.x0-16)*T&&player.x<(tr.x1+16)*T) L.push({k:7,x:tr.dir>0?tr.x0*T-TL:(tr.x1+1)*T,dir:tr.dir,sp:trainSpd()*(tr.fast?1.2:1),tr,t0:tr.t,d:55});
+  return L; }
+// траекториите, които не зависят от героя (изстрели без насочване, гранати, бъчви, враговете, влаковете) — веднъж за кадъра
+function botTraj(th){ const dt=1/60, ef=dt*foeTime;
+  for(const o of th){ if(o.k===3||o.k===9||(o.k===0&&o.h)) continue; const P=o.P=new Float32Array(BOT_K*2); o.end=BOT_K; let x=o.x, y=o.y, vx=o.vx, vy=o.vy||0, t=o.t, life=o.life;
+    for(let i=0;i<BOT_K;i++){
+      if(o.k<=1){ if(o.g) vy+=G*ef; x+=vx*ef; y+=vy*ef; life-=ef; if(life<=0||solidAt(x,y)){ o.end=i; break; } }
+      else if(o.k===2){ vy+=G*dt; const nx=x+vx*dt; if(solidAt(nx,y)) vx*=-0.45; else x=nx; const ny=y+vy*dt; if(solidAt(x,ny)){ if(o.imp) t=0; vy*=-0.4; vx*=0.7; } else y=ny; t-=dt; if(t<=0){ o.end=i; o.ex=x; o.ey=y; break; } }
+      else if(o.k===4){ t-=dt; if(t<=0){ o.end=i; o.ex=x; o.ey=y; break; } }
+      else if(o.k===6){ if(o.g) vy=Math.min(vy+G*ef,520); x+=vx*ef; y+=vy*ef; if(o.g&&rectSolid(x+3,y,o.w-6,o.h)){ y-=vy*ef; vy=0; } }
+      else if(o.k===7){ const tt=(i+1)*dt; if(o.t0!=null&&tt<o.t0){ x=y=-1; } else { const xx=o.x+o.dir*o.sp*(tt-(o.t0||0)); x=Math.max(xx,o.tr.x0*T); y=Math.min(xx+TL,(o.tr.x1+1)*T); } }
+      P[2*i]=x; P[2*i+1]=y; } } }
+// щетата по героя за BOT_K кадъра при поведение pol(i,s) → вход
+function botRisk(pol,th){ const m0=map; if(BOT.simMap) map=BOT.simMap; try{ return botRisk0(pol,th); } finally { map=m0; } }
+function botRisk0(pol,th){ BOT.endX=null; const s=botS0(), dt=1/60, ef=dt*foeTime, L0=lvT, H=th.filter(o=>!o.P).map(o=>({...o})), dead=new Uint8Array(th.length); let dmg=0, cont=0, shf=0;
+  const box=(x,y,w,h)=>s.x<x+w&&s.x+s.w>x&&s.y<y+h&&s.y+s.h>y, haz=lasers.length||vents.length||crushers.length||zTiles.length;
+  try{
+  for(let i=0;i<BOT_K;i++){ botStep(s,pol(i,s)); const t=(i+1)*dt, wt=1-i/(BOT_K*2), cx=s.x+s.w/2, cy=s.y+s.h/2;
+    if(s.y>ROWS*T) return dmg+1000;
+    if(BOT.free&&isWater(s.x+s.w/2,s.y+s.h*0.8)) break;   // във водата се плува — симулацията спира
+    for(let j=0;j<th.length;j++){ const o=th[j], P=o.P; if(!P||dead[j]) continue; let hit=false;
+      if(i>=o.end){ dead[j]=1; if(i===o.end&&o.ex!=null){ const dd=Math.hypot(cx-o.ex,cy-o.ey); if(dd<o.R+6) dmg+=(o.d*(1-dd/(o.R+6))+12)*wt; } continue; }
+      const x=P[2*i], y=P[2*i+1];
+      if(o.k<=1){ const nx=clamp(x,s.x,s.x+s.w), ny=clamp(y,s.y,s.y+s.h); hit=Math.hypot(nx-x,ny-y)<=o.r+2; }
+      else if(o.k===6) hit=box(x,y,o.w,o.h);
+      else if(o.k===7) hit=y>x&&box(x,13*T+2,y-x,2*T-2);
+      if(hit){ dmg+=o.d*wt; dead[j]=1; } }
+    for(const o of H){ if(o.dead) continue; let hit=false;
+      if(o.k===0){ const sp=Math.hypot(o.vx,o.vy), cur=Math.atan2(o.vy,o.vx), tg=Math.atan2(cy-o.y,cx-o.x), na=cur+clamp(angDiff(tg,cur),-D.hTurn*dt,D.hTurn*dt); o.vx=Math.cos(na)*sp; o.vy=Math.sin(na)*sp;   // насочващ се
+        if(o.g) o.vy+=G*ef; o.x+=o.vx*ef; o.y+=o.vy*ef; o.life-=ef; if(o.life<=0||solidAt(o.x,o.y)){ o.dead=1; continue; }
+        const nx=clamp(o.x,s.x,s.x+s.w), ny=clamp(o.y,s.y,s.y+s.h); hit=Math.hypot(nx-o.x,ny-o.y)<=o.r+2; }
+      else if(o.k===3){ o.t+=ef; o.life-=ef; const sp=Math.hypot(o.vx,o.vy); if(o.t>0.5){ const cur=Math.atan2(o.vy,o.vx), na=cur+clamp(angDiff(Math.atan2(cy-o.y,cx-o.x),cur),-D.mTurn*ef,D.mTurn*ef), ns=Math.min(D.mSpd,sp+60*ef); o.vx=Math.cos(na)*ns; o.vy=Math.sin(na)*ns; }
+        o.x+=o.vx*ef; o.y+=o.vy*ef; if(o.life<=0||(o.t>0.3&&solidAt(o.x,o.y))){ o.dead=1; continue; } hit=o.x>s.x-5&&o.x<s.x+s.w+5&&o.y>s.y-5&&o.y<s.y+s.h+5; }
+      else if(o.k===9) hit=o.hit(s,t);
+      if(hit){ dmg+=o.d*wt; o.dead=1; } }
+    if(haz){ lvT=L0+t;   // капаните — по формулите им, с времето на нивото след t
+      for(const l of lasers) if(!l.botH&&lzState(l)===2&&box(l.tx*T+5,l.r0*T,6,(l.r1-l.r0+1)*T)){ dmg+=20*wt; l.botH=1; }
+      for(const v of vents) if(vtState(v)===2&&box(v.tx*T+1,15*T-75,14,75)) cont+=8/15;
+      for(const c of crushers){ const r=crRect(c); if(!c.botH&&r.pos>0.2&&box(r.x-1,r.y-2,r.w+2,r.h+2)){ dmg+=60*wt; c.botH=1; } }
+      if(s.onGround&&elecOn()&&onTile(s,'Z')) cont+=8/12;
+      lvT=L0; }
+    if(rectHas(s.x,s.y+s.h-6,s.w,6,'~')) cont+=9/15*3;
+    if(!shf&&SHIFT.length&&s.onGround&&botShiftGone(s,t)){ shf=1; dmg+=300*wt; } }
+  } finally { lvT=L0; for(const l of lasers) l.botH=0; for(const c of crushers) c.botH=0; }
+  for(let i=BOT_K;i<BOT_K+90&&!s.onGround&&!s.climb&&!(BOT.free&&isWater(s.x+s.w/2,s.y+s.h*0.8));i++){ botStep(s,pol(i,s)); if(s.y>ROWS*T) return dmg+500; }   // във въздуха: докъде пада
+  BOT.endX=s.x; return dmg+cont*D.haz; }
+// подвижните зали (SHIFT): след s.left секунди сегашните им правоъгълници изчезват — стои ли s на такъв след t
+const botInR=(R,x,y)=>R.some(([x0,y0,x1,y1])=>x>=x0&&x<=x1&&y>=y0&&y<=y1);
+function botShiftGone(s,t){ const fy=Math.floor((s.y+s.h+1)/T), x0=Math.floor(s.x/T), x1=Math.floor((s.x+s.w-0.01)/T);
+  for(const q of SHIFT){ if(q.st<0||!(q.left<t)) continue; const R=q.st?q.b:q.a; let all=true; for(let x=x0;x<=x1;x++) if(SOLID.has(tileAt(x,fy))&&!botInR(R,x,fy)) all=false; if(all&&botInR(R,x0,fy)||all&&botInR(R,x1,fy)) return true; }
+  return false; }
+// има ли наблизо капан или киселина (иначе без изстрели няма какво да се предвижда)
+function botHazNear(){ const p=player, cx=Math.floor((p.x+5)/T), near=x=>Math.abs(x-p.x)<360;
+  if(SHIFT.length||lasers.some(l=>near(l.tx*T))||vents.some(v=>near(v.tx*T))||crushers.some(c=>near(c.tx*T))||zTiles.some(([x])=>Math.abs(x-cx)<20)||trains.length||tracks.some(tr=>tr.t<1)) return true;
+  for(let x=cx-8;x<=cx+8;x++) for(let y=0;y<ROWS;y++) if(tileAt(x,y)==='~') return true; return false; }
+function botDodge(mv){ const p=player; if(p.climb||p.dead||p.swim) return mv;   // плуването симулацията не го знае
+  const th=botThreats(); if(!th.length&&!botHazNear()){ BOT.dodge=null; return mv; }
+  botTraj(th); const plan=mv.pol||(()=>({dir:mv.dir,cr:mv.cr,jh:mv.jh})), r0=botRisk((i,s)=>i===0?mv:plan(i,s),th);
+  if(r0<0.5){ BOT.dodge=null; return mv; }
+  const C=[];
+  if(BOT.dodge){ const d=BOT.dodge; C.push([d.f,d.i]); }
+  if(p.onGround) for(const f of [()=>({dir:0}),()=>({dir:0,cr:1}),i=>({jp:i===0,jh:i<20}),i=>({dir:-1,jp:i===0,jh:i<20}),i=>({dir:1,jp:i===0,jh:i<20}),()=>({dir:-1}),()=>({dir:1}),
+    ()=>({dir:-1,cr:1}),()=>({dir:1,cr:1}),i=>({jp:i===0,jh:i<5}),i=>({jp:i===10,jh:i>=10&&i<30}),i=>({jp:i===22,jh:i>=22&&i<42}),i=>({dir:-1,jp:i===0,jh:i<6}),i=>({dir:1,jp:i===0,jh:i<6}),
+    i=>({dir:i<12?-1:0}),i=>({dir:i<12?1:0})]) C.push([f,0]);
+  else for(const d of [-1,0,1]){ C.push([()=>({dir:d,jh:1}),0]); C.push([()=>({dir:d}),0]); }
+  let best=null, bv=r0-0.5;
+  const x0=p.x, pd=BOT.path.length>1?Math.sign((BOT.path[BOT.path.length-1]%COLS)*T-x0):0;   // назад (срещу пътя) — само ако спестява явно повече
+  for(const [f,i0] of C){ let v=botRisk((i,s)=>f(i+i0,s),th); if(pd&&BOT.endX!=null&&Math.sign(BOT.endX-x0)===-pd&&Math.abs(BOT.endX-x0)>8) v+=6; if(v<bv){ bv=v; best=[f,i0]; } }
+  if(!best){ BOT.dodge=null; return mv; }
+  const [f,i0]=best; BOT.dodge={f,i:i0+1}; if(BOT.prog){ BOT.air=BOT.prog.tx; BOT.prog=null; }
+  const q=f(i0,botS0()); return {...q,fire:mv.fire,wk:mv.wk,up:mv.up&&!q.dn}; }
+
+/* ---------- кадърът ---------- */
+function botKeys(q){ const set=(k,v)=>{ v=!!v; if(v&&!keys[k]) pressed[k]=true; keys[k]=v; };
+  set('left',q.dir<0); set('right',q.dir>0); set(FLIP?'down':'up',q.up); set(FLIP?'up':'down',q.dn); set('crouch',q.cr); set('fire',q.fire);
+  keys.jump=!!(q.jh||q.jp); if(q.jp) pressed.jump=true; if(q.wk) pressed[q.wk]=true; set('era',q.era&&!keys.era); }
+function botTick(){ const p=player; if(!p||!LVL) return;
+  if(p.dead&&!BOT.wasDead){ let e0=null, dd=1e9; for(const e of enemies) if(!e.dead){ const d=Math.hypot(e.x-p.x,e.y-p.y); if(d<dd){ dd=d; e0=e; } }   // за проверката: къде и до какво загина
+    (BOT.dlog=BOT.dlog||[]).push([Math.floor(p.x/T),Math.floor(p.y/T),e0?e0.type+'@'+Math.round(dd):'',boss&&!boss.dead?boss.type+':'+boss.state:'',ebullets.length?'изстр.'+ebullets.length:'',p.y>ROWS*T-30?'яма':''].filter(Boolean).join(' ')); }
+  BOT.wasDead=p.dead; BOT.maxX=Math.max(BOT.maxX||0,p.x);
+  if(p.dead||intro.lock>0){ botKeys(BOT_0); BOT.prog=null; BOT.dodge=null; return; }
+  if(BOT.lvl!==LVL){ BOT.lvl=LVL; BOT.dlog=[]; BOT.airing=false; BOT.maxX=player.x; BOT.why=''; BOT.progT=lvT;BOT.nT=lvT; BOT.sig=-1; BOT.ban.clear(); BOT.bad.clear(); BOT.g=null; BOT.goal=null; BOT.bestT=lvT; BOT.idleT=0; BOT.stuck=0; BOT.gave=false; }
+  if(!BOT.g||!botMapOk()||BOT.gv!==botGv()) botGraph();
+  let n=botNodeOf(p); if(n>=0){ BOT.n=n; BOT.nT=lvT; }
+  else if(!BOT.prog&&lvT-(BOT.nT||0)>1.5&&(p.onGround||p.swim)){ const o=botOff(), cx=Math.floor((p.x+p.w/2)/T), cy=Math.floor((p.y+p.h)/T);   // дълго без място — най-близкото
+    for(let r=0;r<3&&n<0;r++) for(let y=cy-r;y<=cy+r&&n<0;y++) for(let x=cx-r;x<=cx+r;x++){ const id=o+y*COLS+x; if(y>0&&y<ROWS&&x>=0&&x<COLS&&(BOT.g.kind[id]||BOT.free&&BOT.free[id])){ n=id; break; } } }
+  if(n>=0&&!BOT.prog){ if(--BOT.re<=0){ BOT.re=12; botDij(n); BOT.goal=botGoal(); BOT.path=BOT.goal?botPathTo(BOT.goal.n):[n]; botProgress(); }
+    else { const i=BOT.path.indexOf(n); if(i>0) BOT.path=BOT.path.slice(i); else if(i<0) BOT.re=0; } }
+  let mv=botMove(n); mv=botFight({...mv}); mv=botFreq(mv); mv=botDodge(mv);
+  botKeys(mv); }
+// напредък към целта: без напредък 6 s — целта настрана; 25 s без нищо — „тук поемаш ти“
+function botProgress(){ const g=BOT.goal, ref=g&&(g.X||g.k||(g.q&&g.q.ref)||g.t), c=g?BOT.d[g.n]:1e9, sig=stats.kills*1e4+pickups.filter(k=>k.taken).length*100-botTasks().length;
+  if(sig!==BOT.sig){ BOT.sig=sig; BOT.progT=lvT; }   // напредък: убит враг, взет предмет, щета по целта, по-близо до изхода
+  if(ref!==BOT.gref){ BOT.gref=ref; BOT.best=c; BOT.bestT=lvT; }
+  else if(c<BOT.best-0.5||(g&&g.t==='foe'&&BOT.shot===g.X&&lvT-BOT.shotT<1)){ BOT.best=c; BOT.bestT=lvT; if(g&&!g.X&&!g.k) BOT.progT=lvT; }
+  if(g&&(g.X||g.k||g.q)&&(lvT-BOT.bestT>(g.q&&g.q.hold?15:6)||lvT-BOT.progT>(g.q&&g.q.hold?20:12))){ BOT.ban.set(ref,lvT+20); BOT.gref=null; BOT.stuck++; BOT.progT=Math.max(BOT.progT,lvT-7); }
+  else if(lvT-BOT.progT>40&&!BOT.gave){ const p=player; BOT.gave=true; BOT.stuck++; BOT.why=[Math.floor((p.x+5)/T),Math.round((p.y+p.h)/T),g?g.t:'—',g&&g.n>=0?(g.n%COLS)+','+botY(g.n):'',p.swim?'плува':p.climb?'стълба':p.onGround?'':'въздух'].join(' ');
+    showMsg('Автопилот: тук поемаш ти',3); chtSet('bot',false); } }
+// извън играта: ботът сам минава началния текст, „загина“ и края на нивото
+function botMeta(dt){
+  const z=()=>{ pressed.fire=true; };
+  if(state==='story'&&storyT>0.5&&storyT*45>=parasLen(LVL.story)+45) z();
+  else if(state==='dead'&&deadT>1.3) z();
+  else if(state==='levelEnd'&&endT>1.3&&(endT-0.5)*45>=parasLen(LVL.end)+45) z(); }
+function botHud(){ if(!CHT.on.bot) return; ctx.save(); ctx.font='600 7px "IBM Plex Mono",monospace'; ctx.textAlign='right'; ctx.fillStyle='rgba(4,14,18,0.6)'; ctx.fillRect(W-86,17,82,11);   // под реда с името на нивото
+  ctx.fillStyle=ACC(); ctx.fillText('АВТОПИЛОТ · A',W-8,25); ctx.restore(); }
 
 /* ================= ДВИГАТЕЛ · ИНТРО: фракталът „готически арки“ от визуализатора (docs/audio) =================
    При всяко пускане, вместо стария начален екран:
@@ -5878,6 +6336,12 @@ defBosses('intro',{worm:'Гигантският червей! Стреляй, д
 defBosses('name',{warden:'НАДЗИРАТЕЛЯТ',colossus:'КОЛОС',heli:'БОЕН ХЕЛИКОПТЕР',worm:'ЧЕРВЕЯТ',guardian:'ПАЗИТЕЛЯТ',exo:'КОМАНДИРЪТ',tank:'ТАНКЪТ',hunter:'ЛОВЕЦЪТ',queen:'МАЙКАТА',titan:'„ТИТАН“'});
 defBosses('col',{warden:'#c77dff',heli:'#ffb53a',colossus:'#9dff5a',worm:'#a6ff6a',guardian:'#8ad8ff',exo:'#c9c3b4',tank:'#ffb53a',hunter:'#7fd8ff',queen:'#ff6ad5',titan:'#ff5a45'});
 defBosses('sfx',{warden:'warden',heli:'chop',tank:'engine',titan:'warden',exo:'stomp',hunter:'screech'});
+// автопилотът (engine/bot.js): опасностите на босовете — кога и къде удрят
+defBosses('bot',{guardian:{vuln:b=>b.shieldDown,threats(b){ const L=[];
+  if(b.state==='beamW'||b.state==='beam'){ const t0=b.state==='beam'?0:b.t, t1=b.state==='beam'?b.t:t0+0.35, y=b.beamY; L.push({d:25,hit:(s,t)=>t>=t0-0.03&&t<=t1+0.03&&s.y<y+5&&s.y+s.h>y-5}); }
+  if(b.state==='stompW'){ const t0=b.t, cx=b.x+b.w/2; L.push({d:15,hit:(s,t)=>Math.abs(t-t0)<0.03&&s.onGround&&Math.abs(s.x+s.w/2-cx)<84});
+    for(const sd of [-1,1]) L.push({d:12,hit:(s,t)=>{ if(t<t0) return false; const x=cx+sd*24+sd*140*D.bspd*(t-t0), y=15*T-8; return Math.hypot(clamp(x,s.x,s.x+s.w)-x,clamp(y,s.y,s.y+s.h)-y)<10; }}); }
+  return L; }}});
 defFoes('upd',{egg:updEgg,pylon:updPylon}); defFoes('draw',{egg:drawEgg,pylon:drawPylon});
 
 /* ================= РЕЗОНАНС 1 · ТРЕНИРОВКА: КУРСЪТ ПО БЕЗОПАСНОСТ ================= */
@@ -6680,6 +7144,7 @@ defBosses('name',{deep:'ДЪЛБИННИЯТ',breach:'ПРОБИВЪТ · ПРЕ
 defBosses('col',{deep:'#4fe3d6',breach:'#ff6ad5',stone:'#e0c08a',swarm:'#ffd36b',storm:'#9fc8ff',maker:'#ffffff'});
 
 /* ---------- 1. ДЪЛБИННИЯТ ---------- */
+defBoss('deep',{bot:{vuln:b=>b.state==='head'}});   // автопилотът: главата е уязвима само над водата
 defBoss('deep',{make:()=>{ const a=LVL.arena, cx=AX()+15*T; if(!FLOOD) FLOOD={y:11*T,y0:11*T,rate:0,top:11*T,on:false,x0:AX()+T,x1:AX()+29*T}; FLOOD.y=FLOOD.y0;
   return {type:'deep',cx,x:cx-24,y:H+100,w:48,h:36,hp:700*D.bhp,max:700*D.bhp,state:'intro',t:2,phase:1,wave:0,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,rise:0,st:0,surgeT:12,surge:0}; }});
 function deepWave(b){ const a=LVL.arena, n=b.phase===1?(DI===0?2:3):(DI===0?3:4), hs=a.hatches.slice();
@@ -6746,6 +7211,7 @@ defBoss('breach',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; cons
   ctx.restore(); }});
 
 /* ---------- 3. КАМЕННИЯТ СТРАЖ ---------- */
+defBoss('stone',{bot:{vuln:()=>ERA===1,tasks:b=>ERA===0&&b.state!=='intro'?[{key:'era',any:true,ref:'stoneEra'}]:[]}});   // автопилотът: уязвим е само в другата епоха
 defBoss('stone',{make:()=>{ const cx=AX()+20*T, a=LVL.arena; setDoorAll([a.door,a.r0,a.r1],'D'); return {type:'stone',x:cx-20,y:15*T-62,w:40,h:62,hp:900*D.bhp,max:900*D.bhp,state:'intro',t:2,face:-1,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,at:2.5,pulse:0,hintT:0}; }});
 defBoss('stone',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
   if(ERA===0){ sparks(b.x+b.w/2+rnd(-10,10),b.y+rnd(10,50),3,'#d8c8a0'); b.hintT-=1; if(b.hintT<=0){ b.hintT=25; showMsg('Камъкът е неуязвим — смени епохата с [E]!',1.8); } return; }
@@ -6802,6 +7268,7 @@ defBoss('swarm',{upd:dt=>{
 defBoss('swarm',{draw:()=>{ const b=boss; if(b.form==='fist'&&b.ft>1.6&&b.state==='fight'){ const x=b.fx-cam; ctx.strokeStyle=`rgba(255,200,80,${0.3+0.3*Math.sin(titleT*20)})`; ctx.setLineDash([3,4]); ctx.beginPath(); ctx.moveTo(x,b.fy); ctx.lineTo(x,15*T); ctx.stroke(); ctx.setLineDash([]); } }});
 
 /* ---------- 5. БУРЯТА ---------- */
+defBoss('storm',{bot:{vuln:b=>b.eye>=0.5,contact:false,threats:b=>b.cols.filter(c=>!c.done).map(c=>({d:22,hit:(s,t)=>Math.abs(t-c.t)<0.03&&Math.abs(s.x+s.w/2-c.x)<13}))}});   // автопилотът: мълниите падат по колоните
 defBoss('storm',{make:()=>{ const cx=AX()+15*T; return {type:'storm',cx,x:cx-45,y:0.6*T,w:90,h:46,hp:800*D.bhp,max:800*D.bhp,state:'intro',t:2,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,eye:0,cols:[],at:2.5,gust:0,gustT:8}; }});
 defBoss('storm',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return; if(b.eye<0.5){ if(Math.random()<0.4) sparks(b.cx+rnd(-30,30),b.y+rnd(10,40),2,'#cfe8ff'); return; }
   b.hp-=d; b.hitT=0.08; sparks(b.cx+rnd(-8,8),b.y+24,4,'#9fe8ff'); if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Бурята преминава в свиреп ураган!',2); shake=8; } if(b.hp<=0){ bossDie(); GWIND=0; } }});
@@ -7579,6 +8046,10 @@ defBoss('mirror',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; cons
   draw({...(b.pose||{}),x:b.x,y:b.y,h:26},0.8,true); }});
 
 /* ---------- 4. ЛОВЕЦЪТ НА ЧЕСТОТИ ---------- */
+defBoss('stalker',{bot:{vuln:b=>b.state==='confused',contact:false,threats(b){   // автопилотът: накъде се хвърля ловецът (към шума — и към изстрелите ти)
+  const sp=(b.phase>1?340:290)*D.bspd, x0=AX()+T, x1=AX()+29*T-b.w, p=player, to=(tx,t)=>{ const g=clamp(tx-b.w/2,x0,x1); return b.x+Math.sign(g-b.x)*Math.min(Math.abs(g-b.x),sp*t); };
+  const pos=t=>b.state==='hunt'?to(b.tx,t):b.state==='wander'?clamp(b.x+b.face*40*t,x0,x1):b.state==='confused'&&t>b.t?to(p.x+p.w/2,t-b.t):b.x;
+  return [{d:28,hit:(s,t)=>{ if(b.state==='confused'&&t<b.t) return false; const x=pos(t); return s.x<x+b.w&&s.x+s.w>x&&s.y<b.y+b.h&&s.y+s.h>b.y; }}]; }}});
 defBoss('stalker',{make:()=>({type:'stalker',x:AX()+18*T,y:15*T-40,w:64,h:40,hp:800*D.bhp,max:800*D.bhp,state:'intro',t:2,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,face:-1,tx:0,lastT:-1,confT:0,hintT:0})});
 defBoss('stalker',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
   if(b.state==='confused'){ b.hp-=d*1.3; bHitFx(b,'#c86aff'); } else { b.hp-=d*0.1; sparks(b.x+b.w/2+rnd(-14,14),b.y+rnd(6,30),2,'#7a5a8a'); b.hintT-=1; if(b.hintT<=0){ b.hintT=30; showMsg('Плътната броня отбива изстрелите! Атакувай само докато е дезориентиран!',1.8); } }
@@ -7608,6 +8079,11 @@ defBoss('stalker',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; con
   ctx.restore(); }});
 
 /* ---------- 5. КАМЕРТОНЪТ ---------- */
+defBoss('fork',{bot:{vuln:b=>b.phase>=3,contact:false,threats(b){   // автопилотът: вълните по пода (и следващите, ако тръгват скоро)
+  const fast=b.phase===1?1:b.phase===2?1.35:1.6, v=170*fast*D.bspd, L=[], w0=b.waveT/fast, hitAt=x=>s=>Math.abs(s.x+s.w/2-x)<10&&s.y+s.h>15*T-16;
+  for(const w of b.waves) L.push({d:14,hit:(s,t)=>hitAt(w.x+w.dir*v*t)(s)});
+  if(w0<1) for(const dr of [-1,1]) L.push({d:14,hit:(s,t)=>t>w0&&hitAt(b.cx+dr*v*(t-w0))(s)});
+  return L; }}});
 defBoss('fork',{make:()=>{ const cx=AX()+15*T; return {type:'fork',cx,x:cx-14,y:3*T,w:28,h:6*T,hp:1600*D.bhp,max:1600*D.bhp,state:'intro',t:2.5,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,waveT:2.5,ringT:5,droneT:6,crys:[{hp:500*D.bhp,x:cx-58},{hp:500*D.bhp,x:cx+58}],waves:[]}; }});
 defBoss('fork',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
   if(b.phase<3){ sparks(b.cx+rnd(-10,10),b.y+40+rnd(-20,20),3,'#ffffff'); return; }
@@ -8377,6 +8853,10 @@ defBoss('legion',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; begi
   tint=null; ctx.restore(); }});
 
 /* ---------- 4. БЕЗМЪЛВНИЯТ ---------- */
+defBoss('silent',{bot:{contact:false,threats(b){   // автопилотът: дебне към шума, клечи и се хвърля
+  const x0=AX()+T, x1=AX()+29*T-b.w, ls=330*D.bspd*b.face, hs=(b.phase>1?95:70)*D.bspd;
+  const pos=t=>b.state==='hunt'?clamp(b.x+Math.sign(b.tx-b.x-b.w/2)*Math.min(Math.abs(b.tx-b.x-b.w/2),hs*t),x0,x1):b.state==='crouch'?(t<b.t?b.x:clamp(b.x+ls*Math.min(t-b.t,0.55),x0,x1)):b.state==='lunge'?clamp(b.x+b.vx*Math.min(t,b.t),x0,x1):b.x;
+  return [{d:26,hit:(s,t)=>{ const x=pos(t); return s.x<x+b.w&&s.x+s.w>x&&s.y<b.y+b.h&&s.y+s.h>b.y; }}]; }}});
 defBoss('silent',{make:()=>({type:'silent',x:AX()+22*T,y:15*T-40,w:48,h:40,hp:900*D.bhp,max:900*D.bhp,state:'intro',t:2,face:-1,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,tx:0,heard:0,spawnT:10})});
 defBoss('silent',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
   if(b.state!=='recover'){ b.hp-=d*0.12; sparks(b.x+b.w/2,b.y+10,2,'#8adcff'); hint4(b,'Бронята му поглъща куршумите. Изчакай го да скочи в атака и стреляй в оголеното ядро!'); }
@@ -9090,6 +9570,9 @@ const alive5=tag=>enemies.filter(e=>e.tag===tag&&!e.dead);
 const crystalFx=(x,y,col,t)=>{ ctx.save(); ctx.globalCompositeOperation='lighter'; const g=ctx.createRadialGradient(x,y,1,x,y,16); g.addColorStop(0,`rgba(${col},${0.7+0.3*Math.sin(t*6)})`); g.addColorStop(1,`rgba(${col},0)`); ctx.fillStyle=g; ctx.fillRect(x-16,y-16,32,32); ctx.restore(); };
 
 /* ---------- 1. КОМБАЙНЪТ ---------- */
+defBoss('combine',{bot:{vuln:b=>b.state==='stun',contact:false,threats(b){   // автопилотът: накъде ще се засили комбайнът
+  const sp=(b.phase>1?1.3:1)*D.bspd*170, x0=AX()+T, x1=AX()+29*T-b.w, pos=t=>b.state==='drive'?clamp(b.x+b.face*sp*t,x0,x1):b.state==='aim'&&t>b.t?clamp(b.x+b.face*sp*(t-b.t),x0,x1):b.x;
+  return [{d:24,hit:(s,t)=>{ const x=pos(t); return s.x<x+b.w&&s.x+s.w>x&&s.y<b.y+b.h&&s.y+s.h>b.y; }}]; }}});
 defBoss('combine',{make:()=>({type:'combine',x:AX()+20*T,y:15*T-44,w:84,h:44,hp:900*D.bhp,max:900*D.bhp,state:'intro',t:2,face:-1,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,baleT:3,act:0,mech:true})});
 defBoss('combine',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
   if(b.state!=='stun'){ sparks(b.x+b.w/2+rnd(-20,20),b.y+8,3,'#d8a040'); hint5(b,'Челото е от закалена стомана. Изчакай комбайнът да се блъсне и да заседне в края!'); b.hp-=d*0.05; return; }
@@ -9116,6 +9599,7 @@ defBoss('combine',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; con
   if(b.state==='stun'&&Math.floor(b.anim*6)%2){ ctx.fillStyle='#ffe6a0'; ctx.fillRect(x+34,y-10,12,2); } ctx.restore(); }});
 
 /* ---------- 2. КАСКАДАТА ---------- */
+defBoss('cascade',{bot:{vuln:b=>b.state==='open'}});   // автопилотът: уязвима, щом кристалите паднат
 defFoes('dims',{rim:[16,16,90]});
 defFoe('rim',{upd:(e,dt)=>{ e.anim+=dt; e.alert=false; e.mech=true; }});
 defFoe('rim',{draw:e=>{ if(e.dead&&e.deadT>0.5) return; const x=Math.round(e.x+e.w/2-cam), y=Math.round(e.y+e.h/2); crystalFx(x,y,'90,220,210',e.anim);
@@ -9143,6 +9627,10 @@ defBoss('cascade',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; con
   ctx.fillStyle='#0e3a36'; ctx.fillRect(cx-10,y+18,5,4); ctx.fillRect(cx+5,y+18,5,4); if(b.open>0.3){ crystalFx(cx,y+b.h*0.5,'255,255,255',b.anim); } ctx.restore(); }});
 
 /* ---------- 3. НОЩНИЦАТА ---------- */
+defBoss('moth',{bot:{vuln:b=>isLit(b.x+b.w/2,b.y+b.h/2),contact:false,   // автопилотът: ракета до себе си (нощницата се спуска към светлото) и къде ще се гмурне
+  tasks:b=>b.state!=='intro'&&flareCd<=0&&!FLARES.some(f=>Math.abs(f.x-player.x)<80)?[{key:'era',any:true,ref:'mothFlare'}]:[],
+  threats(b){ const pos=t=>{ if(b.state!=='dive'||t>b.t) return [b.x,b.y]; const k=Math.exp(-3*t); return [b.tx-b.w/2+(b.x-b.tx+b.w/2)*k,b.ty-b.h/2+(b.y-b.ty+b.h/2)*k]; };
+    return [{d:18,hit:(s,t)=>{ const [x,y]=pos(t); return s.x<x+b.w&&s.x+s.w>x&&s.y<y+b.h&&s.y+s.h>y; }}]; }}});
 defBoss('moth',{make:()=>({type:'moth',x:AX()+13*T,y:3*T,w:70,h:30,hp:950*D.bhp,max:950*D.bhp,state:'intro',t:2,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,diveT:4,spawnT:5,tx:0,ty:0})});
 defBoss('moth',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
   if(!isLit(b.x+b.w/2,b.y+b.h/2)){ for(let i=0;i<3;i++) part(b.x+rnd(b.w),b.y+rnd(b.h),rnd(-40,40),rnd(-40,40),0.4,'#2a2024',2,0); hint5(b,'В тъмнината роякът се разсейва и куршумите минават на халос. Освети я с ракета!'); return; }
@@ -9169,6 +9657,7 @@ defBoss('moth',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; const 
   ctx.restore(); }});
 
 /* ---------- 4. ВЪЛЧЕВ ---------- */
+defBoss('valchev',{bot:{vuln:b=>b.state==='charge'||b.state==='stun'}});   // автопилотът: щитът пада, докато зарежда
 const VALCH_POS=[[32.5,12],[40.5,9],[48.5,12]];
 defBoss('valchev',{make:()=>({type:'valchev',x:AX()+20*T,y:15*T-30,w:14,h:30,hp:850*D.bhp,max:850*D.bhp,state:'intro',t:2.2,face:-1,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,pos:1,fireT:1.4,spawnT:8,act:0})});
 defBoss('valchev',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
@@ -9196,6 +9685,7 @@ defBoss('valchev',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; beg
   else if(b.state!=='stun'){ ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.strokeStyle=`rgba(150,255,160,${0.35+0.15*Math.sin(b.anim*8)})`; ctx.lineWidth=2; ctx.beginPath(); ctx.ellipse(x,y,15,21,0,0,7); ctx.stroke(); ctx.restore(); ctx.lineWidth=1; } }});
 
 /* ---------- 5. ТРЕТИЯТ РЕЗОНАТОР ---------- */
+defBoss('resonator',{bot:{vuln:b=>b.open>=0.6}});   // автопилотът: пластините са отворени
 defBoss('resonator',{make:()=>({type:'resonator',x:AX()+12*T,y:2.5*T,w:5*T,h:5*T,hp:1600*D.bhp,max:1600*D.bhp,state:'intro',t:2.5,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,cyc:0,open:0,fireT:2,waveT:6,sleepT:3,mech:true})});
 defBoss('resonator',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
   if(b.open<0.6){ sparks(b.x+b.w/2+rnd(-20,20),b.y+b.h/2+rnd(-20,20),3,'#3fd0a0'); hint5(b,'Титаниевите пластини са плътно затворени. Изчакай цикъла им на отваряне!'); return; }
@@ -9853,6 +10343,7 @@ const glow6=(x,y,col,r,a)=>{ ctx.save(); ctx.globalCompositeOperation='lighter';
 const wisps6=(n,x,y)=>{ if(enemies.filter(e=>!e.dead&&e.type==='wisp').length>=n) return; const e=makeEnemy('wisp',x,y); e.summoned=true; e.alert=true; enemies.push(e); for(let i=0;i<8;i++) part(x,y-6,rnd(-40,40),rnd(-40,40),0.5,'#c8d8ff',1.5,0); };
 
 /* ---------- 1. СЯНКАТА ---------- */
+defBoss('shadow',{bot:{vuln:b=>b.solidT>0,tasks:b=>b.state!=='intro'&&!(b.solidT>0.3)&&toneCd<=0&&Math.hypot(b.x-player.x,b.y-player.y)<230?[{key:'era',any:true,ref:'shadowTone'}]:[]}});   // автопилотът: тон (E) я вплътнява
 defBoss('shadow',{make:()=>({type:'shadow',x:AX()+22*T,y:15*T-30,w:14,h:30,hp:700*D.bhp,max:700*D.bhp,state:'intro',t:2,face:-1,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,solidT:0,fireT:1.6,wispT:6,dashT:5,onGround:false})});
 defBoss('shadow',{onTone:d=>{ const b=boss; if(d<260&&b.state!=='intro'){ b.solidT=b.phase>1?2.8:3.6; for(let i=0;i<16;i++) part(b.x+b.w/2,b.y+b.h/2,rnd(-80,80),rnd(-80,80),0.5,'#e8c25a',2,0); showMsg('Сянката се вплътни!',1.2); } }});
 defBoss('shadow',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
@@ -9883,6 +10374,7 @@ defBoss('shadow',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; cons
   ctx.fillStyle='rgba(180,150,255,0.25)'; ctx.fillRect(x-(b.face>0?24:-4),Math.round(b.y+b.h)-2,20,2); }});
 
 /* ---------- 2. ЕХОТАТА ---------- */
+defBoss('echoes',{bot:{vuln:()=>!ERAD||ERA===1,contact:false,tasks:b=>b.state!=='intro'&&ERAD&&ERA===0?[{key:'era',any:true,ref:'echoEra'}]:[]}});   // автопилотът: уязвими са в съня (E)
 defBoss('echoes',{make:()=>{ const a=LVL.arena; if(ERAD) setDoorAll([a.door,a.r0,a.r1],'D'); return {type:'echoes',x:AX()+13*T,y:2.5*T,w:4*T,h:4*T,hp:1000*D.bhp,max:1000*D.bhp,state:'intro',t:2,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,fireT:2,rainT:5,wispT:4,pullT:9}; }});
 const echoVuln=()=>!ERAD||ERA===1;
 defBoss('echoes',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
@@ -9910,6 +10402,7 @@ defBoss('echoes',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; cons
   ctx.strokeStyle=`rgba(240,200,255,${0.3*fa})`; ctx.beginPath(); ctx.ellipse(cx,cy,26,18,0,0,7); ctx.stroke(); ctx.restore(); }});
 
 /* ---------- 3. ЖРЕЦЪТ ---------- */
+defBoss('priest',{bot:{vuln:b=>b.state==='open'}});   // автопилотът: открит е, щом огньовете угаснат
 defFoes('dims',{pyre:[16,26,80]});
 defFoe('pyre',{upd:(e,dt)=>{ e.anim+=dt; e.alert=false; e.mech=true; e.cd-=dt; const p=player;
   if(e.cd<=0&&!p.dead){ e.cd=rnd(2.6,3.6)*D.rate; const x=e.x+e.w/2, y=e.y, tt=1.1, tx=p.x+p.w/2; if(Math.abs(tx-x)<260) bossOrb(x,y,(tx-x)/tt,(p.y+p.h-6-y)/tt-0.5*G*tt,{grav:true,dmg:10,r:4,red:true,life:4}); } }});
@@ -9951,6 +10444,11 @@ defBoss('priest',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; begi
     for(let i=0;i<2;i++) glow6(x+(i?9:-9),y-18,'255,150,70',8,0.6); } }});
 
 /* ---------- 4. ТРИГЛАВИЯТ ---------- */
+const r6Tone=(b,r)=>toneCd<=0&&Math.hypot(b.x+b.w/2-player.x-5,b.y+b.h/2-player.y-13)<r?[{key:'era',any:true,ref:'r6Tone'}]:[];
+defBoss('cerber',{bot:{vuln:b=>b.state==='quiet',contact:false,tasks:b=>b.state==='sing'?r6Tone(b,300):[],threats(b){   // автопилотът: тон, докато пеят; накъде се засилва
+  const sp=(b.phase>1?1.25:1)*D.bspd*190, x0=AX()+T, x1=AX()+29*T-b.w, nx=(b.act+1)%2!==0;
+  const pos=t=>b.state==='charge'?clamp(b.x+b.face*sp*t,x0,x1):b.state==='aim'&&nx&&t>b.t?clamp(b.x+b.face*sp*(t-b.t),x0,x1):b.x;
+  return [{d:24,hit:(s,t)=>{ const x=pos(t); return s.x<x+b.w&&s.x+s.w>x&&s.y<b.y+b.h&&s.y+s.h>b.y; }}]; }}});
 defBoss('cerber',{make:()=>({type:'cerber',x:AX()+18*T,y:15*T-46,w:72,h:46,hp:1000*D.bhp,max:1000*D.bhp,state:'intro',t:2,face:-1,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,act:0})});
 defBoss('cerber',{onTone:d=>{ const b=boss; if(b.state==='sing'&&d<320){ b.state='quiet'; b.t=b.phase>1?3.4:4.2; shake=6; showMsg('Главите замлъкнаха! Стреляй сега!',1.4); for(let i=0;i<24;i++) part(b.x+b.w/2,b.y+10,rnd(-100,100),rnd(-80,20),0.6,'#e8c25a',2,0); }
   else if(b.state!=='quiet'&&b.state!=='intro') hint6(b,'Изчакай хорът да запее — тогава откликни с тона.'); }});
@@ -9984,6 +10482,7 @@ defBoss('cerber',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; cons
   ctx.restore(); }});
 
 /* ---------- 5. ПЪРВИЯТ ТОН ---------- */
+defBoss('firsttone',{bot:{vuln:b=>b.shield<=0.4,tasks:b=>b.state!=='intro'&&b.openT<=0.2?r6Tone(b,300):[]}});   // автопилотът: тон отблизо пробива щита
 defBoss('firsttone',{make:()=>({type:'firsttone',x:AX()+13*T,y:2*T,w:4*T,h:4*T,hp:1500*D.bhp,max:1500*D.bhp,state:'intro',t:2.5,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,shield:1,openT:0,fireT:2,beamT:5,sumT:7,mech:true})});
 defBoss('firsttone',{onTone:d=>{ const b=boss; if(b.state==='intro') return; if(d<320){ b.openT=b.phase>2?2.6:3.4; showMsg('Щитът е пробит!',1); for(let i=0;i<30;i++) part(b.x+b.w/2,b.y+b.h/2,rnd(-120,120),rnd(-120,120),0.6,'#e8c25a',2,0); } else hint6(b,'Твърде далеч си! Приближи се плътно и изпей тона.'); }});
 defBoss('firsttone',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
@@ -10626,6 +11125,7 @@ const bite7=(b,dt,dmg,kx)=>{ const p=player; if(!p.dead&&ov(b,p)){ b.bite=(b.bit
 const glow7=(x,y,col,r,a)=>{ ctx.save(); ctx.globalCompositeOperation='lighter'; const g=ctx.createRadialGradient(x,y,1,x,y,r); g.addColorStop(0,`rgba(${col},${a})`); g.addColorStop(1,`rgba(${col},0)`); ctx.fillStyle=g; ctx.fillRect(x-r,y-r,r*2,r*2); ctx.restore(); };
 
 /* ---------- 1. ?SYNTAX ERROR ---------- */
+defBoss('syntax',{bot:{vuln:b=>b.state==='open'}});   // автопилотът: курсорите FIX (POKE) са задачи на механиката
 const SYN_FIX=[[29,14,'FIX 10'],[40,8,'FIX 20'],[52,14,'FIX 30']];
 defBoss('syntax',{make:()=>{ dropBossCursors(); for(const [tx,row,l] of SYN_FIX) addCursor('POKE',ax7(tx),row,{label:l,boss:true,syn:1});
   return {type:'syntax',x:AX()+8*T,y:3*T,w:13*10,h:18,hp:700*D.bhp,max:700*D.bhp,state:'intro',t:2,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,fireT:1.5,rainT:3,open:0}; }});
@@ -10729,6 +11229,7 @@ defBoss('copy',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; const 
   if(fr&&!b.dead&&Math.floor(b.anim*4)%2){ ctx.font='600 6px "IBM Plex Mono",monospace'; ctx.fillStyle='#ffffff'; ctx.textAlign='center'; ctx.fillText('BUFFER EMPTY',x,Math.round(b.y)-6); ctx.textAlign='left'; } }});
 
 /* ---------- 5. НУЛАТА ---------- */
+defBoss('nula',{bot:{vuln:b=>b.phase<3&&b.shield<=0.4,tasks:b=>b.state==='intro'?[]:CURS.filter(c=>c.o.boss&&c.cd<=0&&(b.phase<3?c.cmd==='BREAK'&&b.openT<=0:c.cmd==='RUN')).map(c=>({x:c.tx*T+8,fy:(c.row+1)*T,key:'era',ref:c}))}});   // автопилотът: BREAK сваля щита, накрая RUN
 defBoss('nula',{make:()=>{ dropBossCursors(); for(const tx of [29,52]) addCursor('BREAK',ax7(tx),14,{label:'BREAK',boss:true,r:10,t:4,cd:8});
   return {type:'nula',x:AX()+13*T,y:2*T,w:4*T,h:4*T,hp:1500*D.bhp,max:1500*D.bhp,state:'intro',t:2.5,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,shield:1,openT:0,fireT:2,aimT:4,sumT:8,mech:true}; }});
 defBoss('nula',{onCmd:c=>{ const b=boss; if(c.cmd==='BREAK'&&b.phase<3){ b.openT=b.phase>1?3.6:4.5; showMsg('BREAK! Защитният щит падна!',1.2); for(let i=0;i<30;i++) part(b.x+b.w/2,b.y+b.h/2,rnd(-120,120),rnd(-120,120),0.6,'#ffffff',2,0); }
@@ -11814,7 +12315,7 @@ function clearPressed(){ for(const k in pressed) pressed[k]=false; }
 const ok=()=>pressed.fire||pressed.enter;
 let last=performance.now(), acc=0;
 function frame(now){
-  const dt=Math.max(0,Math.min(0.05,(now-last)/1000)); last=now; titleT+=dt;
+  const dt=Math.max(0,Math.min(0.05,(now-last)/1000)); last=now; titleT+=dt; if(CHT.on.bot) botMeta(dt);
   if(state==='title'){ cam=(Math.sin(titleT*0.05)*0.5+0.5)*(GAME.menuCam||60); if(ok()){ initAudio(); SFX.menuOk(); toMenu(modeSel+2); } clearPressed(); }
   else if(state==='gintro'){ GAME.introUpd(dt); clearPressed(); }
   else if(state==='gmenu'){ cam=(Math.sin(titleT*0.05)*0.5+0.5)*(GAME.menuCam||60); gmenuInput(); clearPressed(); }
@@ -11833,7 +12334,7 @@ function frame(now){
   else if(state==='play'){
     if(pressed.pause||pressed.esc){ state='paused'; if(AC) AC.suspend(); clearPressed(); }
     else if(LVL.training&&TRN&&pressed.enter){ if(TRN.skip>0){ clearPressed(); SFX.menuOk(); finishTraining(); } else { TRN.skip=2.5; clearPressed(); } }
-    else { acc+=chtOn('slow')?dt/2:dt; let n=0; while(acc>=1/60&&n<4&&state==='play'){ update(1/60); clearPressed(); acc-=1/60; n++; } if(n===4) acc=0; }
+    else { acc+=chtOn('slow')?dt/2:dt; let n=0; while(acc>=1/60&&n<4&&state==='play'){ if(CHT.on.bot) botTick(); update(1/60); clearPressed(); acc-=1/60; n++; } if(n===4) acc=0; }
   }
   else if(state==='dead'&&pressed.esc){ clearPressed(); toTitle(); }
   else if(state==='dead'){ deadT+=dt; acc+=dt; while(acc>=1/60){ update(1/60); acc-=1/60; } if(deadT>1&&ok()){ if(SURV){ survLives--; if(survLives<=0) endSurv(); else respawn(); } else respawn(); } clearPressed(); }
@@ -11851,7 +12352,7 @@ function frame(now){
 loadMenuLevel(); totals={time:0,shots:0,hits:0,kills:0,deaths:0};
 if(document.fonts&&document.fonts.load){ Promise.all([document.fonts.load('10px "Russo One"'),document.fonts.load('600 10px "IBM Plex Mono"'),document.fonts.load('10px "Unbounded"'),document.fonts.load('700 10px "Oswald"'),document.fonts.load('700 10px "Exo 2"'),document.fonts.load('700 10px "Comfortaa"'),document.fonts.load('700 10px "Philosopher"'),document.fonts.load('700 10px "Pixelify Sans"'),document.fonts.load('700 10px "Jura"')]).then(()=>{ prerender(); }).catch(()=>{}); }
 document.addEventListener('visibilitychange',()=>{ if(document.hidden&&state==='play'){ state='paused'; if(AC) AC.suspend(); } });
-window.__rz={get GAME(){return GAME},get intro(){return INTRO},GAMES,GHIST,setGame,enterGame,toMenu,menuItems,get gSel(){return gSel},hurtEnemy,get ECHO(){return ECHO},get PLATES(){return PLATES},get LIGHTS(){return LIGHTS},get TERMS(){return TERMS},get ALARM(){return ALARM},get NOISE(){return NOISE},get MST(){return MST},get FLOOD(){return FLOOD},get ESC(){return ESC},get CHASE(){return CHASE},get ERA(){return ERA},get FLIP(){return FLIP},get GENS(){return GENS},get LEVERS(){return LEVERS},get SHIFT(){return SHIFT},get ALLIES(){return ALLIES},switchEra,flipWorld,isWater,get pickups(){return pickups},get scientists(){return scientists},get barks(){return barks},solidAt,startBoss,respawn,get cp(){return cp},hurtBoss,get musOn(){return musOn},get AC(){return AC},get musBus(){return musBus},get sfxBus(){return sfxBus},get sfxOn(){return sfxOn},toggleMute,toggleMus,toggleSfx,svLoad,svSave,svClear,svEnter,svItems,get svSel(){return svSel},get svConf(){return svConf},get DI(){return DI},get survLives(){return survLives},get survSeed(){return survSeed},get keys(){return keys},get pressed(){return pressed},frame,get levels(){return GLV},get unl(){return gUnl},resetClock(){titleT=0;acc=0;},svValidate,elecOn,CHT,chtSet,chtDo,chtUnlock,hurtPlayer,finishTraining,get TRN(){return TRN},get msg(){return msg},get grav(){return G},completeLevel,get bmiss(){return bmiss},get LI(){return LI},startSurv,genLevel,svPlan,epGen,get epSeed(){return epSeed},get epFix(){return epFix},set epFix(v){epFix=v},get survK(){return survK},get survScore(){return survScore},set survSeed(v){survSeed=v},get LVL(){return LVL},get lifts(){return lifts},get tracks(){return tracks},get trains(){return trains},get gateOpen(){return gateOpen},get rockets(){return rockets},clearPressed,loadLevel,get map(){return map},get LV(){return LV},get player(){return player},get state(){return state},set state(v){state=v},get boss(){return boss},get enemies(){return enemies},get exitPortal(){return exitPortal},get enc(){return enc},update,setDiff(i){DI=i;D=DIFFS[i];},startEpisode,get cam(){return cam},set cam(v){cam=v},render,groundY};
+window.__rz={get GAME(){return GAME},get intro(){return INTRO},GAMES,GHIST,setGame,enterGame,toMenu,menuItems,get gSel(){return gSel},hurtEnemy,get ECHO(){return ECHO},get PLATES(){return PLATES},get LIGHTS(){return LIGHTS},get TERMS(){return TERMS},get ALARM(){return ALARM},get NOISE(){return NOISE},get MST(){return MST},get FLOOD(){return FLOOD},get ESC(){return ESC},get CHASE(){return CHASE},get ERA(){return ERA},get FLIP(){return FLIP},get GENS(){return GENS},get LEVERS(){return LEVERS},get SHIFT(){return SHIFT},get ALLIES(){return ALLIES},switchEra,flipWorld,isWater,get pickups(){return pickups},get scientists(){return scientists},get barks(){return barks},solidAt,startBoss,respawn,get cp(){return cp},hurtBoss,get musOn(){return musOn},get AC(){return AC},get musBus(){return musBus},get sfxBus(){return sfxBus},get sfxOn(){return sfxOn},toggleMute,toggleMus,toggleSfx,svLoad,svSave,svClear,svEnter,svItems,get svSel(){return svSel},get svConf(){return svConf},get DI(){return DI},get survLives(){return survLives},get survSeed(){return survSeed},get keys(){return keys},get pressed(){return pressed},frame,get levels(){return GLV},get unl(){return gUnl},resetClock(){titleT=0;acc=0;},svValidate,elecOn,CHT,chtSet,chtDo,chtUnlock,hurtPlayer,finishTraining,get TRN(){return TRN},get msg(){return msg},get grav(){return G},completeLevel,get bmiss(){return bmiss},get LI(){return LI},startSurv,genLevel,svPlan,epGen,get epSeed(){return epSeed},get epFix(){return epFix},set epFix(v){epFix=v},get survK(){return survK},get survScore(){return survScore},set survSeed(v){survSeed=v},get LVL(){return LVL},get BOT(){return BOT},get stats(){return stats},get lifts(){return lifts},get tracks(){return tracks},get trains(){return trains},get gateOpen(){return gateOpen},get rockets(){return rockets},clearPressed,loadLevel,get map(){return map},get LV(){return LV},get player(){return player},get state(){return state},set state(v){state=v},get boss(){return boss},get enemies(){return enemies},get exitPortal(){return exitPortal},get enc(){return enc},update,setDiff(i){DI=i;D=DIFFS[i];},startEpisode,get cam(){return cam},set cam(v){cam=v},render,groundY};
 for(const g of GAMES) if(g.debug) Object.defineProperties(window.__rz,Object.getOwnPropertyDescriptors(g.debug));
 requestAnimationFrame(frame);
 })();

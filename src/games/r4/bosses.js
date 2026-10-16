@@ -100,6 +100,10 @@ defBoss('legion',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; begi
   tint=null; ctx.restore(); }});
 
 /* ---------- 4. БЕЗМЪЛВНИЯТ ---------- */
+defBoss('silent',{bot:{contact:false,threats(b){   // автопилотът: дебне към шума, клечи и се хвърля
+  const x0=AX()+T, x1=AX()+29*T-b.w, ls=330*D.bspd*b.face, hs=(b.phase>1?95:70)*D.bspd;
+  const pos=t=>b.state==='hunt'?clamp(b.x+Math.sign(b.tx-b.x-b.w/2)*Math.min(Math.abs(b.tx-b.x-b.w/2),hs*t),x0,x1):b.state==='crouch'?(t<b.t?b.x:clamp(b.x+ls*Math.min(t-b.t,0.55),x0,x1)):b.state==='lunge'?clamp(b.x+b.vx*Math.min(t,b.t),x0,x1):b.x;
+  return [{d:26,hit:(s,t)=>{ const x=pos(t); return s.x<x+b.w&&s.x+s.w>x&&s.y<b.y+b.h&&s.y+s.h>b.y; }}]; }}});
 defBoss('silent',{make:()=>({type:'silent',x:AX()+22*T,y:15*T-40,w:48,h:40,hp:900*D.bhp,max:900*D.bhp,state:'intro',t:2,face:-1,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,tx:0,heard:0,spawnT:10})});
 defBoss('silent',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
   if(b.state!=='recover'){ b.hp-=d*0.12; sparks(b.x+b.w/2,b.y+10,2,'#8adcff'); hint4(b,'Бронята му поглъща куршумите. Изчакай го да скочи в атака и стреляй в оголеното ядро!'); }

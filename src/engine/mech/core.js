@@ -1,11 +1,13 @@
 /* ================= МЕХАНИКИ: РЕГИСТЪР И РЕД НА КУКИТЕ =================
    Всяка механика (engine/mech/*.js) се описва с defMech(id,{куки}); двигателят ги вика на фиксирани места:
      load, respawn, preRespawn, setCp, update(dt), move(p,dt,dir,U,Dn) → true, ако е поела движението, force(p,dt),
-     drawBack, drawWorld, lights(L), chips(chip), postFx, exitOk → false, ако изходът е затворен.
+     drawBack, drawWorld, lights(L), chips(chip), postFx, exitOk → false, ако изходът е затворен;
+     bot(L) — задачите за автопилота (engine/bot.js): L.push({x, fy, key:'up'|'era', hold, ref}) — място (x на центъра, линия на пода)
+     и клавиш, който трябва да се натисне (hold — задържи, докато задачата изчезне).
    Механиката се включва от данните на нивото; в останалите нива куките ѝ не правят нищо.
    MECH_ORDER — редът на извикване за всяка кука (пази поведението и реда на случайните числа);
    механика, която не е в списъка, се вика след изброените, по реда на регистрация. */
-const MECHS={}, MECH_HOOKS='load respawn preRespawn setCp update move force drawBack drawWorld lights chips postFx exitOk'.split(' ');
+const MECHS={}, MECH_HOOKS='load respawn preRespawn setCp update move force drawBack drawWorld lights chips postFx exitOk bot'.split(' ');
 const MECH_ORDER={
   load:['core','water','levers','escort','flips','shifters','allies','eras','gens','chase','sun','winds','echo','cams','noise','plates','terms','snow','freqsonar','trance','tone','cursors'],
   update:['water','levers','eras','echo','noise','plates','cams','terms','level','gusts','snow','cursors','freqsonar','trance','tone','flips','shifters','chase','sun','winds','allies','gens'],

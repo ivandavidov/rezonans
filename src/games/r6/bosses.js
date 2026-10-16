@@ -17,6 +17,7 @@ const glow6=(x,y,col,r,a)=>{ ctx.save(); ctx.globalCompositeOperation='lighter';
 const wisps6=(n,x,y)=>{ if(enemies.filter(e=>!e.dead&&e.type==='wisp').length>=n) return; const e=makeEnemy('wisp',x,y); e.summoned=true; e.alert=true; enemies.push(e); for(let i=0;i<8;i++) part(x,y-6,rnd(-40,40),rnd(-40,40),0.5,'#c8d8ff',1.5,0); };
 
 /* ---------- 1. СЯНКАТА ---------- */
+defBoss('shadow',{bot:{vuln:b=>b.solidT>0,tasks:b=>b.state!=='intro'&&!(b.solidT>0.3)&&toneCd<=0&&Math.hypot(b.x-player.x,b.y-player.y)<230?[{key:'era',any:true,ref:'shadowTone'}]:[]}});   // автопилотът: тон (E) я вплътнява
 defBoss('shadow',{make:()=>({type:'shadow',x:AX()+22*T,y:15*T-30,w:14,h:30,hp:700*D.bhp,max:700*D.bhp,state:'intro',t:2,face:-1,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,solidT:0,fireT:1.6,wispT:6,dashT:5,onGround:false})});
 defBoss('shadow',{onTone:d=>{ const b=boss; if(d<260&&b.state!=='intro'){ b.solidT=b.phase>1?2.8:3.6; for(let i=0;i<16;i++) part(b.x+b.w/2,b.y+b.h/2,rnd(-80,80),rnd(-80,80),0.5,'#e8c25a',2,0); showMsg('Сянката се вплътни!',1.2); } }});
 defBoss('shadow',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
@@ -47,6 +48,7 @@ defBoss('shadow',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; cons
   ctx.fillStyle='rgba(180,150,255,0.25)'; ctx.fillRect(x-(b.face>0?24:-4),Math.round(b.y+b.h)-2,20,2); }});
 
 /* ---------- 2. ЕХОТАТА ---------- */
+defBoss('echoes',{bot:{vuln:()=>!ERAD||ERA===1,contact:false,tasks:b=>b.state!=='intro'&&ERAD&&ERA===0?[{key:'era',any:true,ref:'echoEra'}]:[]}});   // автопилотът: уязвими са в съня (E)
 defBoss('echoes',{make:()=>{ const a=LVL.arena; if(ERAD) setDoorAll([a.door,a.r0,a.r1],'D'); return {type:'echoes',x:AX()+13*T,y:2.5*T,w:4*T,h:4*T,hp:1000*D.bhp,max:1000*D.bhp,state:'intro',t:2,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,fireT:2,rainT:5,wispT:4,pullT:9}; }});
 const echoVuln=()=>!ERAD||ERA===1;
 defBoss('echoes',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
@@ -74,6 +76,7 @@ defBoss('echoes',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; cons
   ctx.strokeStyle=`rgba(240,200,255,${0.3*fa})`; ctx.beginPath(); ctx.ellipse(cx,cy,26,18,0,0,7); ctx.stroke(); ctx.restore(); }});
 
 /* ---------- 3. ЖРЕЦЪТ ---------- */
+defBoss('priest',{bot:{vuln:b=>b.state==='open'}});   // автопилотът: открит е, щом огньовете угаснат
 defFoes('dims',{pyre:[16,26,80]});
 defFoe('pyre',{upd:(e,dt)=>{ e.anim+=dt; e.alert=false; e.mech=true; e.cd-=dt; const p=player;
   if(e.cd<=0&&!p.dead){ e.cd=rnd(2.6,3.6)*D.rate; const x=e.x+e.w/2, y=e.y, tt=1.1, tx=p.x+p.w/2; if(Math.abs(tx-x)<260) bossOrb(x,y,(tx-x)/tt,(p.y+p.h-6-y)/tt-0.5*G*tt,{grav:true,dmg:10,r:4,red:true,life:4}); } }});
@@ -115,6 +118,11 @@ defBoss('priest',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; begi
     for(let i=0;i<2;i++) glow6(x+(i?9:-9),y-18,'255,150,70',8,0.6); } }});
 
 /* ---------- 4. ТРИГЛАВИЯТ ---------- */
+const r6Tone=(b,r)=>toneCd<=0&&Math.hypot(b.x+b.w/2-player.x-5,b.y+b.h/2-player.y-13)<r?[{key:'era',any:true,ref:'r6Tone'}]:[];
+defBoss('cerber',{bot:{vuln:b=>b.state==='quiet',contact:false,tasks:b=>b.state==='sing'?r6Tone(b,300):[],threats(b){   // автопилотът: тон, докато пеят; накъде се засилва
+  const sp=(b.phase>1?1.25:1)*D.bspd*190, x0=AX()+T, x1=AX()+29*T-b.w, nx=(b.act+1)%2!==0;
+  const pos=t=>b.state==='charge'?clamp(b.x+b.face*sp*t,x0,x1):b.state==='aim'&&nx&&t>b.t?clamp(b.x+b.face*sp*(t-b.t),x0,x1):b.x;
+  return [{d:24,hit:(s,t)=>{ const x=pos(t); return s.x<x+b.w&&s.x+s.w>x&&s.y<b.y+b.h&&s.y+s.h>b.y; }}]; }}});
 defBoss('cerber',{make:()=>({type:'cerber',x:AX()+18*T,y:15*T-46,w:72,h:46,hp:1000*D.bhp,max:1000*D.bhp,state:'intro',t:2,face:-1,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,act:0})});
 defBoss('cerber',{onTone:d=>{ const b=boss; if(b.state==='sing'&&d<320){ b.state='quiet'; b.t=b.phase>1?3.4:4.2; shake=6; showMsg('Главите замлъкнаха! Стреляй сега!',1.4); for(let i=0;i<24;i++) part(b.x+b.w/2,b.y+10,rnd(-100,100),rnd(-80,20),0.6,'#e8c25a',2,0); }
   else if(b.state!=='quiet'&&b.state!=='intro') hint6(b,'Изчакай хорът да запее — тогава откликни с тона.'); }});
@@ -148,6 +156,7 @@ defBoss('cerber',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; cons
   ctx.restore(); }});
 
 /* ---------- 5. ПЪРВИЯТ ТОН ---------- */
+defBoss('firsttone',{bot:{vuln:b=>b.shield<=0.4,tasks:b=>b.state!=='intro'&&b.openT<=0.2?r6Tone(b,300):[]}});   // автопилотът: тон отблизо пробива щита
 defBoss('firsttone',{make:()=>({type:'firsttone',x:AX()+13*T,y:2*T,w:4*T,h:4*T,hp:1500*D.bhp,max:1500*D.bhp,state:'intro',t:2.5,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,shield:1,openT:0,fireT:2,beamT:5,sumT:7,mech:true})});
 defBoss('firsttone',{onTone:d=>{ const b=boss; if(b.state==='intro') return; if(d<320){ b.openT=b.phase>2?2.6:3.4; showMsg('Щитът е пробит!',1); for(let i=0;i<30;i++) part(b.x+b.w/2,b.y+b.h/2,rnd(-120,120),rnd(-120,120),0.6,'#e8c25a',2,0); } else hint6(b,'Твърде далеч си! Приближи се плътно и изпей тона.'); }});
 defBoss('firsttone',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;

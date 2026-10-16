@@ -85,6 +85,7 @@ function svValidate(g,cols,sky,lowg,lifts,startX,exitX,o={}){
   for(let h=0;h<q4.length;h++){ const id=q4[h]; if(radjB[id]) for(const n of radjB[id]) if(!B[n]){ B[n]=1; q4.push(n); } }
   const bx=o.backX==null?cols:o.backX, backTraps=[]; for(let id=0;id<N;id++) if(RO[id]&&kind[id]&&!B[id]&&id%cols<bx) backTraps.push(id);
   if(o.back&&backTraps.length&&!o.all) return svValidate.dbg?{traps:backTraps}:null;
+  if(o.noRoute) return {kind,virt,R,Q,RO,traps,gyEq,cols,adj,adjB,B,backTraps,sid};   // автопилотът (engine/bot.js) — само графът
   // weighted route (walking is cheaper than jumping) for the bot and loot placement
   const dist=new Float64Array(N).fill(1e9), pr=new Int32Array(N).fill(-1), heap=[[0,sid]]; dist[sid]=0;
   const cost=(a,b)=>{ const ax=a%cols, ay=(a/cols)|0, bx=b%cols, by=(b/cols)|0; return (acid[b]?40:0)+((Math.abs(ax-bx)<=1&&by>=ay)?1:(ax===bx?2:3+Math.abs(ax-bx))); };

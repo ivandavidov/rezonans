@@ -10,6 +10,7 @@ defBosses('name',{deep:'ДЪЛБИННИЯТ',breach:'ПРОБИВЪТ · ПРЕ
 defBosses('col',{deep:'#4fe3d6',breach:'#ff6ad5',stone:'#e0c08a',swarm:'#ffd36b',storm:'#9fc8ff',maker:'#ffffff'});
 
 /* ---------- 1. ДЪЛБИННИЯТ ---------- */
+defBoss('deep',{bot:{vuln:b=>b.state==='head'}});   // автопилотът: главата е уязвима само над водата
 defBoss('deep',{make:()=>{ const a=LVL.arena, cx=AX()+15*T; if(!FLOOD) FLOOD={y:11*T,y0:11*T,rate:0,top:11*T,on:false,x0:AX()+T,x1:AX()+29*T}; FLOOD.y=FLOOD.y0;
   return {type:'deep',cx,x:cx-24,y:H+100,w:48,h:36,hp:700*D.bhp,max:700*D.bhp,state:'intro',t:2,phase:1,wave:0,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,rise:0,st:0,surgeT:12,surge:0}; }});
 function deepWave(b){ const a=LVL.arena, n=b.phase===1?(DI===0?2:3):(DI===0?3:4), hs=a.hatches.slice();
@@ -76,6 +77,7 @@ defBoss('breach',{draw:()=>{ const b=boss; if(b.dead&&b.deathT>2.6) return; cons
   ctx.restore(); }});
 
 /* ---------- 3. КАМЕННИЯТ СТРАЖ ---------- */
+defBoss('stone',{bot:{vuln:()=>ERA===1,tasks:b=>ERA===0&&b.state!=='intro'?[{key:'era',any:true,ref:'stoneEra'}]:[]}});   // автопилотът: уязвим е само в другата епоха
 defBoss('stone',{make:()=>{ const cx=AX()+20*T, a=LVL.arena; setDoorAll([a.door,a.r0,a.r1],'D'); return {type:'stone',x:cx-20,y:15*T-62,w:40,h:62,hp:900*D.bhp,max:900*D.bhp,state:'intro',t:2,face:-1,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,at:2.5,pulse:0,hintT:0}; }});
 defBoss('stone',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return;
   if(ERA===0){ sparks(b.x+b.w/2+rnd(-10,10),b.y+rnd(10,50),3,'#d8c8a0'); b.hintT-=1; if(b.hintT<=0){ b.hintT=25; showMsg('Камъкът е неуязвим — смени епохата с [E]!',1.8); } return; }
@@ -132,6 +134,7 @@ defBoss('swarm',{upd:dt=>{
 defBoss('swarm',{draw:()=>{ const b=boss; if(b.form==='fist'&&b.ft>1.6&&b.state==='fight'){ const x=b.fx-cam; ctx.strokeStyle=`rgba(255,200,80,${0.3+0.3*Math.sin(titleT*20)})`; ctx.setLineDash([3,4]); ctx.beginPath(); ctx.moveTo(x,b.fy); ctx.lineTo(x,15*T); ctx.stroke(); ctx.setLineDash([]); } }});
 
 /* ---------- 5. БУРЯТА ---------- */
+defBoss('storm',{bot:{vuln:b=>b.eye>=0.5,contact:false,threats:b=>b.cols.filter(c=>!c.done).map(c=>({d:22,hit:(s,t)=>Math.abs(t-c.t)<0.03&&Math.abs(s.x+s.w/2-c.x)<13}))}});   // автопилотът: мълниите падат по колоните
 defBoss('storm',{make:()=>{ const cx=AX()+15*T; return {type:'storm',cx,x:cx-45,y:0.6*T,w:90,h:46,hp:800*D.bhp,max:800*D.bhp,state:'intro',t:2,anim:0,dead:false,deathT:0,boomT:0,hitT:0,vx:0,vy:0,phase:1,eye:0,cols:[],at:2.5,gust:0,gustT:8}; }});
 defBoss('storm',{hurt:(d,blast)=>{ const b=boss; if(!b||b.dead||b.state==='intro') return; if(b.eye<0.5){ if(Math.random()<0.4) sparks(b.cx+rnd(-30,30),b.y+rnd(10,40),2,'#cfe8ff'); return; }
   b.hp-=d; b.hitT=0.08; sparks(b.cx+rnd(-8,8),b.y+24,4,'#9fe8ff'); if(b.phase===1&&b.hp<b.max*0.5){ b.phase=2; showMsg('Бурята преминава в свиреп ураган!',2); shake=8; } if(b.hp<=0){ bossDie(); GWIND=0; } }});
