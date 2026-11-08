@@ -50,6 +50,9 @@ python3 src/win/make_exe.py            # dist/Rezonans-windows/ (Rezonans-x64.ex
   До него са `manifest.webmanifest` (на ръка) и иконите `apple-touch-icon.png`, `icon-*.png` — рисуват се с
   `python3 src/audio/icon.py` (пуска се на ръка при промяна на иконата; отпечатва и SVG пътя за вградената фавикона).
   При всяка промяна на визуализатора се сменя `VER` в него (дата.номер) — показва се в панела ⓘ.
+- Изключение: **`docs/space/`** — отделната игра „Резонанс в космоса“ (на сайта — `/space/`): свой код, без връзка с двигателя
+  и без сборка, пише се на ръка, `build.py` не я пипа. Всички пътища са относителни (работи и от `file://`). Устройство,
+  правила и проверки (`node docs/space/dev/sim.js`, `python3 docs/space/dev/check.py`) — в `docs/space/dev/README.md`.
 - **`src/fonts/fonts.css`, `src/fonts/files/`, `src/fonts/licenses/`** — генерират се от `src/fonts/fetch.py`, но се commit-ват
   (офлайн сборката не трябва да зависи от мрежата). Лицензите (SIL OFL) остават до шрифтовете.
 

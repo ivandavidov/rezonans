@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="bg">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Резонанс в космоса</title>
+<meta name="description" content="Хоризонтален космически шутър: шест нива, скала с подобрения, хангар и босове.">
+<meta name="theme-color" content="#02040a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%227%22 fill=%22%2304070f%22/%3E%3Cpath d=%22M5 16h4l3-7 4 14 4-11 3 4h4%22 fill=%22none%22 stroke=%22%2367f0ff%22 stroke-width=%222.4%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="Резонанс">
+<script>if (/^https?:/.test(location.protocol)) document.write('<link rel="manifest" href="manifest.webmanifest">'); // при file:// браузърът отказва manifest с грешка в конзолата</script>
+<link rel="stylesheet" href="fonts/fonts.css">
+<link rel="stylesheet" href="css/ui.css">
+</head>
+<body>
+<canvas id="cv"></canvas>
+
+<div id="play">
+  <div id="hud" class="off">
+    <div class="hud-tl"><div id="hHull" class="hull"></div><div id="hLives" class="lives"></div></div>
+    <div class="hud-tc"><div id="hScore" class="score">0</div><div id="hMult" class="mult"></div>
+      <div id="hBoss" class="boss"><span class="nm"></span><div class="bar"><i></i><b></b></div></div></div>
+    <div class="hud-tr"><div id="hWpn" class="wpn"></div><div id="hCry" class="cry"></div></div>
+    <div id="hScale" class="scale"></div>
+    <div id="toast"></div>
+  </div>
+  <div id="banner"><b></b><span></span></div>
+  <div id="touch">
+    <button id="tPause" class="tbtn tpause" aria-label="Пауза"><i></i><i></i></button>
+    <button id="tAct" class="tbtn tact"><span>Вземи</span></button>
+    <button id="tBomb" class="tbtn tbomb"><svg viewBox="0 0 100 100"><circle class="trk" cx="50" cy="50" r="44"/><circle id="tBombArc" class="arc" cx="50" cy="50" r="44"/></svg><span>Удар</span></button>
+  </div>
+</div>
+
+<section id="title" class="screen">
+  <div class="logo"><div class="l1">РЕЗОНАНС</div><div class="l2">в космоса</div></div>
+  <nav class="menu">
+    <button class="nav primary" data-act="continue"><span id="contTxt">Играй</span></button>
+    <button class="nav" data-act="levels">Нива</button>
+    <button class="nav" data-act="hangar">Хангар <b id="titleCry"></b></button>
+    <button class="nav" data-act="settings">Настройки</button>
+    <button class="nav" data-act="howto">Как се играе</button>
+  </nav>
+  <div class="keys">
+    <span><kbd>←↑↓→</kbd> / <kbd>WASD</kbd> движение</span><span><kbd>Space</kbd> стрелба</span><span><kbd>X</kbd> вземи от скалата</span><span><kbd>C</kbd> резонансен удар</span><span><kbd>Esc</kbd> пауза</span>
+  </div>
+  <div class="keys touchkeys"><span>Плъзгай пръст по екрана — корабът го следва, а стрелбата е автоматична</span></div>
+  <div class="ver">версия 1.0</div>
+</section>
+
+<section id="levels" class="screen dim off" data-back="title">
+  <h2>Нива</h2>
+  <div class="seg" id="diffSeg"><button class="nav" data-act="diff" data-v="0">Лесно</button><button class="nav" data-act="diff" data-v="1">Нормално</button><button class="nav" data-act="diff" data-v="2">Трудно</button></div>
+  <div class="cards" id="levelCards"></div>
+  <nav class="menu row"><button class="nav" data-act="back">Назад</button></nav>
+</section>
+
+<section id="brief" class="screen dim off" data-back="back">
+  <div class="brief">
+    <div class="bhead"><div class="wavebars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div><small>Връзка със станция „Резонанс“</small><h3 id="briefNo">Ниво 1</h3></div></div>
+    <h2 id="briefName"></h2>
+    <p id="briefText" class="typed"></p>
+    <div class="bboss">Пазач: <b id="briefBoss"></b> · Трудност: <b id="briefDiff"></b></div>
+  </div>
+  <nav class="menu row"><button class="nav primary" data-act="go">Начало</button><button class="nav" data-act="back">Назад</button></nav>
+</section>
+
+<section id="pause" class="screen dim off" data-back="resume">
+  <h2>Пауза</h2>
+  <nav class="menu">
+    <button class="nav primary" data-act="resume">Продължи</button>
+    <button class="nav" data-act="restart">Отначало</button>
+    <button class="nav" data-act="settings">Настройки</button>
+    <button class="nav" data-act="quit">Към началото</button>
+  </nav>
+</section>
+
+<section id="over" class="screen dim off" data-back="quit">
+  <h2 id="overTitle">Край на играта</h2>
+  <div id="overStats" class="stats"></div>
+  <nav class="menu">
+    <button class="nav primary" data-act="cont" id="contBtn">Продължи от контролната точка</button>
+    <button class="nav" data-act="restart">Отначало</button>
+    <button class="nav" data-act="quit">Към началото</button>
+  </nav>
+</section>
+
+<section id="results" class="screen dim off" data-back="hangar">
+  <h2 id="resTitle">Секторът е чист</h2>
+  <div class="medal" id="resMedal"><i></i><span></span></div>
+  <div id="resStats" class="stats"></div>
+  <div id="resBonus" class="bonus"></div>
+  <div class="total"><span>Общо</span><b id="resTotal">0</b><small id="resBest"></small></div>
+  <nav class="menu row"><button class="nav primary" data-act="hangar">Хангар</button><button class="nav" data-act="restart">Отново</button><button class="nav" data-act="quit">Към началото</button></nav>
+</section>
+
+<section id="ending" class="screen dim off" data-back="title">
+  <div class="logo small"><div class="l1">ПОБЕДА</div><div class="l2">звездите светят отново</div></div>
+  <p id="endText" class="typed endtext"></p>
+  <div class="credits" id="credits">
+    <div><span>Игра</span><b>Резонанс в космоса</b></div>
+    <div><span>Идея и посока</span><b>Иван Давидов</b></div>
+    <div><span>Код, графика и музика</span><b>създадени с Claude — всичко се рисува и звучи от кода, без готови файлове</b></div>
+    <div><span>Шрифтове</span><b>Russo One, Exo 2 (SIL Open Font License)</b></div>
+    <div><span>Вдъхновение</span><b>класическите хоризонтални шутъри от 90-те</b></div>
+  </div>
+  <div id="endStats" class="stats"></div>
+  <nav class="menu row"><button class="nav primary" data-act="title">Към началото</button></nav>
+</section>
+
+<section id="hangar" class="screen dim off" data-back="title">
+  <div class="hhead"><h2>Хангар</h2><div class="bank"><i></i><b id="bank">0</b><span>кристала</span></div></div>
+  <div class="hgrid">
+    <div class="hship"><canvas id="shipCv" width="360" height="220"></canvas><div class="wsel" id="wSel"></div><p class="hint2" id="wDesc"></p></div>
+    <div class="ups" id="ups"></div>
+  </div>
+  <nav class="menu row"><button class="nav primary" data-act="next" id="nextBtn">Следващо ниво</button><button class="nav" data-act="back">Назад</button></nav>
+</section>
+
+<section id="settings" class="screen dim off" data-back="back">
+  <h2>Настройки</h2>
+  <div class="setlist" id="setList"></div>
+  <nav class="menu row"><button class="nav" data-act="back">Назад</button></nav>
+</section>
+
+<section id="howto" class="screen dim off" data-back="back">
+  <h2>Как се играе</h2>
+  <div class="howto">
+    <div><h4>Управление</h4><p><kbd>←↑↓→</kbd>/<kbd>WASD</kbd> — движение · <kbd>Space</kbd>/<kbd>Z</kbd> — стрелба (задръж) · <kbd>X</kbd>/<kbd>Shift</kbd> — вземи от скалата · <kbd>C</kbd> — резонансен удар · <kbd>Esc</kbd> — пауза · <kbd>F</kbd> — цял екран · <kbd>M</kbd> — музика</p><p class="touchonly">На телефон: плъзгай пръст където и да е по екрана — корабът следва движението му, а стрелбата е автоматична. Вдясно са бутоните „Вземи“ и „Удар“.</p></div>
+    <div><h4>Скалата</h4><p>Когато унищожиш цяла вълна, тя оставя <b>нота</b>. Всяка нота премества курсора по скалата с едно поле: Скорост → Оръдие → Ракети → Ехо → Щит → Резонанс. Сам решаваш кога да вземеш маркираното подобрение — или да събереш още ноти и да стигнеш до следващото.</p></div>
+    <div><h4>Оръжия</h4><p><b class="c-pulse">Импулс</b> — бърз изстрел право напред. <b class="c-fan">Ветрило</b> — разпръснат изстрел, добър срещу много врагове наведнъж. <b class="c-beam">Лъч</b> — непрекъснат, минава през всички по пътя си. <b class="c-wave">Вълна</b> — минава през щитове. Сваленият <b>Носач</b> пуска кристал, който сменя предлаганото оръжие на всеки 2–3 секунди — хвани го, когато покаже желаното. Ако е същото като твоето, получаваш +1 мощност.</p></div>
+    <div><h4>Резонансен удар</h4><p>Зарежда се с всеки унищожен враг. Пуска вълна през целия екран, която изтрива вражеските изстрели и наранява всички врагове.</p></div>
+    <div><h4>Корпус и кораби</h4><p>Корабът издържа 3 удара, а щитът поема ударите пръв. Изстрелите те засягат само ако улучат светлата точка в средата на кораба. Когато загубиш кораб, губиш едно ниво мощност, щита и дроновете.</p></div>
+    <div><h4>Хангар</h4><p>Кристалите, които събираш от враговете, остават у теб и след края на нивото. В хангара купуваш с тях постоянни подобрения и избираш с какво оръжие да започнеш.</p></div>
+  </div>
+  <nav class="menu row"><button class="nav" data-act="back">Назад</button></nav>
+</section>
+
+<div id="rotate"><div class="phone"></div><p>Завърти устройството хоризонтално</p></div>
+<div id="nogl" class="screen off"><h2>Нужен е WebGL 2</h2><p>Браузърът не поддържа WebGL 2. Опитай с нова версия на Chrome, Safari, Firefox или Edge.</p></div>
+
+<script src="js/core.js"></script>
+<script src="js/sim/world.js"></script>
+<script src="js/sim/foes.js"></script>
+<script src="js/sim/foes2.js"></script>
+<script src="js/sim/foes3.js"></script>
+<script src="js/sim/bosses.js"></script>
+<script src="js/sim/bosses2.js"></script>
+<script src="js/sim/bosses3.js"></script>
+<script src="js/sim/progress.js"></script>
+<script src="js/sim/bot.js"></script>
+<script src="js/levels/l1.js"></script>
+<script src="js/levels/l2.js"></script>
+<script src="js/levels/l3.js"></script>
+<script src="js/levels/l4.js"></script>
+<script src="js/levels/l5.js"></script>
+<script src="js/levels/l6.js"></script>
+<script src="js/save.js"></script>
+<script src="js/input.js"></script>
+<script src="js/gl.js"></script>
+<script src="js/art.js"></script>
+<script src="js/bg.js"></script>
+<script src="js/fx.js"></script>
+<script src="js/look.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

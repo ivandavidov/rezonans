@@ -1,0 +1,20 @@
+{
+ "name": "Резонанс в космоса",
+ "short_name": "Резонанс",
+ "description": "Хоризонтален космически шутър: шест нива, скала с подобрения, хангар и босове.",
+ "lang": "bg",
+ "id": "./",
+ "start_url": "./",
+ "scope": "./",
+ "display": "fullscreen",
+ "orientation": "landscape",
+ "background_color": "#02040a",
+ "theme_color": "#02040a",
+ "categories": ["games", "entertainment"],
+ "icons": [
+  { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+  { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+  { "src": "icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+  { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+ ]
+}
